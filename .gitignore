@@ -167,6 +167,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# nitrix-perf-bench result artefacts (P0a: disposable; structured store is L4)
+/results
+
 # mypy
 .mypy_cache/
 .dmypy.json

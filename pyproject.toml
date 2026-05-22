@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools >=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nitrix-perf-bench"
+version = "0.0.0.dev0"
+description = "Performance benchmark suite for nitrix (see DESIGN.md)."
+requires-python = ">=3.11"
+# Core deps only.  jax lives in the platform dependency-groups below (the
+# CPU vs CUDA variant is the conflicting axis of the platform matrix, L6).
+dependencies = [
+    "numpy >= 2.0",
+]
+
+[project.scripts]
+nperf = "nperf.run:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ---------------------------------------------------------------------------
+# Environment matrix (DESIGN §6/§7).  Each platform is a dependency-group; the
+# runner activates one per subprocess worker via ``uv run --group <env>``.
+# ``jax-cpu`` and ``jax-cuda12`` are the same package with different variants,
+# so they are declared as conflicting (see [tool.uv]).
+#
+# P0a uses a framework-trivial throwaway case (jax + numpy only); nitrix as a
+# SHA-pinned path source and the refs-torch / refs-pyg envs land in P0b/P2.
+# ---------------------------------------------------------------------------
+[dependency-groups]
+jax-cpu = ["jax == 0.10.0"]
+jax-cuda12 = ["jax[cuda12] == 0.10.0"]
+dev = ["pytest", "ruff"]
+
+[tool.uv]
+default-groups = ["jax-cpu", "dev"]
+conflicts = [[{ group = "jax-cpu" }, { group = "jax-cuda12" }]]
+
+[tool.ruff]
+line-length = 79
+lint.select = ["E", "F", "W", "I001"]
+
+[tool.ruff.format]
+quote-style = "single"
