@@ -4,9 +4,11 @@
 > document defines the **architecture**; specific nitrix ops to benchmark
 > are out of scope here (they enter as *cases*, see §2/L2).
 >
-> Status: design accepted 2026-05-22; **revised after design review,
-> 2026-05-22** (dispositions in §9).  Substrate and environment-manager
-> decisions are recorded in §3 and §7.
+> Status: design accepted 2026-05-22; **revised after design review rounds 1 &
+> 2, 2026-05-22** (dispositions in §9).  Substrate and environment-manager
+> decisions are recorded in §3 and §7.  The **L4 row schema and worker
+> lifecycle** — the implementation contract that P0a iterates and P0b freezes —
+> live in the companion **`SCHEMA_AND_LIFECYCLE.md`**.
 
 ## 0. Why a separate repo
 
@@ -97,13 +99,18 @@ Framework-agnostic, the load-bearing piece:
 - **Compile vs steady-state, with a declared cache policy.** Warm-up excludes
   first-call trace/compile; `compile_time` is its own metric. Because JAX
   compile cost is cache-dependent, the policy is: **persistent compilation
-  cache disabled / isolated per worker boot**, so `compile_time` is a genuine
-  *cold* compile (the cost a nitrix user sees on first import), not a
-  warm-cache artefact. The cache policy is recorded in provenance.
+  cache disabled** (not isolated-to-a-temp-dir) with **`jax.clear_caches()`
+  between in-process measurements**, so each attempt's `compile_time` is a
+  genuine *cold* compile (the cost a nitrix user sees on first import). The
+  cache state is recorded in provenance. (Worker reuse + cache discipline are
+  pinned in `SCHEMA_AND_LIFECYCLE.md` §B/§D.)
 - **Statistics.** Report the *distribution* — min (best achievable), median
   (typical), IQR / p95, n — not a point; auto-tune repeat count to a target
-  relative CI; explicit outlier policy. The **regression gate diffs on `min`**
-  (most noise-robust); the median/IQR are for human-facing reports.
+  relative CI; explicit outlier policy. The **regression gate diffs on `min`
+  *and* `p95`** (min = noise-robust best-case; p95 = distribution-shape
+  regressions — e.g. a slow-path fusion firing part of the time — that leave
+  min untouched); the full distribution is for human-facing reports. See
+  `SCHEMA_AND_LIFECYCLE.md` §F.
 - **Honesty controls.** Inputs pre-placed on device with fixed seeds (exclude
   H2D); stable jit signatures (no recompiles in the timed region);
   `XLA_PYTHON_CLIENT_PREALLOCATE=false`; GPU warm-up to steady clocks, with
@@ -117,9 +124,11 @@ A metric is `(name, unit, direction, collect-protocol)`. Built-ins:
 and composable; a case declares which it supports. Two metrics carry protocol
 caveats:
 - **`fidelity_vs_ref` returns a *structured* record**, not a scalar:
-  `{max_abs, max_rel, n_mismatched, layout_normalised: bool, oracle: str}`. A
-  single number would hide exactly the disagreements that matter; the gate
-  reads the structure (L2).
+  `{status: pass|fail|inconclusive, max_abs, max_rel, n_mismatched,
+  layout_normalised, oracle}` (the `oracle` block records which rung of the
+  ladder produced ground truth — `SCHEMA_AND_LIFECYCLE.md` §C). A single number
+  would hide exactly the disagreements that matter; the gate reads the
+  structure (L2).
 - **`energy` needs a different protocol.** NVML power is sampled at ~10–50 ms,
   comparable to or longer than many ops, so `power × steady_median` is
   meaningless for millisecond ops. Energy is measured by looping the op for a
@@ -138,15 +147,21 @@ caveats:
   Each baseline declares: its required environment; an `isolation:` marker
   (`uv` default, or `pixi` when it needs the §7 escape hatch, so the runner
   dispatches it correctly); and a **fidelity adapter**.
-- **The fidelity oracle.** Ground truth is the case's reference op evaluated in
-  **fp64**, computed **outside the timed region** (its cost is irrelevant), and
-  **every** baseline — nitrix included — is scored against *that*, never
+- **The fidelity oracle (computed once per param point, shared across all
+  baselines).** Ground truth is the case's reference op in **fp64**, computed
+  **outside the timed region** (cost irrelevant for *time*), and **every**
+  baseline — nitrix included — is scored against *that identical* oracle, never
   against another (lossy) baseline. This resolves "which baseline is right when
-  three disagree": none of them is the oracle. *Fallback:* when no fp64 path
-  exists (e.g. an integer/gather kernel, or a size where fp64 is infeasible —
-  then on a subsample), the case designates a reference baseline as oracle and
-  the fidelity record is explicitly labelled "agreement with X", not "error vs
-  truth" (the `oracle` field carries this).
+  three disagree": none of them is. Cost is irrelevant for time but not for
+  *feasibility*, so the oracle follows a **ladder** (rung recorded in
+  `fidelity.oracle.kind`): (1) **fp64 full**; (2) **fp64 on a deterministic,
+  stratified subsample** — *valid only for `output_independent` ops* (elementwise
+  / gather / per-row); **coupled** ops (global reductions, solvers, FFTs) skip
+  this rung because you cannot fp64 a slice of a coupled result, and below a
+  per-case minimum-meaningful `n` the result is `fidelity.status =
+  inconclusive`, not a forced pass/fail; (3) **designated baseline** when no
+  fp64 path exists at all — the record is then labelled "agreement with X", not
+  "error vs truth". Pinned in `SCHEMA_AND_LIFECYCLE.md` §C.
 - **The fairness contract** (harness-enforced): identical inputs (shared seed);
   matched, recorded precision policy; same device; same I/O policy; both warmed
   + synced; the adapter normalises layout / index conventions (NCHW↔NHWC, PyG↔
@@ -172,16 +187,24 @@ Config-driven sweep over `{case × param × baseline × platform}`.
   nitrix SHAs), `gate` (CI regression check against a stored baseline run).
 
 ### L4 — Results datastore + provenance (the source of truth)
-Append-only JSONL/Parquet, one row per `(case, param, baseline, platform,
-metric)` — *and* per skip/failure — carrying the full distribution and complete
-provenance (§1.1). The **schema is versioned**: P0a's schema is treated as
-**disposable** (results discarded), and from P1 onward changes are
+Append-only JSONL/Parquet, **one record per measurement *attempt***
+`(case, param, baseline, platform)` — with per-metric distributions nested
+under the attempt and a `status` enum, so a fidelity-failed attempt still
+carries its absolute measurements. (Granularity, the full status set, and the
+`failure_detail` shapes are pinned in **`SCHEMA_AND_LIFECYCLE.md` §A** — that
+annex is the row contract.) The **schema is versioned**: P0a's schema is
+treated as **disposable** (results discarded), and from P1 onward changes are
 **additive-only with a `schema_version` field**, because migrations on an
 append-only store are painful. Everything downstream derives from this; its
 shape maps directly onto what `nitrix/tools/op_matrix.py` consumes.
 
-### L5 — Renderers (artefacts; no arithmetic)
-All derived from L4, all arithmetic already done in L1:
+### L5 — Renderers (artefacts; no *metric* arithmetic)
+All derived from L4, with all *metric* arithmetic already done and stored in L1
+(ratios, errors, throughput, regression deltas, trends). Renderers may do
+*pure presentation transforms* (histogram binning, log-axis scaling,
+tile-level percentile aggregation for display). Rule of thumb: if the number
+could appear in a regression gate or a decision-input bundle it is L1's; if it
+only shapes a pixel it is the renderer's (`SCHEMA_AND_LIFECYCLE.md` §G).
 - **Per-op markdown** — regenerate the `PERF_*.md` look, from data.
 - **HTML `/site`** — interactive tables + plots (time-vs-size, roofline,
   history-over-SHA, platform comparison). (`.gitignore` already ignores
@@ -189,8 +212,8 @@ All derived from L4, all arithmetic already done in L1:
 - **op_matrix feed** — emit the `{op → (cpu_baseline, cpu_ratio, gpu_baseline,
   gpu_ratio)}` JSON that `nitrix/tools/op_matrix.py` consumes (fed by the
   coverage tier, §4), closing the loop into nitrix docs and filling `?` cells.
-- **Regression diff** — current run vs a stored baseline run, on `min`, with
-  thresholds; machine-readable for the `gate` mode.
+- **Regression diff** — current run vs a stored baseline run, on `min` (tight)
+  *and* `p95` (loose), with thresholds; machine-readable for the `gate` mode.
 - **Decision-input bundles** — *not* auto-emitted recommendations. Each bundle
   packages the structured inputs a human needs to make a "benchmark-first"
   call (ratios, the fidelity structure, the threshold check, the historical
@@ -222,8 +245,12 @@ results schema that off-the-shelf tools do not provide.
 
 - The **coverage tier** feeds `op_matrix`'s `perf_ratio` cells (`< 1` = nitrix
   win) from real measurements — reconciling "curation" with "coverage" (§1).
-- **Regression gate** (`gate` mode, on `min`) — optional, on nitrix PRs that
-  touch perf-sensitive ops.
+  `op_matrix` is **always** fed by the representative coverage point; if a
+  decision-tier sweep finds a regime where the ratio inverts, that lives in the
+  decision-input bundle, not in `op_matrix` (so the matrix stays a stable,
+  one-point-per-op summary).
+- **Regression gate** (`gate` mode, on `min` + `p95`) — optional, on nitrix PRs
+  that touch perf-sensitive ops.
 - **Decision-input bundles** → read by a human → BACKLOG / SPEC.
 - Results are attributed to a nitrix SHA, with a `compare`-two-SHAs mode.
 
@@ -271,19 +298,27 @@ path source pinned by SHA (recorded in provenance).
 **Escape hatch:** if — and only if — a legacy baseline's C++/CUDA dependency
 cannot be installed via PyPI, drop a `pixi.toml` into *that specific baseline's*
 reference folder (`src/nperf/baselines/<fw>/`) **and** mark that baseline
-`isolation: pixi` in the registry, so the runner dispatches it via pixi rather
-than uv. The marker keeps the escape hatch from quietly becoming a second,
-undeclared dispatch system.
+`isolation: pixi, reason: "<why PyPI failed>"` in the registry — the recorded
+reason leaves an audit trail and keeps pixi an *escape from* the established uv
+default, not a starting choice for a merely-painful install. The marker keeps
+the escape hatch from quietly becoming a second, undeclared dispatch system.
+**The device lock (L3) is dispatcher-agnostic:** it lives in the runner above
+both uv- and pixi-spawned workers (a uv `nitrix-jax` worker and a pixi
+`torch_geometric` worker on the same GPU serialise against the *same* lock —
+`SCHEMA_AND_LIFECYCLE.md` §E).
 
 ## 8. Open questions (not blocking the architecture)
 
 - **Results storage.** In-repo `results/` vs a dedicated results branch vs
-  external store; history depth / retention.
+  external store; history depth / retention. *Coupled to failure-row volume:*
+  every failed/skipped worker emits a row, so a wide sweep matrix grows the
+  store fast — retention policy and failure-row volume are one decision, not
+  two.
 - **Must-have v1 metrics.** Floor proposed: `steady_time`, `peak_hbm`,
   `fidelity_vs_ref`. Defer `energy` (distinct protocol, L1) and
   `est_flops`/roofline.
-- **CI-gate scope.** Which ops are gated, and the `min`-based regression
-  threshold / noise envelope.
+- **CI-gate scope.** Which ops are gated, and the `min`/`p95` regression
+  thresholds / noise envelope.
 
 ## 9. Review dispositions (2026-05-22)
 
@@ -302,3 +337,23 @@ undeclared dispatch system.
   gate diffs on **`min`**; "refuse" still **records** the absolutes + reason;
   the P0 split's load-bearing rule is **schema disposable in P0a,
   additive-only thereafter**, not the split ceremony itself.
+
+### Round 2 (2026-05-22) — row schema & lifecycle
+
+The residual gaps clustered in the L4 row shape and worker-lifecycle
+interaction surfaces; they are cashed out in the **`SCHEMA_AND_LIFECYCLE.md`**
+annex rather than re-revising the architecture.
+
+- **Accepted:** renderer "no-arithmetic" carve-out (metric arithmetic in L1;
+  presentation transforms in renderers); per-attempt row with status-shaped
+  `failure_detail` (`fidelity_failed` rows keep their metrics); `isolation:
+  pixi` carries a recorded `reason`; device lock is dispatcher-agnostic;
+  results-storage ↔ failure-row-volume coupling; §1.1 stays the provenance
+  reference.
+- **Refined / pushed:** subsample is **valid only for `output_independent`
+  ops** — coupled ops skip that rung and may be `fidelity_inconclusive` (a
+  third state); cold-compile is resolved as **`jax.clear_caches()` between
+  in-process attempts** (worker reuse without leaking warm compiles), cache
+  **disabled** not isolated; the shape-shift guard is **`p95`** (not median),
+  gating on `min` *and* `p95`; the oracle is **computed once per param point
+  and shared** across baselines (enforcing identical truth).
