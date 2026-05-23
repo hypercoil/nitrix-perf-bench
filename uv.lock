@@ -137,6 +137,18 @@ wheels = [
 ]
 
 [[package]]
+name = "jaxtyping"
+version = "0.3.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wadler-lindig" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c2/be/00294e369938937e31b094437d5ea040e4fd1a20b998ebe572c4a1dcfa68/jaxtyping-0.3.9.tar.gz", hash = "sha256:f8c02d1b623d5f1b6665d4f3ddaec675d70004f16a792102c2fc51264190951d", size = 45857, upload-time = "2026-02-16T10:35:13.263Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/05/3e39d416fb92b2738a76e8265e6bfc5d10542f90a7c32ad1eb831eea3fa3/jaxtyping-0.3.9-py3-none-any.whl", hash = "sha256:a00557a9d616eff157491f06ed2e21ed94886fad3832399273eb912b345da378", size = 56274, upload-time = "2026-02-16T10:35:11.795Z" },
+]
+
+[[package]]
 name = "ml-dtypes"
 version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
@@ -178,6 +190,49 @@ wheels = [
 ]
 
 [[package]]
+name = "nitrix"
+version = "0.0.0.dev0"
+source = { editable = "../nitrix" }
+dependencies = [
+    { name = "jax" },
+    { name = "jaxtyping" },
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'" },
+    { name = "gnureadline", marker = "extra == 'dev'" },
+    { name = "hypothesis", marker = "extra == 'dev'" },
+    { name = "jax", specifier = ">=0.10.0" },
+    { name = "jaxtyping", specifier = ">=0.2.31" },
+    { name = "mypy", marker = "extra == 'dev'" },
+    { name = "nox", marker = "extra == 'dev'" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "numpyro", marker = "extra == 'dev'", specifier = ">=0.21.0" },
+    { name = "pingouin", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "ruff", marker = "extra == 'dev'" },
+]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "communities", specifier = ">=3.0.0" },
+    { name = "coverage", extras = ["toml"] },
+    { name = "gnureadline" },
+    { name = "hypothesis" },
+    { name = "mypy" },
+    { name = "nox" },
+    { name = "numpyro", specifier = ">=0.21.0" },
+    { name = "pingouin" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[[package]]
 name = "nitrix-perf-bench"
 version = "0.0.0.dev0"
 source = { editable = "." }
@@ -192,9 +247,11 @@ dev = [
 ]
 jax-cpu = [
     { name = "jax" },
+    { name = "nitrix" },
 ]
 jax-cuda12 = [
     { name = "jax", extra = ["cuda12"], marker = "extra == 'group-17-nitrix-perf-bench-jax-cuda12'" },
+    { name = "nitrix" },
 ]
 
 [package.metadata]
@@ -205,8 +262,14 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
-jax-cpu = [{ name = "jax", specifier = "==0.10.0" }]
-jax-cuda12 = [{ name = "jax", extras = ["cuda12"], specifier = "==0.10.0" }]
+jax-cpu = [
+    { name = "jax", specifier = "==0.10.0" },
+    { name = "nitrix", editable = "../nitrix" },
+]
+jax-cuda12 = [
+    { name = "jax", extras = ["cuda12"], specifier = "==0.10.0" },
+    { name = "nitrix", editable = "../nitrix" },
+]
 
 [[package]]
 name = "numpy"
@@ -581,4 +644,13 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/52/52/e57eceff0e342a1f50e274264ed47497b59e6a4e3118808ee58ddda7b74a/scipy-1.17.1-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:a77cbd07b940d326d39a1d1b37817e2ee4d79cb30e7338f3d0cddffae70fcaa2", size = 37682317, upload-time = "2026-02-23T00:22:18.513Z" },
     { url = "https://files.pythonhosted.org/packages/11/2f/b29eafe4a3fbc3d6de9662b36e028d5f039e72d345e05c250e121a230dd4/scipy-1.17.1-cp314-cp314t-win_amd64.whl", hash = "sha256:eb092099205ef62cd1782b006658db09e2fed75bffcae7cc0d44052d8aa0f484", size = 37345327, upload-time = "2026-02-23T00:22:24.442Z" },
     { url = "https://files.pythonhosted.org/packages/07/39/338d9219c4e87f3e708f18857ecd24d22a0c3094752393319553096b98af/scipy-1.17.1-cp314-cp314t-win_arm64.whl", hash = "sha256:200e1050faffacc162be6a486a984a0497866ec54149a01270adc8a59b7c7d21", size = 25489165, upload-time = "2026-02-23T00:22:29.563Z" },
+]
+
+[[package]]
+name = "wadler-lindig"
+version = "0.1.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/67/cbae4bf7683a64755c2c1778c418fea96d00e34395bb91743f08bd951571/wadler_lindig-0.1.7.tar.gz", hash = "sha256:81d14d3fe77d441acf3ebd7f4aefac20c74128bf460e84b512806dccf7b2cd55", size = 15842, upload-time = "2025-06-18T07:00:42.843Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/96/04e7b441807b26b794da5b11e59ed7f83b2cf8af202bd7eba8ad2fa6046e/wadler_lindig-0.1.7-py3-none-any.whl", hash = "sha256:e3ec83835570fd0a9509f969162aeb9c65618f998b1f42918cfc8d45122fe953", size = 20516, upload-time = "2025-06-18T07:00:41.684Z" },
 ]

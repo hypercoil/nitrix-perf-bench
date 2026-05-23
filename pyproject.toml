@@ -25,17 +25,24 @@ where = ["src"]
 # ``jax-cpu`` and ``jax-cuda12`` are the same package with different variants,
 # so they are declared as conflicting (see [tool.uv]).
 #
-# P0a uses a framework-trivial throwaway case (jax + numpy only); nitrix as a
-# SHA-pinned path source and the refs-torch / refs-pyg envs land in P0b/P2.
+# The throwaway case is framework-trivial (jax + numpy only); the first real
+# case (P0b, semiring_matmul) brings in ``nitrix`` -- the system under test --
+# as a path source (DESIGN §7: pinned by SHA, recorded in provenance).  It sits
+# in the platform groups beside jax, not in the core ``dependencies``, so the
+# nitrix-vs-jax coupling is per-env (and the throwaway stays nitrix-free).  The
+# refs-torch / refs-pyg envs land in P2.
 # ---------------------------------------------------------------------------
 [dependency-groups]
-jax-cpu = ["jax == 0.10.0"]
-jax-cuda12 = ["jax[cuda12] == 0.10.0"]
+jax-cpu = ["jax == 0.10.0", "nitrix"]
+jax-cuda12 = ["jax[cuda12] == 0.10.0", "nitrix"]
 dev = ["pytest", "ruff"]
 
 [tool.uv]
 default-groups = ["jax-cpu", "dev"]
 conflicts = [[{ group = "jax-cpu" }, { group = "jax-cuda12" }]]
+
+[tool.uv.sources]
+nitrix = { path = "../nitrix", editable = true }
 
 [tool.ruff]
 line-length = 79

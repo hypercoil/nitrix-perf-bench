@@ -7,10 +7,21 @@ provenance, DESIGN §1.1) — otherwise XLA's preallocation swamps the signal.
 On CPU there is no HBM, so ``peak_hbm_mb`` returns ``None`` and ``host_rss_mb``
 is the memory signal.
 
-NOTE (P0a limitation): ``peak_bytes_in_use`` is a *process* high-water mark;
-JAX exposes no public per-attempt reset, so the value is the HWM up to the
-measurement.  A clean per-attempt peak is a P1 item; the schema already carries
-the field so the renderer is stable.
+⚠️  LOUD CAVEAT — both memory signals here are *process-wide high-water marks*
+that **never reset** within a run, so they are only trustworthy per-attempt in
+a **single-attempt process**:
+
+- ``peak_bytes_in_use`` (HBM) is a monotonic process maximum; JAX exposes no
+  public per-attempt reset.
+- ``ru_maxrss`` (host RSS) is likewise the process max RSS, not the attempt's.
+
+In the current **in-process** driver, once any attempt allocates a large buffer
+every later row inherits that floor — only the *jumps* attribute to the attempt
+that caused them.  The real fix is **one OS process per attempt** (the P1
+subprocess workers, SCHEMA_AND_LIFECYCLE §B): then each process's HWM *is* the
+attempt's peak.  The schema already carries the field, so the renderer is
+stable across the fix; only the isolation changes.  Until then, treat per-row
+memory as a process HWM, not an isolated footprint.
 """
 from __future__ import annotations
 

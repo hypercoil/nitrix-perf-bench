@@ -1,9 +1,11 @@
 # nitrix-perf-bench — L4 row schema & worker lifecycle
 
 > Annex to `DESIGN.md` (architecture).  This is the **implementation
-> contract** for the result row and the worker process — the surface that
-> P0a iterates and P0b freezes (additive-only thereafter).  Written after
-> design review round 2 (2026-05-22).
+> contract** for the result row and the worker process.  **Frozen at
+> `schema_version = 1` (P0b, 2026-05-22)** — additive-only from here (new
+> optional fields / new `status` members; never a rename or removal).
+> Written after design review round 2; reconciled to the validated P0a code
+> (the `rel_to_tol` fidelity headline) on freeze.
 
 The two questions this annex answers: *what exactly does an L4 row look like
 across `ok` / failure / fidelity-fallback / subsample cases?*, and *how do the
@@ -26,7 +28,7 @@ query wants it; the canonical store is per-attempt.
 ```jsonc
 {
   // ---- identity / keys ----
-  "schema_version": 2,
+  "schema_version": 1,
   "run_id": "2026-05-22T18:03:11Z__a1b2c3d",   // groups one invocation
   "case": "semiring_matmul",                    // op-family case id
   "param_point": {                              // structured -> filterable
@@ -56,14 +58,17 @@ query wants it; the canonical store is per-attempt.
   // ---- fidelity (present iff a comparison was attempted) ----
   "fidelity": {
     "status": "pass",                            // pass | fail | inconclusive
-    "max_abs": 3.0e-6, "max_rel": 1.2e-6, "n_mismatched": 0,
+    "rel_to_tol": 0.077,                         // HEADLINE: worst error / allowed tol; pass <=> <= 1
+    "max_abs": 3.0e-6,                           // worst absolute error
+    "max_rel": 1.2e-6,                           // worst relative error, guarded to |ref| > atol
+    "n_mismatched": 0,
     "layout_normalised": true,
     "oracle": {
       "kind": "fp64_full",                       // fp64_full | fp64_subsample | designated_baseline
       "baseline": null,                          // set iff kind == designated_baseline
       "subsample": null                          // set iff kind == fp64_subsample (block C)
     },
-    "threshold": {"max_rel": 1e-4, "scope": "per_case"}
+    "threshold": {"rtol": 1e-3, "atol": 1e-4, "scope": "per_case"}
   },
 
   // ---- ratio (present iff status == ok AND fidelity.status == pass) ----
@@ -77,6 +82,19 @@ query wants it; the canonical store is per-attempt.
   "provenance": { /* see DESIGN §1.1 — flattened or nested */ }
 }
 ```
+
+### ⚠️ `peak_hbm` / `host_rss` are process high-water marks until P1
+
+Both memory metrics read a **process-wide high-water mark** (`peak_bytes_in_use`
+for HBM; `ru_maxrss` for RSS) that **never resets within a run**.  In the
+in-process P0b driver they only ever rise, so once one attempt allocates a large
+buffer every later row inherits that floor — **only the *jumps* attribute to the
+attempt that caused them**, and an absolute per-row value is the process peak at
+that point, not the attempt's isolated footprint.  This is *the* load-bearing
+reason for **one OS process per attempt** (the P1 subprocess workers, §B): then
+each process's HWM *is* the attempt's peak.  The field is in the frozen schema so
+nothing changes on the fix except the isolation; until then, read memory rows
+with this caveat (the renderer states it on every report).
 
 ### `failure_detail` shapes (by `status`)
 
@@ -151,6 +169,29 @@ against the *identical* truth, and fp64 is not recomputed per baseline.
 `output_independent` is declared by the case (or its fidelity adapter); the
 adapter also owns layout/index normalisation (NCHW↔NHWC, PyG↔nitrix indexing)
 and sets `layout_normalised` before comparing.
+
+### The fidelity headline: tolerance-relative, not bare relative
+
+`fidelity.compare` reports **`rel_to_tol` = max(|out − ref| / (atol + rtol·|ref|))**
+as the headline scalar, and it is gate-consistent: **`pass` ⟺ `rel_to_tol ≤ 1`**
+(same as `np.allclose`).  A **bare element-wise `max_rel`** (`|out − ref|/|ref|`)
+is the wrong headline for **zero-centred outputs** — matmul, residuals,
+normalised data, log/tropical semiring results — because most `|ref|` are near
+zero, so a tiny absolute error divides into a huge, *meaningless* relative
+number (P0a's throwaway showed a passing fp32 matmul reporting `max_rel ≈ 0.12`).
+Prefer the **tolerance-relative** (or otherwise scale-normalised) error
+everywhere; `max_rel` is retained only as a guarded diagnostic (`|ref| > atol`),
+never as the pass/fail signal.
+
+**The precision policy must be set *and* recorded.** Before any measurement the
+runner sets one explicit numeric policy (P0a: `jax_default_matmul_precision =
+'highest'`, true fp32 — otherwise GPU tensor cores silently downgrade fp32
+matmul to TF32, which the fp64 oracle correctly catches as a fidelity failure on
+the A10G) and the oracle is computed in true fp64 (`jax_enable_x64`).  Both go
+into `provenance` (`precision_policy`, `jax_enable_x64`) so a fidelity number is
+never read without the numeric regime that produced it.  A *deliberate* reduced
+precision (e.g. a TF32 baseline) is a per-baseline policy, a P1 item — not a
+silent global default.
 
 ---
 

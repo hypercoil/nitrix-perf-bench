@@ -53,6 +53,10 @@ def capture(*, nitrix_path: str = '../nitrix') -> Dict[str, Any]:
         'precision_policy': str(
             getattr(jax.config, 'jax_default_matmul_precision', None)
         ),
+        # True iff the fp64 oracle ran in real double precision (else jax would
+        # silently downcast it to fp32 -- the fidelity number would be fp32 vs
+        # fp32, not vs truth).  Recorded next to precision_policy (annex §C).
+        'jax_enable_x64': bool(getattr(jax.config, 'jax_enable_x64', False)),
         'xla_preallocate': os.environ.get('XLA_PYTHON_CLIENT_PREALLOCATE'),
         'xla_flags': os.environ.get('XLA_FLAGS'),
         'compile_cache': 'disabled',  # P0a policy (DESIGN §L0 / annex §D)

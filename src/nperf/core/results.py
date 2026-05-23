@@ -7,9 +7,15 @@ platform)``, with per-metric distributions nested under the attempt and a
 still carries its ``metrics`` (the absolutes were measured; only the *ratio*
 was refused) — that is the property that keeps refusal from dropping data.
 
-``SCHEMA_VERSION = 0`` marks the **P0a disposable** schema: results produced
-under it are throwaway and the schema is iterated freely.  P0b freezes it
-(``1``); from then changes are additive-only.
+``SCHEMA_VERSION = 1`` is the **P0b frozen** schema: changes from here are
+**additive-only** (new optional fields / new ``Status`` members), never a
+rename or a removal, so older result rows stay readable.  (P0a shipped ``0``,
+the *disposable* schema iterated freely against the throwaway case; the rows it
+produced are not meant to be read back.)  The fidelity headline ``rel_to_tol``
+— worst error as a multiple of the allowed tolerance, gate-consistent
+(``pass`` ⟺ ``<= 1``) — was folded in during P0a validation and is part of the
+frozen ``fidelity`` block (see ``fidelity.compare`` and
+``SCHEMA_AND_LIFECYCLE.md`` §A/§C).
 """
 from __future__ import annotations
 
@@ -19,7 +25,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-SCHEMA_VERSION = 0  # P0a: DISPOSABLE. Frozen-additive from P0b (-> 1).
+SCHEMA_VERSION = 1  # P0b: FROZEN. Additive-only from here (was 0, disposable).
 
 
 class Status(str, Enum):

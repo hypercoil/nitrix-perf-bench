@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, List, Tuple
 import jax
 import numpy as np
 
-from .cases import Case, throwaway
+from .cases import Case, semiring_matmul, throwaway
 from .core import (
     AttemptRecord,
     Status,
@@ -30,12 +30,16 @@ from .core import (
     host_rss_mb,
     make_run_id,
     peak_hbm_mb,
+    read_jsonl,
     write_jsonl,
 )
 from .core.sync import SYNC
 from .report import render_markdown
 
-CASES: Dict[str, Case] = {throwaway.CASE.name: throwaway.CASE}
+CASES: Dict[str, Case] = {
+    throwaway.CASE.name: throwaway.CASE,
+    semiring_matmul.CASE.name: semiring_matmul.CASE,
+}
 
 
 def _platform_from(prov: Dict[str, Any]) -> str:
@@ -50,6 +54,14 @@ def _classify_exception(exc: Exception) -> Tuple[Status, Dict[str, Any]]:
     low = msg.lower()
     if 'resource_exhausted' in low or 'out of memory' in low:
         return Status.OOM, {'message': msg}
+    # Requested backend / device simply isn't present on this host (e.g. the
+    # pallas-cuda kernel on a CPU box).  The env imported fine and nothing
+    # failed to compile -- the hardware is absent -- so this is a recorded
+    # *skip*, not a compile_error.  Message-heuristic, same style as OOM above.
+    if 'visible' in low and ('gpu' in low or 'device' in low):
+        return Status.SKIPPED, {
+            'reason': 'backend_unavailable', 'message': msg,
+        }
     return Status.COMPILE_ERROR, {'message': msg}
 
 
@@ -154,23 +166,49 @@ def run_case(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--case', default='dense_matmul', choices=sorted(CASES))
+    ap.add_argument('--case', default='semiring_matmul', choices=sorted(CASES))
     ap.add_argument('--warmup', type=int, default=3)
     ap.add_argument('--repeats', type=int, default=10)
     ap.add_argument('--quick', action='store_true',
                     help='representative param point only')
-    ap.add_argument('--out', default='results/dense_matmul.jsonl')
-    ap.add_argument('--report', default='results/dense_matmul.md')
+    ap.add_argument('--out', default=None,
+                    help='default: results/<case>.jsonl')
+    ap.add_argument('--report', default=None,
+                    help='default: results/<case>.md')
+    ap.add_argument('--render-from', default=None, metavar='JSONL',
+                    help='re-render a report from saved L4 rows and exit '
+                         '(no measurement); pairs with --report')
     args = ap.parse_args()
 
-    # Fair, *recorded* precision policy (DESIGN §L2 fairness contract): force
-    # true fp32 so GPU tensor cores don't silently downgrade matmul to TF32 —
-    # which the throwaway's fp64 oracle catches as a fidelity failure on the
-    # A10G.  Per-baseline precision (e.g. a deliberate TF32 baseline) is a P1
-    # item; P0a sets one explicit global, captured into provenance.
+    # Re-render path: derive the report straight from stored rows (the renderer
+    # does no arithmetic, so a saved run re-renders identically).  Lets a
+    # renderer change be applied without re-running an expensive sweep.
+    if args.render_from is not None:
+        rows = read_jsonl(args.render_from)
+        if not rows:
+            raise SystemExit(f'no rows in {args.render_from}')
+        prov = rows[0].get('provenance', {})
+        report = render_markdown(rows, prov)
+        report_path = args.report or f'results/{rows[0].get("case")}.md'
+        Path(report_path).write_text(report)
+        print(report)
+        print(f'Re-rendered {len(rows)} rows -> {report_path}.')
+        return
+
+    # Fair, *recorded* numeric policy (DESIGN §L2 fairness / annex §C):
+    #  - matmul precision 'highest' = true fp32, so GPU tensor cores don't
+    #    silently downgrade to TF32 (which the fp64 oracle catches as a
+    #    fidelity failure on a tensor-core GPU);
+    #  - x64 enabled so the fp64 oracle is *actually* fp64 (else jax downcasts
+    #    it to fp32 and the fidelity number is fp32-vs-fp32, not vs-truth).
+    # Both are captured into provenance.  Per-baseline precision (a deliberate
+    # TF32 baseline) is a P1 item.
     jax.config.update('jax_default_matmul_precision', 'highest')
+    jax.config.update('jax_enable_x64', True)
 
     case = CASES[args.case]
+    out_path_arg = args.out or f'results/{case.name}.jsonl'
+    report_path_arg = args.report or f'results/{case.name}.md'
     if args.quick:
         case = replace(case, param_points=[case.representative])
 
@@ -181,13 +219,13 @@ def main() -> None:
         case, platform=platform, warmup=args.warmup, repeats=args.repeats,
         prov=prov, run_id=run_id,
     )
-    out_path = write_jsonl(records, args.out)
+    out_path = write_jsonl(records, out_path_arg)
     report = render_markdown([r.to_json() for r in records], prov)
-    Path(args.report).write_text(report)
+    Path(report_path_arg).write_text(report)
     print(report)
     n_ok = sum(r.status == Status.OK for r in records)
     print(f'{len(records)} attempts ({n_ok} ok). Wrote {out_path} and '
-          f'{args.report}.')
+          f'{report_path_arg}.')
 
 
 if __name__ == '__main__':
