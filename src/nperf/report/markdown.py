@@ -75,12 +75,26 @@ def _mem_note(isolation: str) -> str:
     )
 
 
+def _sched_note(sched: Dict[str, Any]) -> Optional[str]:
+    slots = sched.get('cpu_slots')
+    if not slots or slots <= 1:
+        return None  # serial: nothing to caveat
+    groups = sched.get('core_groups') or []
+    return (
+        f'- CPU attempts ran in **{slots} parallel slots**, each pinned to a '
+        f'disjoint core group ({groups}): timings are free of cross-attempt '
+        'contention, but reflect that **slot core budget**, not the whole '
+        'machine — `cpu_slots=1` is the full-machine number (annex §E).'
+    )
+
+
 def render_markdown(
     records: List[Dict[str, Any]], prov: Dict[str, Any]
 ) -> str:
     dev = prov.get('device', {}) or {}
     sv = records[0].get('schema_version') if records else None
     isolation = prov.get('measurement_isolation', 'in_process')
+    sched = prov.get('scheduler') or {}
     lines = [
         '# nitrix-perf-bench results',
         '',
@@ -97,6 +111,9 @@ def render_markdown(
         f"preallocate: {prov.get('xla_preallocate')} | "
         f"compile_cache: {prov.get('compile_cache')} | "
         f"isolation: {isolation}",
+        f"- scheduler: cpu_slots={sched.get('cpu_slots')} | "
+        f"max_parallel={sched.get('max_parallel')} | "
+        f"gpu_settle_s={sched.get('gpu_settle_s')}" if sched else None,
         f"- nitrix: {(prov.get('nitrix') or {}).get('sha')} | "
         f"bench: {(prov.get('bench') or {}).get('sha')}",
         f"- {prov.get('os')} | python {prov.get('python')} | "
@@ -151,6 +168,7 @@ def render_markdown(
         'tolerance-relative on purpose — a bare relative error is meaningless '
         'for zero-centred outputs (SCHEMA_AND_LIFECYCLE §C).',
         _mem_note(isolation),
+        _sched_note(sched),
         '',
     ]
-    return '\n'.join(lines) + '\n'
+    return '\n'.join(x for x in lines if x is not None) + '\n'

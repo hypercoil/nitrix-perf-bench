@@ -18,14 +18,31 @@ makes a multi-platform run's rows self-describing.
 """
 from __future__ import annotations
 
-import argparse
-import json
-from pathlib import Path
+import os
 
-import jax
+# CPU affinity must be applied **before jax/XLA import** so XLA sizes its CPU
+# thread pool to this slot's cores -- that is what keeps parallel-CPU timing
+# honest (disjoint cores, no contention; the scheduler assigns the group, see
+# schedule.py / annex §E).  Hence the imports below this block are deliberately
+# not at module top (ruff E402 is silenced for exactly those lines).
+_CORES = os.environ.get('NPERF_CPU_CORES')
+if _CORES:
+    _core_set = {int(c) for c in _CORES.split(',') if c != ''}
+    if _core_set and hasattr(os, 'sched_setaffinity'):
+        try:
+            os.sched_setaffinity(0, _core_set)
+        except OSError:
+            pass
+        os.environ.setdefault('OMP_NUM_THREADS', str(len(_core_set)))
 
-from .core import capture, write_jsonl
-from .measure import CASES, measure_attempt
+import argparse  # noqa: E402
+import json  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+import jax  # noqa: E402
+
+from .core import capture, write_jsonl  # noqa: E402
+from .measure import CASES, measure_attempt  # noqa: E402
 
 
 def main() -> None:
@@ -43,6 +60,8 @@ def main() -> None:
 
     prov = capture()
     prov['measurement_isolation'] = 'subprocess'  # honest per-attempt memory
+    if _CORES and hasattr(os, 'sched_getaffinity'):
+        prov['cpu_affinity'] = sorted(os.sched_getaffinity(0))  # pinned slot
 
     case = CASES[spec['case']]
     param = spec['param_point']

@@ -239,17 +239,32 @@ attempt, the warm-up + timed runs share the in-process cache — that is correct
 
 ---
 
-## E. Device lock (resolves the L3 × uv/pixi-coexistence interaction)
+## E. Device lock + resource scheduling (implemented in `schedule.py`)
 
-The per-physical-device lock lives in the **runner/orchestrator, above both
-dispatch paths** — *not* inside the uv worker.  The GPU does not care which
+The per-physical-**resource** lock lives in the **runner/orchestrator, above
+both dispatch paths** — *not* inside the worker.  A resource does not care which
 package manager spawned the process, so a uv-spawned `nitrix-jax` worker and a
-pixi-spawned `torch_geometric` worker on the same A10G must serialise against
-the *same* lock.  The runner acquires the device lock before handing GPU work
-to a worker (regardless of dispatcher) and holds it for that attempt's GPU
-phase.  CPU attempts and attempts on distinct physical devices proceed in
-parallel.  GPU attempts on one device run back-to-back under the lock to keep
-clock state stable; an optional settle interval is recorded in provenance.
+pixi-spawned `torch_geometric` worker on the same A10G serialise against the
+*same* lock.  `ResourcePool` holds the permits and the scheduler
+(`run_scheduled`, a thread pool) acquires a resource's permit around each
+(blocking) worker spawn:
+
+- **GPU** → a **1-permit device lock**.  Attempts on one device run back-to-back
+  under it (clean timings + stable clock state); an optional `gpu_settle_s` is
+  held inside the lock between attempts and recorded in provenance.
+- **CPU** → **`cpu_slots` permits, each carrying a disjoint core group**.  The
+  worker pins to its group (`sched_setaffinity` before jax import; `worker.py`),
+  so parallel CPU attempts are free of cross-attempt *contention*.  The timings
+  then reflect each slot's **core budget** (recorded in `provenance.cpu_affinity`
+  + `provenance.scheduler`), not the whole machine — `cpu_slots = 1` (default) is
+  the full-machine serial number.
+- **Distinct resources** (CPU vs a GPU, or two GPUs) **overlap**.
+
+`provenance.scheduler` records `{cpu_slots, max_parallel, core_groups,
+gpu_settle_s}` so the concurrency regime that produced a timing is legible, and
+the renderer states it.  **Scope today:** single physical GPU + the CPU; the
+multi-GPU fan-out and a CPU/GPU *mixed* sweep arrive with multi-platform
+accumulation (DESIGN §8).
 
 ---
 

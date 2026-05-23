@@ -30,7 +30,7 @@ import sys
 import tempfile
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .core import (
     AttemptRecord,
@@ -48,6 +48,7 @@ from .measure import (
     platform_from,
 )
 from .report import render_markdown
+from .schedule import ResourcePool, resource_of, run_scheduled
 
 _SRC = str(Path(__file__).resolve().parents[1])  # `src` dir, for PYTHONPATH
 
@@ -64,7 +65,9 @@ def _worker_argv(platform: str) -> List[str]:
     return [python, '-m', 'nperf.worker']
 
 
-def _worker_env(platform: str) -> Dict[str, str]:
+def _worker_env(
+    platform: str, cores: Optional[List[int]] = None
+) -> Dict[str, str]:
     env = dict(os.environ)
     # nperf must be importable even when the interpreter is a prebuilt env that
     # never pip-installed it (nitrix is already importable in those by design).
@@ -73,6 +76,9 @@ def _worker_env(platform: str) -> Dict[str, str]:
     env['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'  # honest memory_stats
     # Pin the worker's backend explicitly per target platform.
     env['JAX_PLATFORMS'] = 'cuda' if platform == 'jax-cuda12' else 'cpu'
+    # CPU slot's disjoint core group -> the worker pins to it pre jax-import.
+    if cores:
+        env['NPERF_CPU_CORES'] = ','.join(str(c) for c in cores)
     return env
 
 
@@ -98,12 +104,17 @@ def _synthesize_failure(
 
 
 def _spawn_worker(
-    spec: Dict[str, Any], platform: str, *, framework: str, timeout: float
+    spec: Dict[str, Any], ctx: Dict[str, Any], *, timeout: float
 ) -> AttemptRecord:
+    '''Run one attempt in a fresh worker process (scheduler `run_one`).
+
+    ``ctx`` is the resource context from the pool: ``ctx["cores"]`` is this
+    attempt's pinned CPU core group (None on GPU).'''
+    platform = spec['platform']
     base = dict(
         run_id=spec['run_id'], case=spec['case'],
         param_point=spec['param_point'], baseline=spec['baseline'],
-        platform=platform, framework=framework, provenance={},
+        platform=platform, framework=spec['framework'], provenance={},
     )
     with tempfile.TemporaryDirectory() as tmp:
         result_path = Path(tmp) / 'row.jsonl'
@@ -114,8 +125,8 @@ def _spawn_worker(
         argv = _worker_argv(platform) + ['--spec', str(spec_path)]
         try:
             proc = subprocess.run(
-                argv, env=_worker_env(platform), capture_output=True,
-                text=True, timeout=timeout,
+                argv, env=_worker_env(platform, ctx.get('cores')),
+                capture_output=True, text=True, timeout=timeout,
             )
         except subprocess.TimeoutExpired:
             return AttemptRecord(
@@ -131,26 +142,47 @@ def _spawn_worker(
 
 def run_case_subprocess(
     case: Any, *, platform: str, warmup: int, repeats: int, run_id: str,
-    timeout: float,
+    timeout: float, cpu_slots: int, max_parallel: Optional[int],
+    gpu_settle_s: float,
 ) -> List[AttemptRecord]:
-    records: List[AttemptRecord] = []
+    # Build each point once on the orchestrator to enumerate its baselines +
+    # frameworks + ratio reference (workers rebuild their own oracle); collect
+    # a flat spec list tagged with the physical resource each attempt contends
+    # for.
+    resource = resource_of(platform)
+    specs: List[Dict[str, Any]] = []
+    points: List[tuple] = []  # (n_baselines, ratio_reference)
     for param in case.param_points:
-        # Build once on the orchestrator to enumerate the point's baselines +
-        # frameworks + ratio reference (the worker rebuilds its own oracle).
         built = case.build(param)
-        attempts: List[AttemptRecord] = []
-        for name, (framework, _fn) in built.baselines.items():
-            spec = dict(
+        names = list(built.baselines)
+        for name in names:
+            specs.append(dict(
                 run_id=run_id, case=case.name, param_point=param,
                 baseline=name, platform=platform, warmup=warmup,
-                repeats=repeats,
-            )
-            attempts.append(
-                _spawn_worker(spec, platform, framework=framework,
-                              timeout=timeout)
-            )
-        attach_ratios(attempts, built.ratio_reference)
-        records.extend(attempts)
+                repeats=repeats, framework=built.baselines[name][0],
+                resource=resource,
+            ))
+        points.append((len(names), built.ratio_reference))
+
+    pool = ResourcePool(cpu_slots=cpu_slots, gpu_settle_s=gpu_settle_s)
+    n_parallel = max_parallel or pool.permits(resource)
+    sched = {
+        'cpu_slots': pool.cpu_slots, 'max_parallel': n_parallel,
+        'core_groups': pool.core_groups, 'gpu_settle_s': gpu_settle_s,
+    }
+    records: List[AttemptRecord] = run_scheduled(
+        specs, lambda s, ctx: _spawn_worker(s, ctx, timeout=timeout),
+        pool, max_parallel=n_parallel,
+    )
+
+    # Attach ratios per param point (specs were emitted in point order) and
+    # stamp the scheduler regime onto every row's provenance.
+    i = 0
+    for n_baselines, ratio_reference in points:
+        attach_ratios(records[i:i + n_baselines], ratio_reference)
+        i += n_baselines
+    for rec in records:
+        rec.provenance['scheduler'] = sched
     return records
 
 
@@ -190,6 +222,16 @@ def main() -> None:
                     help='run a single explicit param point (JSON)')
     ap.add_argument('--in-process', action='store_true',
                     help='P0 in-process driver (no spawn; memory = proc HWM)')
+    ap.add_argument('--cpu-slots', type=int, default=1,
+                    help='parallel CPU attempts, each pinned to a disjoint '
+                         'core group (1 = serial; >1 trades nothing on timing '
+                         'fidelity because slots are core-disjoint)')
+    ap.add_argument('--max-parallel', type=int, default=None,
+                    help='cap concurrent workers (default: resource permits: '
+                         'cpu_slots on CPU, 1 on GPU via the device lock)')
+    ap.add_argument('--gpu-settle', type=float, default=0.0,
+                    help='seconds held inside the GPU device lock between '
+                         'attempts (clock-state settle)')
     ap.add_argument('--worker-timeout', type=float, default=3600.0,
                     help='per-attempt subprocess timeout (s)')
     ap.add_argument('--out', default=None,
@@ -243,6 +285,8 @@ def main() -> None:
         records = run_case_subprocess(
             case, platform=args.platform, warmup=args.warmup,
             repeats=args.repeats, run_id=run_id, timeout=args.worker_timeout,
+            cpu_slots=args.cpu_slots, max_parallel=args.max_parallel,
+            gpu_settle_s=args.gpu_settle,
         )
 
     # Report provenance = the rows' own (worker-captured authoritative device).
