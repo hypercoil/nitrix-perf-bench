@@ -262,9 +262,12 @@ pixi-spawned `torch_geometric` worker on the same A10G serialise against the
 
 `provenance.scheduler` records `{cpu_slots, max_parallel, core_groups,
 gpu_settle_s}` so the concurrency regime that produced a timing is legible, and
-the renderer states it.  **Scope today:** single physical GPU + the CPU; the
-multi-GPU fan-out and a CPU/GPU *mixed* sweep arrive with multi-platform
-accumulation (DESIGN §8).
+the renderer states it.  **Mixed CPU+GPU sweeps work** (`--platforms a,b` fans
+attempts across resources; CPU and a GPU run concurrently under their separate
+permits, each row tagged with its `platform` and rated within-platform).  The
+remaining fan-out is **multiple GPUs** (one `gpu:N` lock each) and a durable
+multi-device *storage* policy (DESIGN §8); rendering already combines separate
+runs via `--render-from f1 f2 …`.
 
 ---
 

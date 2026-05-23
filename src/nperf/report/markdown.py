@@ -56,8 +56,8 @@ def _fmt_ratio(rec: Dict[str, Any]) -> str:
     return f"{ratio['value']:.2f}x vs {ratio['vs']}"
 
 
-def _mem_note(isolation: str) -> str:
-    if isolation == 'subprocess':
+def _mem_note(any_in_process: bool) -> str:
+    if not any_in_process:
         return (
             '- `mem` (peak_hbm / host_rss) is **per-attempt**: each attempt '
             'ran in its own process, so the high-water mark *is* this '
@@ -65,13 +65,44 @@ def _mem_note(isolation: str) -> str:
             '§B).'
         )
     return (
-        '- **`mem` (peak_hbm) is a process-wide high-water mark** in this '
-        'in-process run. XLA\'s `peak_bytes_in_use` does not reset between '
+        '- **`mem` (peak_hbm) is a process-wide high-water mark** for any '
+        'in-process rows. XLA\'s `peak_bytes_in_use` does not reset between '
         'attempts, so it only ever rises: once one attempt allocates a large '
-        'buffer, later rows inherit that floor. Read the *jumps* (they '
-        'attribute to the attempt that caused them), not the absolute per-row '
-        'value. Re-run without `--in-process` for per-attempt isolation '
-        '(annex §B).'
+        'buffer, later rows inherit that floor. Read the *jumps*, not the '
+        'absolute per-row value. Re-run without `--in-process` for '
+        'per-attempt isolation (annex §B).'
+    )
+
+
+def _platforms_in_order(records: List[Dict[str, Any]]) -> List[str]:
+    seen: List[str] = []
+    for r in records:
+        p = r.get('platform')
+        if p not in seen:
+            seen.append(p)
+    return seen
+
+
+def _prov_for(records: List[Dict[str, Any]], platform: str) -> Dict[str, Any]:
+    for r in records:
+        if r.get('platform') == platform:
+            return r.get('provenance', {}) or {}
+    return {}
+
+
+def _host_line(platform: str, prov: Dict[str, Any]) -> str:
+    dev = prov.get('device', {}) or {}
+    sched = prov.get('scheduler') or {}
+    iso = prov.get('measurement_isolation', 'in_process')
+    sched_s = (
+        f" | sched cpu_slots={sched.get('cpu_slots')}"
+        f"/par={sched.get('max_parallel')}"
+    ) if sched else ''
+    return (
+        f"- **{platform}** — {dev.get('kind')} ({dev.get('platform')}) | "
+        f"jax {prov.get('jax_version')} | precision "
+        f"{prov.get('precision_policy')} | x64 {prov.get('jax_enable_x64')} | "
+        f"isolation {iso}{sched_s}"
     )
 
 
@@ -88,12 +119,23 @@ def _sched_note(sched: Dict[str, Any]) -> Optional[str]:
     )
 
 
+def _row_sort_key(r: Dict[str, Any]) -> tuple:
+    return (
+        str(r.get('case')), _fmt_param(r.get('param_point', {})),
+        str(r.get('platform')), str(r.get('baseline')),
+    )
+
+
 def render_markdown(
     records: List[Dict[str, Any]], prov: Dict[str, Any]
 ) -> str:
-    dev = prov.get('device', {}) or {}
     sv = records[0].get('schema_version') if records else None
-    isolation = prov.get('measurement_isolation', 'in_process')
+    platforms = _platforms_in_order(records)
+    provs = {p: _prov_for(records, p) for p in platforms}
+    any_in_process = any(
+        (provs[p].get('measurement_isolation') or 'in_process') == 'in_process'
+        for p in platforms
+    )
     sched = prov.get('scheduler') or {}
     lines = [
         '# nitrix-perf-bench results',
@@ -103,34 +145,30 @@ def render_markdown(
         '',
         '## Host',
         '',
-        f"- device: {dev.get('kind')} ({dev.get('platform')})",
-        f"- jax: {prov.get('jax_version')} | "
-        f"backend: {prov.get('jax_backend')}",
-        f"- precision: {prov.get('precision_policy')} | "
-        f"x64: {prov.get('jax_enable_x64')} | "
-        f"preallocate: {prov.get('xla_preallocate')} | "
-        f"compile_cache: {prov.get('compile_cache')} | "
-        f"isolation: {isolation}",
-        f"- scheduler: cpu_slots={sched.get('cpu_slots')} | "
-        f"max_parallel={sched.get('max_parallel')} | "
-        f"gpu_settle_s={sched.get('gpu_settle_s')}" if sched else None,
         f"- nitrix: {(prov.get('nitrix') or {}).get('sha')} | "
         f"bench: {(prov.get('bench') or {}).get('sha')}",
         f"- {prov.get('os')} | python {prov.get('python')} | "
         f"{prov.get('timestamp')}",
+        '',
+        '### Platforms',
+        '',
+    ]
+    lines += [_host_line(p, provs[p]) for p in platforms]
+    lines += [
         '',
         '## Measurements',
         '',
         '`steady` = post-warm-up min / median; `compile` = cold first call; '
         '`fidelity` = worst error as a multiple of the allowed tolerance vs '
         'the fp64 oracle (✓ pass ⟺ ≤ 1×tol / ✗ fail). A `fidelity_failed` row '
-        'keeps its measurements but its ratio is `refused`.',
+        'keeps its measurements but its ratio is `refused`. Ratios are '
+        '**within-platform** (vs that platform\'s reference baseline).',
         '',
-        '| case | param | baseline | status | steady (min/med) | compile | '
-        'mem | fidelity | ratio |',
-        '|---|---|---|---|---|---|---|---|---|',
+        '| case | platform | param | baseline | status | steady (min/med) | '
+        'compile | mem | fidelity | ratio |',
+        '|---|---|---|---|---|---|---|---|---|---|',
     ]
-    for r in records:
+    for r in sorted(records, key=_row_sort_key):
         metrics = r.get('metrics') or {}
         steady = metrics.get('steady_time') or {}
         comp = metrics.get('compile_time') or {}
@@ -140,9 +178,10 @@ def render_markdown(
             if steady else '—'
         )
         lines.append(
-            '| {case} | {param} | `{baseline}` | {status} | {steady} | '
-            '{compile} | {mem} | {fid} | {ratio} |'.format(
+            '| {case} | {platform} | {param} | `{baseline}` | {status} | '
+            '{steady} | {compile} | {mem} | {fid} | {ratio} |'.format(
                 case=r.get('case'),
+                platform=r.get('platform'),
                 param=_fmt_param(r.get('param_point', {})),
                 baseline=r.get('baseline'),
                 status=r.get('status'),
@@ -167,7 +206,7 @@ def render_markdown(
         'allowed tolerance vs the fp64 oracle (✓ ⟺ ≤ 1×tol). It is '
         'tolerance-relative on purpose — a bare relative error is meaningless '
         'for zero-centred outputs (SCHEMA_AND_LIFECYCLE §C).',
-        _mem_note(isolation),
+        _mem_note(any_in_process),
         _sched_note(sched),
         '',
     ]

@@ -19,12 +19,15 @@ throwaway `dense_matmul` case from P0a remains, for core smoke tests.)
 
 **P1 (in progress):** the runner spawns **one subprocess per attempt** via a
 pluggable interpreter — making per-attempt `peak_hbm` and cold `compile_time`
-honest. A **resource-aware scheduler** (`schedule.py`) then serialises GPU
-attempts under a per-device **lock** (clean timings + clock stability) while
-**parallel CPU** attempts run on **disjoint pinned cores** (`--cpu-slots N`,
-honest because slots don't contend). Still to come in P1: the metric/baseline
-registries and multi-platform result accumulation (DESIGN §8 — the multi-GPU /
-mixed CPU+GPU fan-out the scheduler is already built for).
+honest. A **resource-aware scheduler** (`schedule.py`) serialises GPU attempts
+under a per-device **lock** (clean timings + clock stability) while **parallel
+CPU** attempts run on **disjoint pinned cores** (`--cpu-slots N`, honest because
+slots don't contend). **Multi-platform** works end to end: `--platforms a,b`
+fans attempts across platforms in one run (CPU + a GPU overlap), and
+`--render-from f1 f2 …` combines separate runs/devices into one `platform`-column
+report with within-platform ratios. Still to come in P1: the metric/baseline
+registries, multiple-GPU fan-out, and a durable multi-device results store
+(DESIGN §8).
 
 Published reports live in [`reports/`](reports/) (the rendered markdown **and**
 the L4 rows it was generated from, so the report is reproducible from committed
@@ -45,17 +48,26 @@ JAX_PLATFORMS=cpu uv run nperf --quick
 # spawns GPU workers via a pluggable interpreter; point it at a jax[cuda] env
 # that can import nitrix:
 NPERF_PYTHON_JAX_CUDA12=/path/to/cuda-env/bin/python \
-  uv run nperf --platform jax-cuda12 \
+  uv run nperf --platforms jax-cuda12 \
   --out reports/semiring_matmul.jsonl --report reports/PERF_SEMIRING_MATMUL.md
+
+# Mixed run: CPU + GPU in one invocation (distinct resources run in parallel).
+NPERF_PYTHON_JAX_CUDA12=/path/to/cuda-env/bin/python \
+  uv run nperf --platforms jax-cpu,jax-cuda12
+
+# Accumulate separate runs/devices into one multi-platform report:
+uv run nperf --render-from results/a10g.jsonl results/l40.jsonl \
+  --report reports/combined.md
 ```
 
-`--platform` picks the worker env-group (`jax-cpu` default / `jax-cuda12`);
-worker interpreter resolves as `NPERF_PYTHON_<PLATFORM>` → `NPERF_WORKER_PYTHON`
-→ this interpreter. `--cpu-slots N` runs N CPU attempts in parallel on disjoint
-pinned cores (timings reflect the slot's core budget; `1` = full machine);
+`--platforms` is a comma-list of worker env-groups (`jax-cpu` / `jax-cuda12`);
+attempts fan out across them and distinct resources run in parallel. Worker
+interpreter resolves as `NPERF_PYTHON_<PLATFORM>` → `NPERF_WORKER_PYTHON` → this
+interpreter. `--cpu-slots N` runs N CPU attempts in parallel on disjoint pinned
+cores (timings reflect the slot's core budget; `1` = full machine);
 `--gpu-settle S` holds the device lock S seconds between GPU attempts.
 `--out`/`--report` default to `results/<case>.{jsonl,md}`; `--quick` runs the
 representative point, `--point '<json>'` a single explicit one, `--in-process`
-uses the P0 driver, `--render-from <jsonl>` re-renders from saved rows. Tests:
-`JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case build,
-worker round-trip, scheduler invariants).
+uses the P0 driver, `--render-from f1 [f2 …]` re-renders (and combines) saved
+rows. Tests: `JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case
+build, worker round-trip, scheduler invariants, multi-platform).

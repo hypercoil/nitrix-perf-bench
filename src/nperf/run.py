@@ -141,31 +141,40 @@ def _spawn_worker(
 
 
 def run_case_subprocess(
-    case: Any, *, platform: str, warmup: int, repeats: int, run_id: str,
-    timeout: float, cpu_slots: int, max_parallel: Optional[int],
+    case: Any, *, platforms: List[str], warmup: int, repeats: int,
+    run_id: str, timeout: float, cpu_slots: int, max_parallel: Optional[int],
     gpu_settle_s: float,
 ) -> List[AttemptRecord]:
-    # Build each point once on the orchestrator to enumerate its baselines +
-    # frameworks + ratio reference (workers rebuild their own oracle); collect
-    # a flat spec list tagged with the physical resource each attempt contends
-    # for.
-    resource = resource_of(platform)
+    # Fan attempts across the requested platforms: for each param point (oracle
+    # built once, shared) and each platform, emit the platform's baselines as a
+    # contiguous group tagged with the physical resource it contends for.  The
+    # scheduler then overlaps distinct resources (e.g. CPU and a GPU) while the
+    # device lock / CPU slots serialise within a resource.
     specs: List[Dict[str, Any]] = []
-    points: List[tuple] = []  # (n_baselines, ratio_reference)
+    groups: List[tuple] = []  # (start, n_baselines, ratio_reference)
     for param in case.param_points:
         built = case.build(param)
         names = list(built.baselines)
-        for name in names:
-            specs.append(dict(
-                run_id=run_id, case=case.name, param_point=param,
-                baseline=name, platform=platform, warmup=warmup,
-                repeats=repeats, framework=built.baselines[name][0],
-                resource=resource,
-            ))
-        points.append((len(names), built.ratio_reference))
+        for platform in platforms:
+            resource = resource_of(platform)
+            start = len(specs)
+            for name in names:
+                specs.append(dict(
+                    run_id=run_id, case=case.name, param_point=param,
+                    baseline=name, platform=platform, warmup=warmup,
+                    repeats=repeats, framework=built.baselines[name][0],
+                    resource=resource,
+                ))
+            groups.append((start, len(names), built.ratio_reference))
 
-    pool = ResourcePool(cpu_slots=cpu_slots, gpu_settle_s=gpu_settle_s)
-    n_parallel = max_parallel or pool.permits(resource)
+    resources = {resource_of(p) for p in platforms}
+    gpus = tuple(sorted(r for r in resources if r != 'cpu'))
+    pool = ResourcePool(
+        cpu_slots=cpu_slots, gpu_settle_s=gpu_settle_s, gpus=gpus,
+    )
+    # Default: enough threads to keep every resource busy at once.
+    cpu_permits = pool.cpu_slots if 'cpu' in resources else 0
+    n_parallel = max_parallel or max(1, cpu_permits + len(gpus))
     sched = {
         'cpu_slots': pool.cpu_slots, 'max_parallel': n_parallel,
         'core_groups': pool.core_groups, 'gpu_settle_s': gpu_settle_s,
@@ -175,12 +184,11 @@ def run_case_subprocess(
         pool, max_parallel=n_parallel,
     )
 
-    # Attach ratios per param point (specs were emitted in point order) and
-    # stamp the scheduler regime onto every row's provenance.
-    i = 0
-    for n_baselines, ratio_reference in points:
-        attach_ratios(records[i:i + n_baselines], ratio_reference)
-        i += n_baselines
+    # Ratios are computed *within* each (param point, platform) group -- a GPU
+    # kernel must be rated against its platform's own reference, never across
+    # platforms.  Then stamp the scheduler regime onto every row's provenance.
+    for start, n_baselines, ratio_reference in groups:
+        attach_ratios(records[start:start + n_baselines], ratio_reference)
     for rec in records:
         rec.provenance['scheduler'] = sched
     return records
@@ -211,9 +219,11 @@ def run_case_inprocess(
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--case', default='semiring_matmul', choices=sorted(CASES))
-    ap.add_argument('--platform', default='jax-cpu',
-                    choices=['jax-cpu', 'jax-cuda12'],
-                    help='target env-group for subprocess workers')
+    ap.add_argument('--platforms', default='jax-cpu',
+                    help='comma-list of target env-groups for subprocess '
+                         'workers (e.g. "jax-cpu,jax-cuda12"); attempts fan '
+                         'out across them and distinct resources run in '
+                         'parallel')
     ap.add_argument('--warmup', type=int, default=3)
     ap.add_argument('--repeats', type=int, default=10)
     ap.add_argument('--quick', action='store_true',
@@ -238,19 +248,24 @@ def main() -> None:
                     help='default: results/<case>.jsonl')
     ap.add_argument('--report', default=None,
                     help='default: results/<case>.md')
-    ap.add_argument('--render-from', default=None, metavar='JSONL',
-                    help='re-render a report from saved L4 rows and exit')
+    ap.add_argument('--render-from', default=None, nargs='+', metavar='JSONL',
+                    help='re-render a report from saved L4 rows and exit; '
+                         'pass several files to combine runs/devices into one '
+                         'multi-platform report (accumulation, DESIGN §8)')
     args = ap.parse_args()
 
     if args.render_from is not None:
-        rows = read_jsonl(args.render_from)
+        rows: List[Dict[str, Any]] = []
+        for path in args.render_from:
+            rows.extend(read_jsonl(path))
         if not rows:
             raise SystemExit(f'no rows in {args.render_from}')
         report = render_markdown(rows, rows[0].get('provenance', {}))
         report_path = args.report or f'results/{rows[0].get("case")}.md'
         Path(report_path).write_text(report)
         print(report)
-        print(f'Re-rendered {len(rows)} rows -> {report_path}.')
+        print(f'Re-rendered {len(rows)} rows from {len(args.render_from)} '
+              f'file(s) -> {report_path}.')
         return
 
     case = CASES[args.case]
@@ -282,8 +297,9 @@ def main() -> None:
         import jax
         jax.config.update('jax_platforms', 'cpu')
         run_id = make_run_id(capture())
+        platforms = [p.strip() for p in args.platforms.split(',') if p.strip()]
         records = run_case_subprocess(
-            case, platform=args.platform, warmup=args.warmup,
+            case, platforms=platforms, warmup=args.warmup,
             repeats=args.repeats, run_id=run_id, timeout=args.worker_timeout,
             cpu_slots=args.cpu_slots, max_parallel=args.max_parallel,
             gpu_settle_s=args.gpu_settle,

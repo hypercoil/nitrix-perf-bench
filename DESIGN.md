@@ -309,19 +309,20 @@ both uv- and pixi-spawned workers (a uv `nitrix-jax` worker and a pixi
 
 ## 8. Open questions (not blocking the architecture)
 
-- **Results storage + multi-platform accumulation.** In-repo `results/` vs a
-  dedicated results branch vs external store; history depth / retention. *Coupled
-  to failure-row volume:* every failed/skipped worker emits a row, so a wide
-  sweep matrix grows the store fast — retention policy and failure-row volume are
-  one decision, not two. **Multi-platform is already a schema property, not a new
-  design axis:** every row is keyed by `platform` and carries device provenance
-  (annex §A), so a second device's run (e.g. a Lovelace L40 alongside the A10G)
-  *accumulates* — it does not overwrite — once the writer stops truncating a
-  single fixed path. The deferred work is purely mechanical and **lands with the
-  P1 envs**: per-(platform, run) output files, a glob-reading + `platform`-column
-  renderer, and optional append. The `--render-from` primitive (P0b) is the first
-  half (rendering is already decoupled from measuring). No P0 schema change is
-  needed for it.
+- **Multi-platform: producing + rendering DONE (P1); storage policy still
+  open.** Every row is keyed by `platform` and carries device provenance (annex
+  §A), so multi-platform was always a schema property, not a new axis. P1
+  delivered both halves of *using* it: `--platforms a,b` fans attempts across
+  platforms in one run (the scheduler overlaps distinct resources — CPU + a GPU
+  run concurrently), and `--render-from f1 f2 …` combines *separate* runs/devices
+  (e.g. a Lovelace L40 jsonl alongside the A10G one) into a single `platform`-
+  column report with within-platform ratios. **Still open — the *storage*
+  decision:** in-repo `results/` vs a results branch vs an external store, file
+  naming for accumulation (per-`(platform, run)` vs append), and history depth /
+  retention. *Coupled to failure-row volume:* every failed/skipped worker emits a
+  row, so a wide sweep matrix grows the store fast — retention and failure-row
+  volume are one decision, not two. (Today: one jsonl per run; combine at render
+  time. A durable accumulation store is the remaining piece.)
 - **Must-have v1 metrics.** Floor proposed: `steady_time`, `peak_hbm`,
   `fidelity_vs_ref`. Defer `energy` (distinct protocol, L1) and
   `est_flops`/roofline.
