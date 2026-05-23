@@ -16,6 +16,7 @@ import numpy as np
 
 from .cases import BuiltPoint, Case, semiring_matmul, throwaway
 from .core import (
+    METRICS,
     AttemptRecord,
     Status,
     bench_call,
@@ -24,11 +25,26 @@ from .core import (
     peak_hbm_mb,
 )
 from .core.sync import SYNC
+from .providers import framework_of
 
-# The case registry (L2).  Lives here so both entrypoints share one source.
+
+def _validate_case(case: Case) -> Case:
+    '''Reject a case naming a metric outside the registry (typo-proofing).'''
+    unknown = [m for m in case.metrics if m not in METRICS]
+    if unknown:
+        raise ValueError(
+            f'case {case.name!r}: unknown metric(s) {unknown}; '
+            f'register them in core/metrics.py (known: {sorted(METRICS)}).'
+        )
+    return case
+
+
+# The case registry (L2).  Lives here so both entrypoints share one source;
+# each case is validated against the metric registry on registration.
 CASES: Dict[str, Case] = {
-    throwaway.CASE.name: throwaway.CASE,
-    semiring_matmul.CASE.name: semiring_matmul.CASE,
+    c.name: c
+    for c in (_validate_case(throwaway.CASE),
+              _validate_case(semiring_matmul.CASE))
 }
 
 
@@ -84,7 +100,10 @@ def measure_attempt(
     the absolutes* (DESIGN §1).  Any exception becomes a classified status
     row — failure is data, never fatal.
     '''
-    framework, fn = built.baselines[baseline_name]
+    # The case-local baseline name maps to (provider_id, run_fn); the provider
+    # registry says which framework runs it (sync hook / jit).
+    provider_id, fn = built.baselines[baseline_name]
+    framework = framework_of(provider_id)
     base = dict(
         run_id=run_id, case=case.name, param_point=param,
         baseline=baseline_name, platform=platform, framework=framework,
@@ -104,13 +123,20 @@ def measure_attempt(
         fid = compare(
             out_host, built.fp64_reference, rtol=case.rtol, atol=case.atol,
         )
+        # Units come from the metric registry (single source of truth).
         metrics = {
-            'steady_time': {**dist.summary(), 'unit': 's'},
-            'compile_time': {'value': compile_s, 'unit': 's', 'cache': 'cold'},
-            'peak_hbm': {'value': peak_hbm_mb(), 'unit': 'MB'},
-            'host_rss': {'value': host_rss_mb(), 'unit': 'MB'},
+            'steady_time': {**dist.summary(),
+                            'unit': METRICS['steady_time'].unit},
+            'compile_time': {'value': compile_s,
+                             'unit': METRICS['compile_time'].unit,
+                             'cache': 'cold'},
+            'peak_hbm': {'value': peak_hbm_mb(),
+                         'unit': METRICS['peak_hbm'].unit},
+            'host_rss': {'value': host_rss_mb(),
+                         'unit': METRICS['host_rss'].unit},
             'throughput': {
-                'value': float(out_host.size) / dist.min, 'unit': 'elem/s',
+                'value': float(out_host.size) / dist.min,
+                'unit': METRICS['throughput'].unit,
             },
         }
         if fid['status'] == 'pass':

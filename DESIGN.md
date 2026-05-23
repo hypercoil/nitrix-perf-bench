@@ -282,8 +282,15 @@ nitrix-perf-bench/
   iterate it freely. **Results from P0a are disposable.**
 - **P0b** — the first *real* case + the real markdown renderer that replaces
   one `PERF_*.md` from data. Schema is now frozen-additive (`schema_version`).
-- **P1** — metric registry (`steady_time` + `peak_hbm` + `fidelity_vs_ref`
-  floor) + baseline registry + `jax-cpu` / `jax-cuda12` envs.
+- **P1** — subprocess runner + device-lock/parallel-CPU scheduler +
+  multi-platform (done); metric registry (`steady_time` + `peak_hbm` +
+  `fidelity` floor, units/direction/threshold) + **provider** registry (done) +
+  `jax-cpu` / `jax-cuda12` envs. *The "baseline registry" is realised as a
+  **provider** registry:* baseline names (`nitrix-jax`, …) are case-local labels
+  (disambiguated by the `case` field) and would collide across cases, so the
+  registry instead holds the cross-case run providers (framework + env
+  isolation) a baseline maps onto. *Remaining:* multi-GPU fan-out + a durable
+  multi-device results store (§8).
 - **P2** — multi-framework refs (torch / PyG) in isolated envs + op_matrix feed.
 - **P3** — HTML `/site` + regression `gate` + decision-input bundles.
 

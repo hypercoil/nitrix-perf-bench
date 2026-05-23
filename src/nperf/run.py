@@ -47,6 +47,7 @@ from .measure import (
     measure_attempt,
     platform_from,
 )
+from .providers import framework_of
 from .report import render_markdown
 from .schedule import ResourcePool, resource_of, run_scheduled
 
@@ -162,7 +163,8 @@ def run_case_subprocess(
                 specs.append(dict(
                     run_id=run_id, case=case.name, param_point=param,
                     baseline=name, platform=platform, warmup=warmup,
-                    repeats=repeats, framework=built.baselines[name][0],
+                    repeats=repeats,
+                    framework=framework_of(built.baselines[name][0]),
                     resource=resource,
                 ))
             groups.append((start, len(names), built.ratio_reference))

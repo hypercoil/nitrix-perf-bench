@@ -25,9 +25,13 @@ CPU** attempts run on **disjoint pinned cores** (`--cpu-slots N`, honest because
 slots don't contend). **Multi-platform** works end to end: `--platforms a,b`
 fans attempts across platforms in one run (CPU + a GPU overlap), and
 `--render-from f1 f2 …` combines separate runs/devices into one `platform`-column
-report with within-platform ratios. Still to come in P1: the metric/baseline
-registries, multiple-GPU fan-out, and a durable multi-device results store
-(DESIGN §8).
+report with within-platform ratios. **Registries** are in: a metric registry
+(units / direction / kind + the fidelity gate threshold, the single source of
+truth the driver stamps and cases are validated against) and a **provider**
+registry (the cross-case framework + env-isolation a baseline runs under — the
+"baseline registry", realised on providers because baseline *names* are
+case-local and would collide). Still to come in P1: multiple-GPU fan-out and a
+durable multi-device results store (DESIGN §8).
 
 Published reports live in [`reports/`](reports/) (the rendered markdown **and**
 the L4 rows it was generated from, so the report is reproducible from committed

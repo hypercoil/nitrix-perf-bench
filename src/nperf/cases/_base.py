@@ -8,9 +8,11 @@ metrics it supports, and a ``build(param)`` that materialises one
 ``BuiltPoint``.
 
 A ``BuiltPoint`` carries the competing implementations and the shared oracle
-for one param point: per-framework on-device inputs, the baseline registry
-(``name -> (framework, run_fn)``), the fp64 ground-truth output (computed once,
-shared across baselines), and which baseline ratios are taken against.
+for one param point: per-framework on-device inputs, the baselines
+(``case-local name -> (provider_id, run_fn)``; the ``provider_id`` keys the
+cross-case provider registry in ``nperf.providers`` for framework + env
+isolation), the fp64 ground-truth output (computed once, shared across
+baselines), and which baseline ratios are taken against.
 """
 from __future__ import annotations
 
@@ -20,7 +22,8 @@ from typing import Any, Callable, Dict, List, Tuple
 
 @dataclass
 class BuiltPoint:
-    # name -> (framework, run_fn(*args) -> output)
+    # case-local baseline name -> (provider_id, run_fn(*args) -> output);
+    # provider_id keys nperf.providers (framework + env isolation).
     baselines: Dict[str, Tuple[str, Callable[..., Any]]]
     # framework -> on-device args (host->device transfer excluded from timing)
     inputs_for: Callable[[str], Tuple[Any, ...]]
