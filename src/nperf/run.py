@@ -67,7 +67,8 @@ def _worker_argv(platform: str) -> List[str]:
 
 
 def _worker_env(
-    platform: str, cores: Optional[List[int]] = None
+    platform: str, cores: Optional[List[int]] = None,
+    device: Optional[int] = None,
 ) -> Dict[str, str]:
     env = dict(os.environ)
     # nperf must be importable even when the interpreter is a prebuilt env that
@@ -80,6 +81,10 @@ def _worker_env(
     # CPU slot's disjoint core group -> the worker pins to it pre jax-import.
     if cores:
         env['NPERF_CPU_CORES'] = ','.join(str(c) for c in cores)
+    # GPU attempts are pinned to their assigned physical device (multi-GPU
+    # fan-out): the worker then sees exactly that one device as cuda:0.
+    if device is not None:
+        env['CUDA_VISIBLE_DEVICES'] = str(device)
     return env
 
 
@@ -110,7 +115,8 @@ def _spawn_worker(
     '''Run one attempt in a fresh worker process (scheduler `run_one`).
 
     ``ctx`` is the resource context from the pool: ``ctx["cores"]`` is this
-    attempt's pinned CPU core group (None on GPU).'''
+    attempt's pinned CPU core group (None on GPU); ``ctx["device"]`` is its
+    assigned physical GPU id (None on CPU).'''
     platform = spec['platform']
     base = dict(
         run_id=spec['run_id'], case=spec['case'],
@@ -126,7 +132,8 @@ def _spawn_worker(
         argv = _worker_argv(platform) + ['--spec', str(spec_path)]
         try:
             proc = subprocess.run(
-                argv, env=_worker_env(platform, ctx.get('cores')),
+                argv,
+                env=_worker_env(platform, ctx.get('cores'), ctx.get('device')),
                 capture_output=True, text=True, timeout=timeout,
             )
         except subprocess.TimeoutExpired:
@@ -141,10 +148,27 @@ def _spawn_worker(
         return _synthesize_failure(base, proc)
 
 
+def _probe_gpu_count(platform: str = 'jax-cuda12') -> int:
+    '''Ask the GPU worker interpreter how many devices it sees (>=1).
+
+    The orchestrator runs CPU-pinned, so it can't enumerate GPUs itself; a tiny
+    probe in the worker env does.  Any failure -> 1 (assume one device).'''
+    argv = [_worker_argv(platform)[0], '-c',
+            'import jax; print(len(jax.devices("gpu")))']
+    try:
+        proc = subprocess.run(
+            argv, env=_worker_env(platform), capture_output=True, text=True,
+            timeout=120,
+        )
+        return max(1, int(proc.stdout.strip().splitlines()[-1]))
+    except Exception:
+        return 1
+
+
 def run_case_subprocess(
     case: Any, *, platforms: List[str], warmup: int, repeats: int,
     run_id: str, timeout: float, cpu_slots: int, max_parallel: Optional[int],
-    gpu_settle_s: float,
+    gpu_settle_s: float, n_gpus: int = 1,
 ) -> List[AttemptRecord]:
     # Fan attempts across the requested platforms: for each param point (oracle
     # built once, shared) and each platform, emit the platform's baselines as a
@@ -170,16 +194,20 @@ def run_case_subprocess(
             groups.append((start, len(names), built.ratio_reference))
 
     resources = {resource_of(p) for p in platforms}
-    gpus = tuple(sorted(r for r in resources if r != 'cpu'))
+    gpu_present = 'gpu' in resources
     pool = ResourcePool(
-        cpu_slots=cpu_slots, gpu_settle_s=gpu_settle_s, gpus=gpus,
+        cpu_slots=cpu_slots, n_gpus=(n_gpus if gpu_present else 0),
+        gpu_settle_s=gpu_settle_s,
     )
-    # Default: enough threads to keep every resource busy at once.
+    # Default: enough threads to keep every resource busy at once (cpu slots +
+    # every GPU).
     cpu_permits = pool.cpu_slots if 'cpu' in resources else 0
-    n_parallel = max_parallel or max(1, cpu_permits + len(gpus))
+    gpu_permits = pool.n_gpus if gpu_present else 0
+    n_parallel = max_parallel or max(1, cpu_permits + gpu_permits)
     sched = {
-        'cpu_slots': pool.cpu_slots, 'max_parallel': n_parallel,
-        'core_groups': pool.core_groups, 'gpu_settle_s': gpu_settle_s,
+        'cpu_slots': pool.cpu_slots, 'n_gpus': pool.n_gpus,
+        'max_parallel': n_parallel, 'core_groups': pool.core_groups,
+        'gpu_settle_s': gpu_settle_s,
     }
     records: List[AttemptRecord] = run_scheduled(
         specs, lambda s, ctx: _spawn_worker(s, ctx, timeout=timeout),
@@ -238,9 +266,13 @@ def main() -> None:
                     help='parallel CPU attempts, each pinned to a disjoint '
                          'core group (1 = serial; >1 trades nothing on timing '
                          'fidelity because slots are core-disjoint)')
+    ap.add_argument('--gpus', type=int, default=None,
+                    help='physical GPUs to fan attempts across, one device '
+                         'lock each (default: auto-probe the GPU worker '
+                         'interpreter; 1 if none)')
     ap.add_argument('--max-parallel', type=int, default=None,
                     help='cap concurrent workers (default: resource permits: '
-                         'cpu_slots on CPU, 1 on GPU via the device lock)')
+                         'cpu_slots + every GPU)')
     ap.add_argument('--gpu-settle', type=float, default=0.0,
                     help='seconds held inside the GPU device lock between '
                          'attempts (clock-state settle)')
@@ -300,11 +332,15 @@ def main() -> None:
         jax.config.update('jax_platforms', 'cpu')
         run_id = make_run_id(capture())
         platforms = [p.strip() for p in args.platforms.split(',') if p.strip()]
+        gpu_present = any(resource_of(p) == 'gpu' for p in platforms)
+        n_gpus = args.gpus
+        if n_gpus is None:
+            n_gpus = _probe_gpu_count() if gpu_present else 1
         records = run_case_subprocess(
             case, platforms=platforms, warmup=args.warmup,
             repeats=args.repeats, run_id=run_id, timeout=args.worker_timeout,
             cpu_slots=args.cpu_slots, max_parallel=args.max_parallel,
-            gpu_settle_s=args.gpu_settle,
+            gpu_settle_s=args.gpu_settle, n_gpus=n_gpus,
         )
 
     # Report provenance = the rows' own (worker-captured authoritative device).

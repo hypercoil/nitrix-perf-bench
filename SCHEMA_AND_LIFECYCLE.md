@@ -249,25 +249,31 @@ pixi-spawned `torch_geometric` worker on the same A10G serialise against the
 (`run_scheduled`, a thread pool) acquires a resource's permit around each
 (blocking) worker spawn:
 
-- **GPU** → a **1-permit device lock**.  Attempts on one device run back-to-back
-  under it (clean timings + stable clock state); an optional `gpu_settle_s` is
-  held inside the lock between attempts and recorded in provenance.
+A `resource` is a **class** (`'cpu'`/`'gpu'`); the pool hands an attempt a
+specific permit.
+
+- **GPU** → **one permit per physical device** (`--gpus N`, auto-probed from the
+  GPU worker interpreter by default).  Each permit *is* that device's lock, so a
+  device runs one attempt at a time (back-to-back, clock stable, optional
+  `gpu_settle_s` held inside the lock), but **N devices run N attempts at once**.
+  A `gpu` attempt is handed *any* free device id and the worker is pinned to it
+  via `CUDA_VISIBLE_DEVICES` (recorded in `provenance.cuda_visible_devices`).
 - **CPU** → **`cpu_slots` permits, each carrying a disjoint core group**.  The
   worker pins to its group (`sched_setaffinity` before jax import; `worker.py`),
   so parallel CPU attempts are free of cross-attempt *contention*.  The timings
   then reflect each slot's **core budget** (recorded in `provenance.cpu_affinity`
   + `provenance.scheduler`), not the whole machine — `cpu_slots = 1` (default) is
   the full-machine serial number.
-- **Distinct resources** (CPU vs a GPU, or two GPUs) **overlap**.
+- **Distinct resources and distinct GPUs overlap.**
 
-`provenance.scheduler` records `{cpu_slots, max_parallel, core_groups,
+`provenance.scheduler` records `{cpu_slots, n_gpus, max_parallel, core_groups,
 gpu_settle_s}` so the concurrency regime that produced a timing is legible, and
-the renderer states it.  **Mixed CPU+GPU sweeps work** (`--platforms a,b` fans
-attempts across resources; CPU and a GPU run concurrently under their separate
-permits, each row tagged with its `platform` and rated within-platform).  The
-remaining fan-out is **multiple GPUs** (one `gpu:N` lock each) and a durable
-multi-device *storage* policy (DESIGN §8); rendering already combines separate
-runs via `--render-from f1 f2 …`.
+the renderer states it.  **Mixed CPU+GPU and multi-GPU sweeps work**
+(`--platforms a,b` fans across resource classes; `--gpus N` fans GPU attempts
+across N devices; each row is tagged with its `platform` + assigned device and
+rated within-platform).  Rendering combines separate runs/devices via
+`--render-from f1 f2 …`; a durable multi-device *storage* policy is the open
+piece (DESIGN §8).
 
 ---
 

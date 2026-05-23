@@ -30,8 +30,10 @@ report with within-platform ratios. **Registries** are in: a metric registry
 truth the driver stamps and cases are validated against) and a **provider**
 registry (the cross-case framework + env-isolation a baseline runs under — the
 "baseline registry", realised on providers because baseline *names* are
-case-local and would collide). Still to come in P1: multiple-GPU fan-out and a
-durable multi-device results store (DESIGN §8).
+case-local and would collide). **Multi-GPU fan-out** is in: `--gpus N` (default
+auto-probed) gives each device its own lock, so attempts fan across GPUs (one
+per device at a time, N concurrent), each pinned via `CUDA_VISIBLE_DEVICES`. The
+last P1 piece is a durable multi-device results store (DESIGN §8).
 
 Published reports live in [`reports/`](reports/) (the rendered markdown **and**
 the L4 rows it was generated from, so the report is reproducible from committed
@@ -68,8 +70,9 @@ uv run nperf --render-from results/a10g.jsonl results/l40.jsonl \
 attempts fan out across them and distinct resources run in parallel. Worker
 interpreter resolves as `NPERF_PYTHON_<PLATFORM>` → `NPERF_WORKER_PYTHON` → this
 interpreter. `--cpu-slots N` runs N CPU attempts in parallel on disjoint pinned
-cores (timings reflect the slot's core budget; `1` = full machine);
-`--gpu-settle S` holds the device lock S seconds between GPU attempts.
+cores (timings reflect the slot's core budget; `1` = full machine); `--gpus N`
+fans GPU attempts across N devices (default: auto-probed), one lock each;
+`--gpu-settle S` holds a device's lock S seconds between its attempts.
 `--out`/`--report` default to `results/<case>.{jsonl,md}`; `--quick` runs the
 representative point, `--point '<json>'` a single explicit one, `--in-process`
 uses the P0 driver, `--render-from f1 [f2 …]` re-renders (and combines) saved

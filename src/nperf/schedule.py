@@ -6,9 +6,11 @@ timed attempt at a time** for the measurement to be honest.  This module owns
 that invariant, *above* the worker-spawn path (dispatcher-agnostic: it does not
 care whether a worker is a uv interpreter, a prebuilt env, or pixi):
 
-- **GPU** → a 1-permit lock (the *device lock*).  Attempts on one device
-  serialise back-to-back so they never corrupt each other's timings and the
-  clock state stays stable; an optional settle interval is held between them.
+- **GPU** → one permit **per physical device** (`gpu:0 … gpu:N-1`).  Each
+  permit *is* that device's lock: a device hosts one attempt at a time
+  (back-to-back, clock state stable, optional settle), but **N devices run N
+  attempts concurrently**.  A `gpu` attempt is handed *any* free device id; the
+  worker is pinned to it via `CUDA_VISIBLE_DEVICES`.
 - **CPU** → ``cpu_slots`` permits, each bound to a **disjoint core group**.
   Parallel CPU attempts then run on non-overlapping cores (pinned in the
   worker, `worker.py`), so concurrency is free of cross-attempt *contention*.
@@ -16,14 +18,14 @@ care whether a worker is a uv interpreter, a prebuilt env, or pixi):
   whole machine; ``cpu_slots = 1`` (default) is plain full-machine serial
   timing.
 
-Attempts on **distinct** resources proceed concurrently; the scheduler is a
-thread pool whose tasks each acquire their resource's permit around the
-(blocking) subprocess run.
+A `resource` is now a **class** (`'cpu'` / `'gpu'`); the pool hands out a
+specific permit (a core group or a device id).  Attempts on **distinct**
+resources — and on **distinct GPUs** — proceed concurrently; the scheduler is a
+thread pool whose tasks each acquire a permit around the (blocking) run.
 """
 from __future__ import annotations
 
 import os
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -51,54 +53,57 @@ def partition_cores(cores: Sequence[int], k: int) -> List[List[int]]:
 
 
 def resource_of(platform: str) -> str:
-    '''The physical resource a platform's attempts contend for.'''
-    return 'cpu' if platform == 'jax-cpu' else 'gpu:0'
+    '''The physical resource *class* a platform's attempts contend for.'''
+    return 'cpu' if platform == 'jax-cpu' else 'gpu'
 
 
 class ResourcePool:
-    '''Per-resource permits: the GPU device lock + pinned CPU slots.'''
+    '''Per-resource permits: per-device GPU locks + pinned CPU slots.'''
 
     def __init__(
-        self, *, cpu_slots: int = 1, gpu_settle_s: float = 0.0,
-        gpus: Sequence[str] = ('gpu:0',),
+        self, *, cpu_slots: int = 1, n_gpus: int = 1,
+        gpu_settle_s: float = 0.0,
     ) -> None:
         cores = _available_cores()
         self.cpu_slots = max(1, min(cpu_slots, len(cores)))
+        self.n_gpus = max(0, n_gpus)
         self.gpu_settle_s = gpu_settle_s
-        # Each CPU permit carries a disjoint core group (the pinning target).
-        self._core_groups: "Queue[List[int]]" = Queue()
+        # Each CPU permit carries a disjoint core group (the pinning target);
+        # each GPU permit is a physical device id (its presence = its lock).
         self.core_groups = partition_cores(cores, self.cpu_slots)
+        self._cpu_q: "Queue[List[int]]" = Queue()
         for group in self.core_groups:
-            self._core_groups.put(group)
-        self._gpu_locks = {g: threading.Semaphore(1) for g in gpus}
+            self._cpu_q.put(group)
+        self._gpu_q: "Queue[int]" = Queue()
+        for dev in range(self.n_gpus):
+            self._gpu_q.put(dev)
 
     def permits(self, resource: str) -> int:
-        '''How many attempts may run at once on this resource.'''
-        return self.cpu_slots if resource == 'cpu' else 1
+        '''How many attempts may run at once on this resource class.'''
+        return self.cpu_slots if resource == 'cpu' else self.n_gpus
 
     @contextmanager
     def acquire(self, resource: str) -> Iterator[Dict[str, Any]]:
-        '''Hold the resource for one attempt; yield its execution context.
+        '''Hold one permit of the resource class; yield its execution context.
 
-        For CPU the context carries the pinned ``cores``; for GPU it is the
-        device lock (no cores; the worker uses the device), with the settle
-        interval held *inside* the lock so the next attempt starts on a rested
-        device.'''
+        CPU yields the pinned ``cores``; GPU yields a ``device`` id (the worker
+        pins to it via ``CUDA_VISIBLE_DEVICES``), with the settle interval held
+        *inside* the per-device lock so the next attempt starts on a rested
+        device.  Blocks until a permit is free (≤ one attempt per device).'''
         if resource == 'cpu':
-            cores = self._core_groups.get()
+            cores = self._cpu_q.get()
             try:
-                yield {'cores': cores}
+                yield {'cores': cores, 'device': None}
             finally:
-                self._core_groups.put(cores)
+                self._cpu_q.put(cores)
         else:
-            lock = self._gpu_locks[resource]  # the device lock (annex §E)
-            lock.acquire()
+            dev = self._gpu_q.get()  # the per-device lock (annex §E)
             try:
-                yield {'cores': None}
+                yield {'cores': None, 'device': dev}
             finally:
                 if self.gpu_settle_s:
                     time.sleep(self.gpu_settle_s)
-                lock.release()
+                self._gpu_q.put(dev)
 
 
 def run_scheduled(

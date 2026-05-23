@@ -289,8 +289,10 @@ nitrix-perf-bench/
   **provider** registry:* baseline names (`nitrix-jax`, …) are case-local labels
   (disambiguated by the `case` field) and would collide across cases, so the
   registry instead holds the cross-case run providers (framework + env
-  isolation) a baseline maps onto. *Remaining:* multi-GPU fan-out + a durable
-  multi-device results store (§8).
+  isolation) a baseline maps onto.  **Multi-GPU fan-out done** (`--gpus N`: one
+  device lock each, attempts fan across devices, pinned via
+  `CUDA_VISIBLE_DEVICES`).  *Remaining:* a durable multi-device results store
+  (§8).
 - **P2** — multi-framework refs (torch / PyG) in isolated envs + op_matrix feed.
 - **P3** — HTML `/site` + regression `gate` + decision-input bundles.
 

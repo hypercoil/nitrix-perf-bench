@@ -62,6 +62,9 @@ def main() -> None:
     prov['measurement_isolation'] = 'subprocess'  # honest per-attempt memory
     if _CORES and hasattr(os, 'sched_getaffinity'):
         prov['cpu_affinity'] = sorted(os.sched_getaffinity(0))  # pinned slot
+    cvd = os.environ.get('CUDA_VISIBLE_DEVICES')
+    if cvd is not None:
+        prov['cuda_visible_devices'] = cvd  # the assigned physical GPU id
 
     case = CASES[spec['case']]
     param = spec['param_point']
