@@ -291,8 +291,9 @@ nitrix-perf-bench/
   registry instead holds the cross-case run providers (framework + env
   isolation) a baseline maps onto.  **Multi-GPU fan-out done** (`--gpus N`: one
   device lock each, attempts fan across devices, pinned via
-  `CUDA_VISIBLE_DEVICES`).  *Remaining:* a durable multi-device results store
-  (§8).
+  `CUDA_VISIBLE_DEVICES`).  **Durable accumulation store done** (`store.py`:
+  per-run files, `--store` / `--render-from <dir> --latest` / `--prune-keep`).
+  **P1 complete** modulo the cross-machine store *transport* policy (§8).
 - **P2** — multi-framework refs (torch / PyG) in isolated envs + op_matrix feed.
 - **P3** — HTML `/site` + regression `gate` + decision-input bundles.
 
@@ -318,20 +319,20 @@ both uv- and pixi-spawned workers (a uv `nitrix-jax` worker and a pixi
 
 ## 8. Open questions (not blocking the architecture)
 
-- **Multi-platform: producing + rendering DONE (P1); storage policy still
-  open.** Every row is keyed by `platform` and carries device provenance (annex
-  §A), so multi-platform was always a schema property, not a new axis. P1
-  delivered both halves of *using* it: `--platforms a,b` fans attempts across
-  platforms in one run (the scheduler overlaps distinct resources — CPU + a GPU
-  run concurrently), and `--render-from f1 f2 …` combines *separate* runs/devices
-  (e.g. a Lovelace L40 jsonl alongside the A10G one) into a single `platform`-
-  column report with within-platform ratios. **Still open — the *storage*
-  decision:** in-repo `results/` vs a results branch vs an external store, file
-  naming for accumulation (per-`(platform, run)` vs append), and history depth /
-  retention. *Coupled to failure-row volume:* every failed/skipped worker emits a
-  row, so a wide sweep matrix grows the store fast — retention and failure-row
-  volume are one decision, not two. (Today: one jsonl per run; combine at render
-  time. A durable accumulation store is the remaining piece.)
+- **Multi-platform producing/rendering + the accumulation store: DONE (P1).**
+  Every row is keyed by `platform` and carries device provenance (annex §A), so
+  multi-platform was always a schema property, not a new axis. P1 delivered:
+  `--platforms a,b` (+ `--gpus N`) fans attempts across resources in one run;
+  the **store** (`store.py`, default git-ignored `results/store/<case>/<run_id>
+  .jsonl`) accumulates each run as a file (`--store`), `--render-from <dir>`
+  globs it, `--latest` collapses to the current row per `(case, platform, param,
+  baseline)`, and `--prune-keep N` caps history (the failure-row-volume guard).
+  A second device's run (a Lovelace L40 beside the A10G) is just another file —
+  validated by combining a CPU and an A10G run into one `platform`-column report.
+  **Still open — the *transport* policy only:** where the store lives across
+  *machines* (local + git-ignored, a results branch, or a network/object store);
+  the on-disk accumulation / selection / retention mechanism is built and
+  machine-local today.
 - **Must-have v1 metrics.** Floor proposed: `steady_time`, `peak_hbm`,
   `fidelity_vs_ref`. Defer `energy` (distinct protocol, L1) and
   `est_flops`/roofline.

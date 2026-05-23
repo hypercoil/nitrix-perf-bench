@@ -5,18 +5,21 @@ Default mode (**subprocess**): one OS process per attempt, spawned via a
 pluggable interpreter (`worker.py`).  This is the P1 runner — it makes
 per-attempt memory honest (each worker's high-water mark *is* its attempt's
 peak; see `core/memory.py`) and isolates crashes (a dead worker becomes a
-failure row, the sweep continues).  Workers run **serially** for now; the
-device lock for parallel-per-GPU scheduling (annex §E) lands with the
-parallelisation slice.
+failure row, the sweep continues).  Attempts fan across the requested
+`--platforms` and across `--gpus` devices, scheduled by `schedule.py`: distinct
+resources (CPU vs a GPU, or two GPUs) overlap, while a per-device lock / pinned
+CPU slots serialise within a resource (annex §E).
 
 `--in-process` keeps the P0 driver (no spawn cost, faster for CPU smoke) — but
 its memory metrics are process high-water marks, so the renderer flags them.
 
-`--render-from` re-renders a report from saved L4 rows (no measurement).
+`--store` ingests a run into the durable per-run store (`store.py`);
+`--render-from <files/dirs>` re-renders (and combines) saved L4 rows — no
+measurement — with `--latest` to collapse to current state per key.
 
-Worker interpreter resolution (per `--platform`): `NPERF_PYTHON_<PLATFORM>`,
-then `NPERF_WORKER_PYTHON`, else this interpreter (the uv default when you run
-the orchestrator under the matching env; for a platform this env can't provide,
+Worker interpreter resolution (per platform): `NPERF_PYTHON_<PLATFORM>`, then
+`NPERF_WORKER_PYTHON`, else this interpreter (the uv default when you run the
+orchestrator under the matching env; for a platform this env can't provide,
 e.g. GPU from a CPU orchestrator, point `NPERF_PYTHON_JAX_CUDA12` at that env's
 python, or run the orchestrator itself under `uv run --group <platform>`).
 """
@@ -32,6 +35,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from . import store
 from .core import (
     AttemptRecord,
     Status,
@@ -282,24 +286,37 @@ def main() -> None:
                     help='default: results/<case>.jsonl')
     ap.add_argument('--report', default=None,
                     help='default: results/<case>.md')
-    ap.add_argument('--render-from', default=None, nargs='+', metavar='JSONL',
+    ap.add_argument('--render-from', default=None, nargs='+', metavar='PATH',
                     help='re-render a report from saved L4 rows and exit; '
-                         'pass several files to combine runs/devices into one '
-                         'multi-platform report (accumulation, DESIGN §8)')
+                         'each PATH is a .jsonl file or a directory (a store '
+                         'root / case dir, globbed) -- combines runs/devices '
+                         'into one multi-platform report (DESIGN §8)')
+    ap.add_argument('--latest', action='store_true',
+                    help='with --render-from: keep only the newest row per '
+                         '(case, platform, param, baseline) across runs')
+    ap.add_argument('--store', nargs='?', const=store.STORE_DEFAULT,
+                    default=None, metavar='DIR',
+                    help='also ingest this run durably into the store '
+                         f'(default DIR: {store.STORE_DEFAULT})')
+    ap.add_argument('--prune-keep', type=int, default=None, metavar='N',
+                    help='with --store: keep only the N most recent runs')
     args = ap.parse_args()
 
     if args.render_from is not None:
+        files = store.expand_inputs(args.render_from)
         rows: List[Dict[str, Any]] = []
-        for path in args.render_from:
+        for path in files:
             rows.extend(read_jsonl(path))
+        if args.latest:
+            rows = store.latest(rows)
         if not rows:
             raise SystemExit(f'no rows in {args.render_from}')
         report = render_markdown(rows, rows[0].get('provenance', {}))
         report_path = args.report or f'results/{rows[0].get("case")}.md'
         Path(report_path).write_text(report)
         print(report)
-        print(f'Re-rendered {len(rows)} rows from {len(args.render_from)} '
-              f'file(s) -> {report_path}.')
+        print(f'Re-rendered {len(rows)} rows from {len(files)} file(s) -> '
+              f'{report_path}.')
         return
 
     case = CASES[args.case]
@@ -350,8 +367,20 @@ def main() -> None:
     Path(report_path_arg).write_text(report)
     print(report)
     n_ok = sum(r.status == Status.OK for r in records)
-    print(f'{len(records)} attempts ({n_ok} ok). Wrote {out_path} and '
-          f'{report_path_arg}.')
+    msg = (f'{len(records)} attempts ({n_ok} ok). Wrote {out_path} and '
+           f'{report_path_arg}.')
+
+    # Durable accumulation: append this run to the store (one file per run),
+    # then optionally cap history.  Combine later with `--render-from <store>`.
+    if args.store is not None:
+        stored = store.ingest(
+            records, root=args.store, case=case.name, run_id=run_id,
+        )
+        msg += f' Ingested -> {stored}.'
+        if args.prune_keep is not None:
+            removed = store.prune(args.store, case.name, args.prune_keep)
+            msg += f' Pruned {len(removed)} old run(s).'
+    print(msg)
 
 
 if __name__ == '__main__':

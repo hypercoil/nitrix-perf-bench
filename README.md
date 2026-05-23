@@ -7,7 +7,7 @@ multi-outcome, multi-platform, with structured results as the source of truth.
 - **Row schema + worker lifecycle (implementation contract):**
   [`SCHEMA_AND_LIFECYCLE.md`](SCHEMA_AND_LIFECYCLE.md)
 
-## Status: P1 (subprocess runner)
+## Status: P1 complete
 
 The L4 result schema is **frozen at `schema_version = 1`** (additive-only;
 `SCHEMA_AND_LIFECYCLE.md`). The first **real** nitrix case ships —
@@ -32,8 +32,12 @@ registry (the cross-case framework + env-isolation a baseline runs under — the
 "baseline registry", realised on providers because baseline *names* are
 case-local and would collide). **Multi-GPU fan-out** is in: `--gpus N` (default
 auto-probed) gives each device its own lock, so attempts fan across GPUs (one
-per device at a time, N concurrent), each pinned via `CUDA_VISIBLE_DEVICES`. The
-last P1 piece is a durable multi-device results store (DESIGN §8).
+per device at a time, N concurrent), each pinned via `CUDA_VISIBLE_DEVICES`. A
+**durable store** (`--store`; `results/store/<case>/<run_id>.jsonl`) accumulates
+each run as a file, `--render-from <dir> --latest` combines runs/devices into
+the current-state report, and `--prune-keep N` caps history. **P1 is complete**
+modulo the cross-machine store transport policy (DESIGN §8); next is **P2**
+(torch / PyG reference baselines in pixi envs).
 
 Published reports live in [`reports/`](reports/) (the rendered markdown **and**
 the L4 rows it was generated from, so the report is reproducible from committed
@@ -61,9 +65,13 @@ NPERF_PYTHON_JAX_CUDA12=/path/to/cuda-env/bin/python \
 NPERF_PYTHON_JAX_CUDA12=/path/to/cuda-env/bin/python \
   uv run nperf --platforms jax-cpu,jax-cuda12
 
-# Accumulate separate runs/devices into one multi-platform report:
-uv run nperf --render-from results/a10g.jsonl results/l40.jsonl \
-  --report reports/combined.md
+# Accumulate runs durably (one file per run), then render current state across
+# every accumulated run/device:
+NPERF_PYTHON_JAX_CUDA12=/path/to/cuda-env/bin/python \
+  uv run nperf --platforms jax-cuda12 --store      # ingest A10G run
+uv run nperf --platforms jax-cpu --store           # ingest a CPU run
+uv run nperf --render-from results/store/semiring_matmul --latest \
+  --report reports/combined.md                      # newest per (plat,param,baseline)
 ```
 
 `--platforms` is a comma-list of worker env-groups (`jax-cpu` / `jax-cuda12`);
@@ -73,8 +81,10 @@ interpreter. `--cpu-slots N` runs N CPU attempts in parallel on disjoint pinned
 cores (timings reflect the slot's core budget; `1` = full machine); `--gpus N`
 fans GPU attempts across N devices (default: auto-probed), one lock each;
 `--gpu-settle S` holds a device's lock S seconds between its attempts.
-`--out`/`--report` default to `results/<case>.{jsonl,md}`; `--quick` runs the
-representative point, `--point '<json>'` a single explicit one, `--in-process`
-uses the P0 driver, `--render-from f1 [f2 …]` re-renders (and combines) saved
-rows. Tests: `JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case
-build, worker round-trip, scheduler invariants, multi-platform).
+`--store [DIR]` ingests the run durably (default `results/store`); `--prune-keep
+N` caps history. `--out`/`--report` default to `results/<case>.{jsonl,md}`;
+`--quick` runs the representative point, `--point '<json>'` a single explicit
+one, `--in-process` uses the P0 driver, `--render-from <files/dirs> [--latest]`
+re-renders (and combines) saved rows. Tests: `JAX_PLATFORMS=cpu uv run pytest`
+(CPU-only; schema, fidelity, case build, worker round-trip, scheduler
+invariants, multi-platform, registries, store).
