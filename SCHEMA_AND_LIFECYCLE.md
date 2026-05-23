@@ -100,7 +100,7 @@ with this caveat (the renderer states it on every report).
 
 | `status` | phase | `failure_detail` |
 |---|---|---|
-| `env_failed` | pre-measurement | `{phase: "resolve"\|"import", env_group, message}` |
+| `env_failed` | pre-measurement | `{phase: "resolve"\|"import", env_group?, reason?, message}` (e.g. a provider's framework absent from the worker env — `reason: "provider_env_missing"` — so a missing torch/PyG refs env is a clean skip, not a sweep failure) |
 | `compile_error` | pre-measurement | `{jit_signature, message}` |
 | `oom` | mid-measurement | `{requested_bytes?, device_free_bytes?, message}` |
 | `timeout` | mid-measurement | `{limit_s}` |

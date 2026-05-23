@@ -52,8 +52,24 @@ PROVIDERS: Dict[str, Provider] = {
     for p in (
         Provider('jax', 'jax', description='in-tree JAX (uv group)'),
         Provider('numpy', 'numpy', description='host NumPy (uv)'),
-        # P2: Provider('torch', 'torch', isolation='pixi',
-        #              pixi_reason='libtorch CUDA wheels not on PyPI for pin')
+        # P2 cross-framework refs.  torch's *CPU* wheel is on the PyTorch
+        # index and uv-installable, so it is a uv env -- a separate
+        # interpreter (built by tools/setup_refs_env.sh; the runner selects
+        # it via NPERF_PYTHON_TORCH), not a separate package manager.  It is
+        # still isolated from nitrix's jax-only env (DESIGN §7): nitrix must
+        # never import torch.
+        Provider('torch', 'torch',
+                 description='cross-framework ref; separate uv env '
+                             '(tools/setup_refs_env.sh)'),
+        # PyG's compiled scatter/segment extensions (torch-scatter etc.) are
+        # not on PyPI as portable wheels for an arbitrary torch/CUDA pin --
+        # the conda-forge build is the supported path -- so it is the DESIGN
+        # §7 pixi escape hatch, with this reason as its audit trail.
+        Provider('pyg', 'torch', isolation='pixi',
+                 pixi_reason='torch-scatter/torch-sparse compiled extensions '
+                             'ship as conda-forge builds, not portable PyPI '
+                             'wheels for an arbitrary torch/CUDA pin',
+                 description='PyTorch Geometric ref (conda/pixi env)'),
     )
 }
 

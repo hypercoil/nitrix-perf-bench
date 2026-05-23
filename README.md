@@ -7,7 +7,7 @@ multi-outcome, multi-platform, with structured results as the source of truth.
 - **Row schema + worker lifecycle (implementation contract):**
   [`SCHEMA_AND_LIFECYCLE.md`](SCHEMA_AND_LIFECYCLE.md)
 
-## Status: P1 complete
+## Status: P2 in progress (torch refs done)
 
 The L4 result schema is **frozen at `schema_version = 1`** (additive-only;
 `SCHEMA_AND_LIFECYCLE.md`). The first **real** nitrix case ships —
@@ -36,8 +36,22 @@ per device at a time, N concurrent), each pinned via `CUDA_VISIBLE_DEVICES`. A
 **durable store** (`--store`; `results/store/<case>/<run_id>.jsonl`) accumulates
 each run as a file, `--render-from <dir> --latest` combines runs/devices into
 the current-state report, and `--prune-keep N` caps history. **P1 is complete**
-modulo the cross-machine store transport policy (DESIGN §8); next is **P2**
-(torch / PyG reference baselines in pixi envs).
+modulo the cross-machine store transport policy (DESIGN §8).
+
+**P2 (in progress) — cross-framework refs.** A `torch-dense` baseline (the same
+materialise-then-reduce a torch practitioner writes for a non-real semiring
+matmul) now runs as a `torch` **provider**: a separate, uv-isolated interpreter
+(torch CPU wheels are on the PyTorch index, so it is its own *interpreter*, not
+a second package manager). Build it reproducibly with
+`tools/setup_refs_env.sh`, then point the runner at it with
+`NPERF_PYTHON_TORCH`; the worker interpreter is now resolved per **(framework,
+platform)**, so a torch attempt picks its own env even on a jax platform. With
+no refs env configured, `torch-dense` records a clean `env_failed` row and the
+jax baselines still run. The committed report combines the A10G GPU run with a
+CPU cross-framework run. **PyG** is the genuine pixi case (compiled
+`torch-scatter`/`torch-sparse`); its provider is registered with an audit-trail
+reason and lands as a baseline alongside the sparse/ELL case on a conda/pixi
+host. Remaining: the op_matrix `perf_ratio` feed.
 
 Published reports live in [`reports/`](reports/) (the rendered markdown **and**
 the L4 rows it was generated from, so the report is reproducible from committed
@@ -51,8 +65,15 @@ memory and cold-compile are honest. `--in-process` keeps the faster P0 driver
 
 ```bash
 # CPU smoke (subprocess workers reuse this uv interpreter). The Pallas baseline
-# records a `skipped` row off-GPU; nitrix-jax and naive-dense run.
+# records a `skipped` row off-GPU; nitrix-jax and naive-dense run; torch-dense
+# records `env_failed` until the refs env below exists.
 JAX_PLATFORMS=cpu uv run nperf --quick
+
+# Cross-framework (P2): build the torch refs env once (off the root overlay --
+# torch is ~1 GB), then point the runner at it. torch-dense now runs.
+tools/setup_refs_env.sh                                  # -> $NPERF_REFS_ENV_DIR
+NPERF_PYTHON_TORCH="${NPERF_REFS_ENV_DIR:-/output/nperf-refs-env}/bin/python" \
+  JAX_PLATFORMS=cpu uv run nperf --quick
 
 # Full sweep targeting a CUDA host. The orchestrator coordinates on CPU and
 # spawns GPU workers via a pluggable interpreter; point it at a jax[cuda] env

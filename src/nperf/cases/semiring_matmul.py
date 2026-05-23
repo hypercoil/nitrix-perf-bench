@@ -17,6 +17,14 @@ What it exercises beyond the throwaway:
   ``ratio_reference = 'nitrix-jax'``;
 - a per-algebra ceiling (``jnp-matmul``) added **only for ``real``**, where the
   honest fast path is tensor cores (cf. the in-tree report's note);
+- a **cross-framework external reference** (``torch-dense``, P2): the same
+  materialise-then-reduce written in torch -- what a torch / PyG practitioner
+  writes for a non-real semiring matmul (no ``torch.matmul`` fast path).  It is
+  the ``torch`` provider, so it runs in its own subprocess under the torch refs
+  env (``tools/setup_refs_env.sh``; selected via ``NPERF_PYTHON_TORCH``); with
+  no such env it records a clean ``env_failed`` row and the jax baselines still
+  run.  Same ratio reference (``nitrix-jax``), so it reads as "the torch
+  practitioner's op is N× the nitrix reference" on the same device;
 - a **scalable fp64 oracle**: the case's own reference op
   (``reference_semiring_matmul``) evaluated in true fp64.  It is a
   ``fori_loop`` over the contraction axis, so the oracle costs O(m·n) memory —
@@ -113,6 +121,45 @@ def _naive_dense_fn(
     return run
 
 
+# Cross-framework reference (P2): the *same* materialise-then-reduce, in torch.
+# A torch / PyG practitioner needing a non-real semiring matmul has no
+# ``torch.matmul`` fast path, so they write exactly this -- broadcast-combine
+# then reduce over the contraction axis -- which makes it the natural external
+# baseline (and a direct XLA-vs-eager counterpoint to ``naive-dense``).  torch
+# is imported *lazily*, only when the attempt runs, so a jax-only worker can
+# still build this point for its own baselines without torch present.
+def _torch_semiring(torch: Any, name: str, A: Any, B: Any) -> Any:
+    '''``C[i, j] = reduce_k(combine(A[i, k], B[k, j]))`` in torch, per algebra.
+
+    Mirrors ``nitrix.semiring.algebras`` exactly: real = sum(a*b);
+    log = logsumexp(a+b); tropical_max_plus = max(a+b);
+    euclidean = sqrt(clamp(sum((a-b)**2), 0)).
+    '''
+    a = A[:, :, None]
+    b = B[None, :, :]
+    if name == 'real':
+        return torch.sum(a * b, dim=1)
+    if name == 'log':
+        return torch.logsumexp(a + b, dim=1)
+    if name == 'tropical_max_plus':
+        return torch.amax(a + b, dim=1)
+    if name == 'euclidean':
+        s = torch.sum((a - b) ** 2, dim=1)
+        return torch.sqrt(torch.clamp(s, min=0.0))
+    raise KeyError(f'no torch semiring for algebra {name!r}')
+
+
+def _torch_dense_fn(name: str) -> Callable[[Any, Any], Any]:
+    '''Build the torch materialise-then-reduce baseline for one algebra.'''
+
+    def run(A: Any, B: Any) -> Any:
+        import torch
+
+        return _torch_semiring(torch, name, A, B)
+
+    return run
+
+
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     m, k, n = param['m'], param['k'], param['n']
     name = param['algebra']
@@ -142,7 +189,20 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     )
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
-        return (ja, jb)  # all baselines here are jax
+        if framework == 'torch':
+            # Same fp32 values, as torch tensors on torch's own device (cuda
+            # if this env's torch build sees one, else cpu -- so a torch-cpu
+            # refs env stays on cpu even on a GPU box; a fair GPU comparison
+            # needs a cuda torch build).  H2D excluded from the timed region.
+            import torch
+
+            dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+            ta = torch.from_numpy(a).to(dev)
+            tb = torch.from_numpy(b).to(dev)
+            if dev == 'cuda':
+                torch.cuda.synchronize()
+            return (ta, tb)
+        return (ja, jb)  # jax / numpy baselines share the on-device jax arrays
 
     reduce_k, finalize = _NAIVE_REDUCE[name]
     baselines = {
@@ -157,6 +217,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             ),
         ),
         'naive-dense': ('jax', _naive_dense_fn(alg, reduce_k, finalize)),
+        # Cross-framework external reference (P2); runs in the torch refs env.
+        'torch-dense': ('torch', _torch_dense_fn(name)),
     }
     if alg is REAL:
         # The honest fast path for the real semiring is tensor cores; include

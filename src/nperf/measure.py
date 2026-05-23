@@ -28,6 +28,18 @@ from .core.sync import SYNC
 from .providers import framework_of
 
 
+def _host_f64(out: Any, framework: str) -> np.ndarray:
+    '''Bring a baseline output to host as fp64 for the fidelity compare.
+
+    torch tensors (possibly on cuda, possibly autograd-tracked) need an
+    explicit ``detach().cpu().numpy()`` -- ``np.asarray`` rejects a cuda
+    tensor.  jax arrays / numpy convert directly.  torch is imported only by
+    being handed a torch output, so the base env never needs it here.'''
+    if framework == 'torch':
+        return out.detach().cpu().numpy().astype(np.float64)
+    return np.asarray(out, dtype=np.float64)
+
+
 def _validate_case(case: Case) -> Case:
     '''Reject a case naming a metric outside the registry (typo-proofing).'''
     unknown = [m for m in case.metrics if m not in METRICS]
@@ -64,6 +76,16 @@ def classify_message(msg: str) -> Tuple[Status, Dict[str, Any]]:
     low = msg.lower()
     if 'resource_exhausted' in low or 'out of memory' in low:
         return Status.OOM, {'message': msg}
+    # A provider's framework package isn't importable in the worker env (e.g.
+    # the torch refs env was never built / NPERF_PYTHON_TORCH is unset, so the
+    # worker fell back to the jax-only base env).  The *env* is wrong, not the
+    # op -- a clean env_failed, so the default CPU run degrades gracefully
+    # (torch-dense records env_failed; the jax baselines still run).
+    if 'no module named' in low or 'modulenotfounderror' in low:
+        return Status.ENV_FAILED, {
+            'phase': 'import', 'reason': 'provider_env_missing',
+            'message': msg,
+        }
     # Requested backend / device simply isn't present on this host (e.g. the
     # pallas-cuda kernel on a CPU box).  The env imported fine and nothing
     # failed to compile -- the hardware is absent -- so this is a recorded
@@ -119,7 +141,7 @@ def measure_attempt(
         )
         out = run_fn(*args)
         sync(out)
-        out_host = np.asarray(out, dtype=np.float64)
+        out_host = _host_f64(out, framework)
         fid = compare(
             out_host, built.fp64_reference, rtol=case.rtol, atol=case.atol,
         )

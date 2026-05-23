@@ -294,7 +294,21 @@ nitrix-perf-bench/
   `CUDA_VISIBLE_DEVICES`).  **Durable accumulation store done** (`store.py`:
   per-run files, `--store` / `--render-from <dir> --latest` / `--prune-keep`).
   **P1 complete** modulo the cross-machine store *transport* policy (§8).
-- **P2** — multi-framework refs (torch / PyG) in isolated envs + op_matrix feed.
+- **P2 (in progress)** — multi-framework refs in isolated envs + op_matrix
+  feed.  **torch done**: a `torch` provider (uv-isolated — torch CPU wheels are
+  on the PyTorch index, so it is a separate *interpreter*, not a separate
+  package manager) drives a `torch-dense` baseline (the same
+  materialise-then-reduce a torch practitioner writes for a non-real semiring
+  matmul); it runs in its own subprocess via a **framework-aware interpreter
+  resolution** (`NPERF_PYTHON_TORCH`, built reproducibly by
+  `tools/setup_refs_env.sh`), and a missing refs env records a clean
+  `env_failed` row rather than failing the sweep.  The combined CPU+A10G report
+  shows it (`reports/PERF_SEMIRING_MATMUL.md`).  **PyG** is the genuine §7 pixi
+  case (compiled `torch-scatter`/`torch-sparse` extensions): its provider is
+  registered with the audit-trail `pixi_reason`, and it lands as a baseline with
+  the sparse / ELL case (PyG's message-passing idiom is scatter-reduce, not
+  dense) on a host with a conda/pixi env.  Remaining: op_matrix `perf_ratio`
+  feed.
 - **P3** — HTML `/site` + regression `gate` + decision-input bundles.
 
 ## 7. Environment-manager decision

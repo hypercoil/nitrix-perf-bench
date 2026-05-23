@@ -17,7 +17,11 @@ its memory metrics are process high-water marks, so the renderer flags them.
 `--render-from <files/dirs>` re-renders (and combines) saved L4 rows — no
 measurement — with `--latest` to collapse to current state per key.
 
-Worker interpreter resolution (per platform): `NPERF_PYTHON_<PLATFORM>`, then
+Worker interpreter resolution (per *attempt*, by framework + platform): a
+framework the base env doesn't ship (torch, pyg) resolves
+`NPERF_PYTHON_<FW>_<PLATFORM>` then `NPERF_PYTHON_<FW>` first (its own isolated
+env, e.g. `NPERF_PYTHON_TORCH` from tools/setup_refs_env.sh); jax/numpy skip
+straight to the platform-wide `NPERF_PYTHON_<PLATFORM>`, then
 `NPERF_WORKER_PYTHON`, else this interpreter (the uv default when you run the
 orchestrator under the matching env; for a platform this env can't provide,
 e.g. GPU from a CPU orchestrator, point `NPERF_PYTHON_JAX_CUDA12` at that env's
@@ -57,17 +61,38 @@ from .schedule import ResourcePool, resource_of, run_scheduled
 
 _SRC = str(Path(__file__).resolve().parents[1])  # `src` dir, for PYTHONPATH
 
+# Frameworks the orchestrator / base env already ships, so their workers run
+# under the platform interpreter (the historical behaviour).  Everything else
+# (torch, pyg) is an isolated env that needs its own interpreter even on a jax
+# platform's device -- hence the framework-specific overrides below.
+_BASE_FRAMEWORKS = frozenset({'jax', 'numpy'})
+
 
 # --------------------------------------------------------------------------- #
 # Subprocess orchestration                                                    #
 # --------------------------------------------------------------------------- #
-def _worker_argv(platform: str) -> List[str]:
-    override = (
-        os.environ.get('NPERF_PYTHON_' + platform.upper().replace('-', '_'))
-        or os.environ.get('NPERF_WORKER_PYTHON')
-    )
-    python = override or sys.executable
-    return [python, '-m', 'nperf.worker']
+def _worker_python(platform: str, framework: str = 'jax') -> str:
+    '''Resolve the worker interpreter for a ``(framework, platform)`` attempt.
+
+    A framework the orchestrator env does not ship (torch, pyg) needs its
+    *own* interpreter even when the target *device* matches a jax
+    platform -- so its framework-specific overrides win first
+    (``NPERF_PYTHON_<FW>_<PLATFORM>`` then ``NPERF_PYTHON_<FW>``); then the
+    platform-wide override (``NPERF_PYTHON_<PLATFORM>`` -- back-compat for the
+    jax/numpy workers, which only ever consult this); then the global
+    ``NPERF_WORKER_PYTHON``; else this interpreter.'''
+    keys: List[str] = []
+    plat = platform.upper().replace('-', '_')
+    if framework not in _BASE_FRAMEWORKS:
+        fw = framework.upper()
+        keys += ['NPERF_PYTHON_%s_%s' % (fw, plat), 'NPERF_PYTHON_' + fw]
+    keys += ['NPERF_PYTHON_' + plat, 'NPERF_WORKER_PYTHON']
+    override = next((os.environ[k] for k in keys if os.environ.get(k)), None)
+    return override or sys.executable
+
+
+def _worker_argv(platform: str, framework: str = 'jax') -> List[str]:
+    return [_worker_python(platform, framework), '-m', 'nperf.worker']
 
 
 def _worker_env(
@@ -133,7 +158,8 @@ def _spawn_worker(
         spec_path.write_text(
             json.dumps({**spec, 'result_path': str(result_path)})
         )
-        argv = _worker_argv(platform) + ['--spec', str(spec_path)]
+        argv = (_worker_argv(platform, spec['framework'])
+                + ['--spec', str(spec_path)])
         try:
             proc = subprocess.run(
                 argv,

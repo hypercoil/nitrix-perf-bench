@@ -3,9 +3,11 @@
 
 Checks the case *builds* correctly on CPU: the baseline registry is shaped as
 expected, the fp64 oracle is real double precision, and every runnable
-strategy (the JAX reference and the naive-dense form) agrees with the oracle.
-The Pallas baseline is registered but not executed here — it needs CUDA
-(covered by the runner on a GPU host, recorded as a ``skipped`` row off-GPU).
+*jax* strategy (the JAX reference and the naive-dense form) agrees with the
+oracle.  The Pallas baseline is registered but not executed here — it needs
+CUDA (covered by the runner on a GPU host, recorded as a ``skipped`` row
+off-GPU).  The ``torch-dense`` baseline lives in its own (torch) env, so its
+math is checked in ``test_refs_torch.py`` under ``importorskip``, not here.
 """
 import numpy as np
 import pytest
@@ -23,7 +25,7 @@ def _point(algebra: str) -> dict:
 def test_baseline_registry_shape():
     built = semiring_matmul._build(_point('log'))
     assert set(built.baselines) == {'nitrix-jax', 'nitrix-pallas',
-                                    'naive-dense'}
+                                    'naive-dense', 'torch-dense'}
     assert built.ratio_reference == 'nitrix-jax'
     # jnp-matmul ceiling is added only for the real semiring.
     real_built = semiring_matmul._build(_point('real'))
@@ -42,6 +44,8 @@ def test_runnable_baselines_match_oracle(algebra):
     built = semiring_matmul._build(_point(algebra))
     args = built.inputs_for('jax')
     for name, (framework, fn) in built.baselines.items():
+        if framework != 'jax':
+            continue  # torch-dense runs in its own env (test_refs_torch.py)
         if name == 'nitrix-pallas':
             continue  # needs CUDA; exercised by the runner on a GPU host
         out = np.asarray(fn(*args), dtype=np.float64)

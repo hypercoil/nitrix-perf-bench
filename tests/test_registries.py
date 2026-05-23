@@ -48,9 +48,24 @@ def test_provider_lookup_and_framework():
     assert framework_of('numpy') == 'numpy'
 
 
+def test_torch_provider_is_uv_isolated():
+    # torch CPU wheels are uv-installable, so the cross-framework ref is a uv
+    # env (a separate interpreter), not the pixi escape hatch.
+    p = provider('torch')
+    assert p.framework == 'torch' and p.isolation == 'uv'
+
+
+def test_pyg_provider_is_pixi_with_reason():
+    # PyG's compiled extensions are the genuine pixi case; it must carry the
+    # audit-trail reason and runs under torch's sync hook.
+    p = provider('pyg')
+    assert p.isolation == 'pixi' and p.pixi_reason
+    assert framework_of('pyg') == 'torch'
+
+
 def test_unregistered_provider_raises_clearly():
     with pytest.raises(KeyError, match='unregistered provider'):
-        framework_of('torch')  # not registered until P2
+        framework_of('tensorflow')  # never registered
 
 
 def test_pixi_provider_requires_reason():

@@ -23,8 +23,24 @@ def numpy_sync(out: Any) -> None:
     return None
 
 
-# Extended in P2 with ``torch`` (``torch.cuda.synchronize``), etc.
+def torch_sync(out: Any) -> None:
+    '''Block on a torch result before the clock stops.
+
+    torch CUDA dispatch is async like JAX, so a GPU timing is only honest
+    after ``torch.cuda.synchronize()``.  On CPU there is nothing to wait on
+    (eager ops are synchronous), and ``synchronize`` is a no-op without CUDA,
+    so this is correct on both.  Imported lazily so the (jax-only) base env
+    never needs torch to load this module.
+    '''
+    import torch
+
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+
+
+# torch (above) lands with the P2 cross-framework refs; ``pyg`` reuses it.
 SYNC: Dict[str, Callable[[Any], None]] = {
     'jax': jax_sync,
     'numpy': numpy_sync,
+    'torch': torch_sync,
 }
