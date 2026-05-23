@@ -29,13 +29,16 @@ shipped (its in-tree bench had a single baseline): it expresses
 ``(m, k, n)`` combine tensor reduced over the contraction axis in one
 vectorised pass.  Measured on an A10G it is indeed **much faster** at steady
 state (≈9× the JAX reference at 512³ log) — but at two real costs the report
-surfaces: **elevated ``peak_hbm``** (≈3× the streaming kernels — XLA *tiles*
-the reduction rather than materialising the whole O(m·k·n) tensor, so it is not
-the naive 4.3 GB-at-1024³ blow-up, but it is still markedly larger than the
-streaming O(m·n)) and a **pathological cold ``compile_time``** (XLA fusing a
-large reduction over the expanded operand — minutes for a single 512³ logsumexp
-point).  Both are *findings*, not bugs; ``compile_time`` and ``peak_hbm`` being
-first-class metrics is exactly why they are visible.
+surfaces: **elevated ``peak_hbm``** (the materialised operand needs ~68–85 MB
+vs the streaming kernels' 2.6–23 MB — 3–26× depending on size/algebra; XLA
+*tiles* the reduction so it is not the full O(m·k·n) blow-up, but is markedly
+larger than the streaming O(m·n)) and a **pathological cold ``compile_time``**
+(XLA fusing a large reduction over the expanded operand — ~300 s cold per
+reduction point, ~580 s for 512³ logsumexp).  Both are *findings*, not bugs;
+``compile_time`` and ``peak_hbm`` being first-class metrics is why they are
+visible.  These costs are only honest under the subprocess runner (``peak_hbm``
+is per-attempt only with process isolation; cold compile needs a fresh process
+— see ``core/memory.py`` / SCHEMA_AND_LIFECYCLE §B).
 
 Oracle honesty note: the fp64 oracle and the ``nitrix-jax`` baseline share the
 reference code path (the baseline *is* the reference, in fp32).  That is by
