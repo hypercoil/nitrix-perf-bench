@@ -38,6 +38,13 @@ def test_status_serialises_to_value():
     json.dumps(d)  # must be JSON-serialisable end to end
 
 
+def test_from_json_roundtrip():
+    rec = _ok_record()
+    back = AttemptRecord.from_json(rec.to_json())
+    assert back.status is Status.OK  # string -> enum
+    assert back.to_json() == rec.to_json()  # lossless
+
+
 def test_jsonl_roundtrip(tmp_path):
     recs = [
         _ok_record(),

@@ -1,0 +1,147 @@
+# -*- coding: utf-8 -*-
+"""Shared L1/L3 measurement core — used by *both* the in-process driver
+(`run.py`) and the single-attempt subprocess worker (`worker.py`).
+
+Keeping the per-attempt measurement here (rather than in either entrypoint)
+means the worker and the in-process path measure *identically* — the only
+difference is process isolation, which is what makes per-attempt memory honest
+(see `worker.py` / SCHEMA_AND_LIFECYCLE §B).
+"""
+from __future__ import annotations
+
+from typing import Any, Dict, List, Tuple
+
+import jax
+import numpy as np
+
+from .cases import BuiltPoint, Case, semiring_matmul, throwaway
+from .core import (
+    AttemptRecord,
+    Status,
+    bench_call,
+    compare,
+    host_rss_mb,
+    peak_hbm_mb,
+)
+from .core.sync import SYNC
+
+# The case registry (L2).  Lives here so both entrypoints share one source.
+CASES: Dict[str, Case] = {
+    throwaway.CASE.name: throwaway.CASE,
+    semiring_matmul.CASE.name: semiring_matmul.CASE,
+}
+
+
+def platform_from(prov: Dict[str, Any]) -> str:
+    '''Map the captured backend to an env-group id (L6).'''
+    backend = (prov.get('device') or {}).get('platform')
+    return {'gpu': 'jax-cuda12', 'cpu': 'jax-cpu'}.get(
+        backend, f'jax-{backend}'
+    )
+
+
+def classify_message(msg: str) -> Tuple[Status, Dict[str, Any]]:
+    '''Classify a failure *message* into a status + failure_detail.
+
+    Shared by the in-process exception path and the orchestrator's
+    worker-death path (which only has the dead process's stderr text).'''
+    low = msg.lower()
+    if 'resource_exhausted' in low or 'out of memory' in low:
+        return Status.OOM, {'message': msg}
+    # Requested backend / device simply isn't present on this host (e.g. the
+    # pallas-cuda kernel on a CPU box).  The env imported fine and nothing
+    # failed to compile -- the hardware is absent -- so this is a recorded
+    # *skip*, not a compile_error.  Message-heuristic, same style as OOM above.
+    if 'visible' in low and ('gpu' in low or 'device' in low):
+        return Status.SKIPPED, {
+            'reason': 'backend_unavailable', 'message': msg,
+        }
+    return Status.COMPILE_ERROR, {'message': msg}
+
+
+def classify_exception(exc: Exception) -> Tuple[Status, Dict[str, Any]]:
+    '''Classify a caught attempt exception into a status + failure_detail.'''
+    return classify_message(f'{type(exc).__name__}: {exc}')
+
+
+def measure_attempt(
+    case: Case,
+    param: Dict[str, Any],
+    built: BuiltPoint,
+    baseline_name: str,
+    *,
+    platform: str,
+    run_id: str,
+    prov: Dict[str, Any],
+    warmup: int,
+    repeats: int,
+) -> AttemptRecord:
+    '''Measure one ``(case, param, baseline)`` against the point's oracle.
+
+    The per-attempt lifecycle the schema depends on: ``jax.clear_caches()``
+    first (cold compile, annex §D), time the warm steady state, compare to the
+    shared fp64 oracle, and on the fidelity gate *refuse the ratio but record
+    the absolutes* (DESIGN §1).  Any exception becomes a classified status
+    row — failure is data, never fatal.
+    '''
+    framework, fn = built.baselines[baseline_name]
+    base = dict(
+        run_id=run_id, case=case.name, param_point=param,
+        baseline=baseline_name, platform=platform, framework=framework,
+        provenance=prov,
+    )
+    try:
+        jax.clear_caches()  # cold compile per attempt (annex §D)
+        args = built.inputs_for(framework)
+        run_fn = jax.jit(fn) if framework == 'jax' else fn
+        sync = SYNC[framework]
+        compile_s, dist = bench_call(
+            run_fn, args, warmup=warmup, repeats=repeats, sync=sync,
+        )
+        out = run_fn(*args)
+        sync(out)
+        out_host = np.asarray(out, dtype=np.float64)
+        fid = compare(
+            out_host, built.fp64_reference, rtol=case.rtol, atol=case.atol,
+        )
+        metrics = {
+            'steady_time': {**dist.summary(), 'unit': 's'},
+            'compile_time': {'value': compile_s, 'unit': 's', 'cache': 'cold'},
+            'peak_hbm': {'value': peak_hbm_mb(), 'unit': 'MB'},
+            'host_rss': {'value': host_rss_mb(), 'unit': 'MB'},
+            'throughput': {
+                'value': float(out_host.size) / dist.min, 'unit': 'elem/s',
+            },
+        }
+        if fid['status'] == 'pass':
+            return AttemptRecord(
+                **base, status=Status.OK, metrics=metrics, fidelity=fid,
+            )
+        # Refuse the ratio, but keep the absolutes + the failing record.
+        return AttemptRecord(
+            **base, status=Status.FIDELITY_FAILED, metrics=metrics,
+            fidelity=fid, failure_detail={'fidelity': fid},
+        )
+    except Exception as exc:  # noqa: BLE001 -- failure is data; classified.
+        status, detail = classify_exception(exc)
+        return AttemptRecord(**base, status=status, failure_detail=detail)
+
+
+def attach_ratios(
+    attempts: List[AttemptRecord], ratio_reference: str
+) -> None:
+    '''Fill ``ratio`` (vs the reference baseline, on ``min``) for the OK rows
+    of one param point.  Stored in L1 — not recomputed in a renderer (§G).'''
+    ref = next(
+        (a for a in attempts
+         if a.baseline == ratio_reference and a.status == Status.OK), None,
+    )
+    if ref is None or not ref.metrics:
+        return
+    ref_min = ref.metrics['steady_time']['min']
+    for a in attempts:
+        if a.status == Status.OK and a.metrics:
+            a.ratio = {
+                'vs': ratio_reference, 'metric': 'min',
+                'value': a.metrics['steady_time']['min'] / ref_min,
+            }

@@ -56,11 +56,31 @@ def _fmt_ratio(rec: Dict[str, Any]) -> str:
     return f"{ratio['value']:.2f}x vs {ratio['vs']}"
 
 
+def _mem_note(isolation: str) -> str:
+    if isolation == 'subprocess':
+        return (
+            '- `mem` (peak_hbm / host_rss) is **per-attempt**: each attempt '
+            'ran in its own process, so the high-water mark *is* this '
+            'attempt\'s peak (the P1 subprocess runner; SCHEMA_AND_LIFECYCLE '
+            '§B).'
+        )
+    return (
+        '- **`mem` (peak_hbm) is a process-wide high-water mark** in this '
+        'in-process run. XLA\'s `peak_bytes_in_use` does not reset between '
+        'attempts, so it only ever rises: once one attempt allocates a large '
+        'buffer, later rows inherit that floor. Read the *jumps* (they '
+        'attribute to the attempt that caused them), not the absolute per-row '
+        'value. Re-run without `--in-process` for per-attempt isolation '
+        '(annex §B).'
+    )
+
+
 def render_markdown(
     records: List[Dict[str, Any]], prov: Dict[str, Any]
 ) -> str:
     dev = prov.get('device', {}) or {}
     sv = records[0].get('schema_version') if records else None
+    isolation = prov.get('measurement_isolation', 'in_process')
     lines = [
         '# nitrix-perf-bench results',
         '',
@@ -75,7 +95,8 @@ def render_markdown(
         f"- precision: {prov.get('precision_policy')} | "
         f"x64: {prov.get('jax_enable_x64')} | "
         f"preallocate: {prov.get('xla_preallocate')} | "
-        f"compile_cache: {prov.get('compile_cache')}",
+        f"compile_cache: {prov.get('compile_cache')} | "
+        f"isolation: {isolation}",
         f"- nitrix: {(prov.get('nitrix') or {}).get('sha')} | "
         f"bench: {(prov.get('bench') or {}).get('sha')}",
         f"- {prov.get('os')} | python {prov.get('python')} | "
@@ -129,13 +150,7 @@ def render_markdown(
         'allowed tolerance vs the fp64 oracle (✓ ⟺ ≤ 1×tol). It is '
         'tolerance-relative on purpose — a bare relative error is meaningless '
         'for zero-centred outputs (SCHEMA_AND_LIFECYCLE §C).',
-        '- **`mem` (peak_hbm) is a process-wide high-water mark.** XLA\'s '
-        '`peak_bytes_in_use` does not reset between attempts in this '
-        'in-process driver, so it only ever rises: once one attempt '
-        'allocates a large buffer, later rows inherit that floor. Read the '
-        '*jumps* (they attribute to the attempt that caused them), not the '
-        'absolute per-row value. True per-attempt isolation arrives with the '
-        'P1 subprocess workers (annex §B).',
+        _mem_note(isolation),
         '',
     ]
     return '\n'.join(lines) + '\n'

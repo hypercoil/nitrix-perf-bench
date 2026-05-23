@@ -116,29 +116,58 @@ refused.  This is what makes "how often does `nitrix-pallas` fidelity-fail on
 
 ---
 
-## B. Worker lifecycle
+## B. Worker lifecycle (implemented in P1)
 
-A **worker** is one OS process per `(framework, platform, dispatcher)`,
-spawned by the runner via `uv run --group <env>` (or pixi for an
-`isolation: pixi` baseline, DESIGN §7).  A worker handles **many attempts
-serially** — process spawn is amortised, not per-measurement.
+A **worker is one OS process per *attempt*** — `python -m nperf.worker --spec
+…` (`worker.py`), spawned by the orchestrator (`run.py`).  One-process-**per-
+attempt** (not the originally-sketched many-attempts-per-worker) is deliberate,
+and validated as load-bearing on **two** axes:
 
-**Per-attempt loop (inside a worker):**
+- **Memory honesty.** `peak_bytes_in_use` / `ru_maxrss` are process high-water
+  marks that never reset; only a fresh process makes the HWM equal *this*
+  attempt's peak (§A memory caveat).  Measured: a streaming `nitrix-jax` attempt
+  reports 2.6 MB HBM next to a `naive-dense` 68 MB attempt — in a shared process
+  the former *inherited* the latter's floor.
+- **Cold-compile honesty.** `jax.clear_caches()` alone does **not** fully cold a
+  process — XLA autotune warmth leaks across in-process attempts (measured: a
+  `naive-dense` reduction compiled in ~70 ms after an earlier one warmed XLA,
+  vs ~300 s genuinely cold in a fresh process).  A fresh process per attempt is
+  what makes `compile_time.cache == "cold"` true.
 
-1. Receive an attempt spec (case, param_point, baseline, metrics).
-2. `jax.clear_caches()` (and equivalent for non-JAX frameworks) — see §D.
-3. Build inputs on-device (fixed seed); warm up (excluded from `steady_time`);
-   record `compile_time` from the first call.
-4. Run the timed loop (L0 protocol); collect metric distributions.
-5. Fidelity: compare against the **pre-computed oracle for this param_point**
-   (§C); fill the `fidelity` block; decide ratio emission.
-6. Emit exactly one L4 row; continue to the next attempt.
+The amortise-spawn-across-many-attempts idea is therefore **rejected** for
+memory/compile-measured attempts; process spawn (~seconds) is cheap next to the
+compile + warmup + repeats it isolates.
 
-**Failure is caught per attempt, never fatal to the worker or the sweep.**
-Each attempt is wrapped: any exception is classified into a `status` +
-`failure_detail`, the row is emitted, and the loop proceeds.  OOM specifically:
-catch, record `device_free_bytes`/`requested_bytes` if obtainable,
-`clear_caches()`, continue.
+**Interpreter (pluggable, uv default).** The orchestrator resolves the worker
+interpreter per `--platform`: `NPERF_PYTHON_<PLATFORM>`, then
+`NPERF_WORKER_PYTHON`, else its own interpreter (the uv default when the
+orchestrator runs under the matching env; for a platform that env can't provide
+— e.g. GPU from a CPU orchestrator — point `NPERF_PYTHON_JAX_CUDA12` at that
+env's python, or run the orchestrator itself under `uv run --group <platform>`).
+A pixi-isolated baseline (DESIGN §7) is the same hook with a pixi command.
+
+**Per-attempt sequence:**
+
+1. Orchestrator builds the param point once (enumerate baselines + frameworks +
+   ratio reference), then for each baseline writes a spec and spawns a worker.
+2. Worker: set numeric policy (matmul=highest, x64); `capture()` its *own*
+   device provenance (authoritative — multi-platform rows self-describe);
+   `jax.clear_caches()` (§D); build inputs (fixed seed); warm up (excluded from
+   `steady_time`); record cold `compile_time`; run the timed loop (L0); compare
+   to the oracle (§C); emit exactly one L4 row to its result file.
+3. Orchestrator collects the row; attaches ratios across the point's rows.
+
+**Failure is never fatal to the sweep.** Inside the worker, any exception is
+classified into a `status` + `failure_detail` and emitted as the row.  If the
+worker *process itself* dies without a row (segfault, OOM-kill, timeout), the
+orchestrator synthesizes the row: `returncode < 0` → killed by signal (SIGKILL
+→ `oom`); a timeout → `timeout`; otherwise the captured stderr tail is
+classified (`RESOURCE_EXHAUSTED` → `oom`, backend-absent → `skipped`, else
+`compile_error`).
+
+**Scheduling.** Workers currently run **serially**.  Parallel CPU workers +
+serial-per-GPU under the device lock (§E) land with the parallelisation slice;
+serial execution needs no lock.
 
 ---
 

@@ -7,21 +7,22 @@ provenance, DESIGN §1.1) — otherwise XLA's preallocation swamps the signal.
 On CPU there is no HBM, so ``peak_hbm_mb`` returns ``None`` and ``host_rss_mb``
 is the memory signal.
 
-⚠️  LOUD CAVEAT — both memory signals here are *process-wide high-water marks*
-that **never reset** within a run, so they are only trustworthy per-attempt in
-a **single-attempt process**:
+⚠️  CAVEAT — both memory signals here are *process-wide high-water marks* that
+**never reset** within a process, so they are only trustworthy per-attempt when
+each attempt gets its **own process**:
 
 - ``peak_bytes_in_use`` (HBM) is a monotonic process maximum; JAX exposes no
   public per-attempt reset.
 - ``ru_maxrss`` (host RSS) is likewise the process max RSS, not the attempt's.
 
-In the current **in-process** driver, once any attempt allocates a large buffer
-every later row inherits that floor — only the *jumps* attribute to the attempt
-that caused them.  The real fix is **one OS process per attempt** (the P1
-subprocess workers, SCHEMA_AND_LIFECYCLE §B): then each process's HWM *is* the
-attempt's peak.  The schema already carries the field, so the renderer is
-stable across the fix; only the isolation changes.  Until then, treat per-row
-memory as a process HWM, not an isolated footprint.
+This is **resolved by default**: the P1 runner (`run.py` / `worker.py`) gives
+each attempt its own subprocess, so the worker's HWM *is* that attempt's peak
+(`provenance.measurement_isolation == 'subprocess'`).  The **only** case where
+the high-water-mark caveat still bites is the ``--in-process`` driver (kept for
+fast CPU smoke), where one process runs every attempt and the value only ever
+rises — there, read the *jumps* (they attribute to the attempt that caused
+them), not the absolute per-row value.  The renderer states whichever applies
+on every report (annex §B).
 """
 from __future__ import annotations
 

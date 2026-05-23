@@ -70,6 +70,17 @@ class AttemptRecord:
         d['status'] = self.status.value
         return d
 
+    @classmethod
+    def from_json(cls, d: Dict[str, Any]) -> 'AttemptRecord':
+        '''Reconstruct from a ``to_json`` dict (status string -> enum).
+
+        Lets the orchestrator read a subprocess worker's emitted row back into
+        the same type the in-process path produces, so ratio-attachment and
+        writing are uniform.'''
+        d = dict(d)
+        d['status'] = Status(d['status'])
+        return cls(**d)
+
 
 def write_jsonl(records: Iterable[AttemptRecord], path: str | Path) -> Path:
     path = Path(path)
