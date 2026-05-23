@@ -307,8 +307,12 @@ nitrix-perf-bench/
   case (compiled `torch-scatter`/`torch-sparse` extensions): its provider is
   registered with the audit-trail `pixi_reason`, and it lands as a baseline with
   the sparse / ELL case (PyG's message-passing idiom is scatter-reduce, not
-  dense) on a host with a conda/pixi env.  Remaining: op_matrix `perf_ratio`
-  feed.
+  dense) on a host with a conda/pixi env.  **op_matrix feed done**
+  (`tools/op_matrix_feed.py`): reads the accumulated rows and emits, per op, the
+  `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's `docs/op_matrix.json` wants
+  (ratio = nitrix-primary.min / reference.min at the representative point;
+  `<1` = nitrix faster).  It never mutates nitrix — `--apply` writes a merged
+  *copy* for review, so the op_matrix change is nitrix's own commit.
 - **P3** — HTML `/site` + regression `gate` + decision-input bundles.
 
 ## 7. Environment-manager decision

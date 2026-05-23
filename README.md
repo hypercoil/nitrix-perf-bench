@@ -51,7 +51,11 @@ jax baselines still run. The committed report combines the A10G GPU run with a
 CPU cross-framework run. **PyG** is the genuine pixi case (compiled
 `torch-scatter`/`torch-sparse`); its provider is registered with an audit-trail
 reason and lands as a baseline alongside the sparse/ELL case on a conda/pixi
-host. Remaining: the op_matrix `perf_ratio` feed.
+host. The **op_matrix feed** (`tools/op_matrix_feed.py`) reads the accumulated
+rows and emits the `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's
+`docs/op_matrix.json` wants (ratio = nitrix.min / reference.min at the
+representative point; `<1` = nitrix faster) — never mutating nitrix (`--apply`
+writes a merged copy for review).
 
 Published reports live in [`reports/`](reports/) (the rendered markdown **and**
 the L4 rows it was generated from, so the report is reproducible from committed
