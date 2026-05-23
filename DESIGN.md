@@ -310,13 +310,21 @@ nitrix-perf-bench/
     `message`/`aggregate`).  A `pyg` baseline (torch `MessagePassing`, a
     GCN-style linear `edge_fn` so JAX / torch / fp64-oracle compute identical
     math) competes against `nitrix-jax` for REAL (`aggr='add'`) and
-    TROPICAL_MAX_PLUS (`aggr='max'`); report `reports/PERF_ELL_EDGE_AGGREGATE.md`
-    (finding: PyG ~2–5× faster than the nitrix reference on CPU).  Modern PyG
-    message-passes on torch-native `scatter_reduce`, so it installs pure-Python
-    via uv — **not** the pixi escape hatch (forcing pixi would fabricate the
-    need the `pixi_reason` guard prevents).  §7 pixi stays reserved for if a
-    baseline ever needs the *compiled* `torch-scatter`/`torch-sparse`
-    extensions with no portable PyPI wheel for the torch/CUDA pin.
+    TROPICAL_MAX_PLUS (`aggr='max'`); combined CPU+A10G report
+    `reports/PERF_ELL_EDGE_AGGREGATE.md`.  **Finding (the value of measuring on
+    the target):** PyG is ~2–5× faster on CPU, but on the A10G the gap
+    *vanishes* — nitrix-jax is within ~5% for REAL and ~15% **faster** for
+    TROPICAL_MAX_PLUS (XLA fuses the gather+vmap+reduce well on Ampere).  So the
+    CPU shortfall does not motivate a GPU kernel; fed back to nitrix as evidence
+    on BACKLOG B3 (Pallas dispatch for edge-aggregate), tempering it rather than
+    triggering it.  Modern PyG message-passes on torch-native `scatter_reduce`,
+    so it installs pure-Python via uv — **not** the pixi escape hatch (forcing
+    pixi would fabricate the need the `pixi_reason` guard prevents).  §7 pixi
+    stays reserved for if a baseline ever needs the *compiled*
+    `torch-scatter`/`torch-sparse` with no portable PyPI wheel.  The GPU run
+    uses a CUDA refs env (`NPERF_REFS_VARIANT=cuda tools/setup_refs_env.sh`:
+    jax[cuda12] + cuda torch coexist — cu13 vs cu12 lib families — so torch's
+    peak HBM is read from torch's own allocator, jax's from jax's).
   - **op_matrix feed** (`tools/op_matrix_feed.py`): reads the accumulated rows
     and emits, per op, the `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's
     `docs/op_matrix.json` wants (ratio = nitrix-primary.min / reference.min at

@@ -55,11 +55,16 @@ A **PyG** baseline lands on a second case, `ell_edge_aggregate`, where it is the
 (gather ELL neighbours → per-edge `edge_fn` → semiring reduce) — exactly PyG's
 `message`/`aggregate`. A torch `MessagePassing` baseline (GCN-style linear
 `edge_fn`, so JAX / torch / the fp64 oracle compute identical math) competes
-against `nitrix-jax` for sum- and max-aggregation
-(`reports/PERF_ELL_EDGE_AGGREGATE.md`; finding: PyG ~2–5× faster than the nitrix
-reference on CPU). Modern PyG message-passes on torch-native `scatter_reduce`,
-so it installs pure-Python via uv (the same refs env) — **not** the pixi escape
-hatch; pixi stays reserved for genuinely conda-only compiled extensions.
+against `nitrix-jax` for sum- and max-aggregation (combined CPU+A10G report
+`reports/PERF_ELL_EDGE_AGGREGATE.md`). The finding shows why measuring on the
+target matters: PyG is ~2–5× faster on **CPU**, but on the **A10G** the gap
+vanishes (nitrix within ~5% for sum, ~15% faster for max) — XLA fuses the
+gather+vmap+reduce well on Ampere. Modern PyG message-passes on torch-native
+`scatter_reduce`, so it installs pure-Python via uv (the same refs env) —
+**not** the pixi escape hatch; pixi stays reserved for genuinely conda-only
+compiled extensions. The GPU run uses a CUDA refs env
+(`NPERF_REFS_VARIANT=cuda tools/setup_refs_env.sh`; jax[cuda12] + cuda torch
+coexist, and torch's HBM is read from torch's own allocator).
 
 The **op_matrix feed** (`tools/op_matrix_feed.py`) reads the accumulated rows
 and emits the `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's

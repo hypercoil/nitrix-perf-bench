@@ -159,7 +159,7 @@ def measure_attempt(
             'compile_time': {'value': compile_s,
                              'unit': METRICS['compile_time'].unit,
                              'cache': 'cold'},
-            'peak_hbm': {'value': peak_hbm_mb(),
+            'peak_hbm': {'value': peak_hbm_mb(framework),
                          'unit': METRICS['peak_hbm'].unit},
             'host_rss': {'value': host_rss_mb(),
                          'unit': METRICS['host_rss'].unit},
