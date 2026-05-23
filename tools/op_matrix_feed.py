@@ -44,15 +44,21 @@ from nperf.measure import CASES  # noqa: E402
 # A case measures one nitrix op; the op_matrix is keyed by the public qualname.
 CASE_QUALNAME: Dict[str, str] = {
     'semiring_matmul': 'nitrix.semiring.semiring_matmul',
+    'ell_edge_aggregate': 'nitrix.semiring.semiring_ell_edge_aggregate',
 }
 
 # perf-bench platform -> op_matrix device axis.
 PLATFORM_DEVICE = {'jax-cpu': 'cpu', 'jax-cuda12': 'gpu'}
 
 
-def _same_point(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
-    '''Match a row's param point to the representative (shape + algebra).'''
-    return all(a.get(k) == b.get(k) for k in ('m', 'k', 'n', 'algebra'))
+def _point_keys(rep: Dict[str, Any]) -> Dict[str, Any]:
+    '''The representative point sans ``seed`` (the case-agnostic identity).'''
+    return {k: v for k, v in rep.items() if k != 'seed'}
+
+
+def _same_point(row_pt: Dict[str, Any], rep: Dict[str, Any]) -> bool:
+    '''Match a row's param point to the representative (every key but seed).'''
+    return all(row_pt.get(k) == v for k, v in _point_keys(rep).items())
 
 
 def _ok_min(row: Dict[str, Any]) -> Optional[float]:
@@ -100,7 +106,7 @@ def build_fragment(
     ]
     entry: Dict[str, Any] = {
         '_meta': {
-            'point': {k: rep[k] for k in ('m', 'k', 'n', 'algebra')},
+            'point': _point_keys(rep),
             'reference': reference,
             'ratio_convention': 'primary.steady_min / reference.steady_min '
                                 '(<1 = nitrix faster)',
@@ -163,8 +169,8 @@ def main() -> None:
 
     entry = next(iter(fragment.values()))
     pt = entry['_meta']['point']
-    print(f'\n# op {next(iter(fragment))} @ '
-          f'{pt["m"]}x{pt["k"]}x{pt["n"]} ({pt["algebra"]}), '
+    pt_str = ','.join(f'{k}={v}' for k, v in pt.items())
+    print(f'\n# op {next(iter(fragment))} @ {pt_str}, '
           f'vs {args.reference} (ratio <1 = nitrix faster):', file=sys.stderr)
     for dev in ('cpu', 'gpu'):
         b = entry.get(f'perf_{dev}_baseline')

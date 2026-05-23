@@ -61,15 +61,18 @@ PROVIDERS: Dict[str, Provider] = {
         Provider('torch', 'torch',
                  description='cross-framework ref; separate uv env '
                              '(tools/setup_refs_env.sh)'),
-        # PyG's compiled scatter/segment extensions (torch-scatter etc.) are
-        # not on PyPI as portable wheels for an arbitrary torch/CUDA pin --
-        # the conda-forge build is the supported path -- so it is the DESIGN
-        # §7 pixi escape hatch, with this reason as its audit trail.
-        Provider('pyg', 'torch', isolation='pixi',
-                 pixi_reason='torch-scatter/torch-sparse compiled extensions '
-                             'ship as conda-forge builds, not portable PyPI '
-                             'wheels for an arbitrary torch/CUDA pin',
-                 description='PyTorch Geometric ref (conda/pixi env)'),
+        # PyTorch Geometric: framework 'torch' (torch tensors + sync hook), so
+        # it shares the torch refs env / interpreter.  Modern PyG (>=2.3) does
+        # message passing on torch-native scatter_reduce, so core PyG installs
+        # pure-Python via uv -- no compiled torch-scatter/torch-sparse, hence
+        # *not* the pixi escape hatch (forcing pixi here would fabricate the
+        # very need the pixi_reason guard exists to prevent).  pixi stays
+        # reserved (DESIGN §7) for if a baseline ever needs those *compiled*
+        # extensions (e.g. their fused CUDA segment-reduce for a GPU parity
+        # run) and no portable PyPI wheel exists for the torch/CUDA pin.
+        Provider('pyg', 'torch',
+                 description='PyTorch Geometric ref; torch refs env '
+                             '(tools/setup_refs_env.sh)'),
     )
 }
 

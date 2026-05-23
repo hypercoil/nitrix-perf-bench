@@ -7,7 +7,7 @@ multi-outcome, multi-platform, with structured results as the source of truth.
 - **Row schema + worker lifecycle (implementation contract):**
   [`SCHEMA_AND_LIFECYCLE.md`](SCHEMA_AND_LIFECYCLE.md)
 
-## Status: P2 in progress (torch refs done)
+## Status: P2 essentially done (torch + PyG refs)
 
 The L4 result schema is **frozen at `schema_version = 1`** (additive-only;
 `SCHEMA_AND_LIFECYCLE.md`). The first **real** nitrix case ships —
@@ -48,11 +48,21 @@ a second package manager). Build it reproducibly with
 platform)**, so a torch attempt picks its own env even on a jax platform. With
 no refs env configured, `torch-dense` records a clean `env_failed` row and the
 jax baselines still run. The committed report combines the A10G GPU run with a
-CPU cross-framework run. **PyG** is the genuine pixi case (compiled
-`torch-scatter`/`torch-sparse`); its provider is registered with an audit-trail
-reason and lands as a baseline alongside the sparse/ELL case on a conda/pixi
-host. The **op_matrix feed** (`tools/op_matrix_feed.py`) reads the accumulated
-rows and emits the `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's
+CPU cross-framework run.
+
+A **PyG** baseline lands on a second case, `ell_edge_aggregate`, where it is the
+*natural* reference: nitrix's `semiring_ell_edge_aggregate` is message passing
+(gather ELL neighbours → per-edge `edge_fn` → semiring reduce) — exactly PyG's
+`message`/`aggregate`. A torch `MessagePassing` baseline (GCN-style linear
+`edge_fn`, so JAX / torch / the fp64 oracle compute identical math) competes
+against `nitrix-jax` for sum- and max-aggregation
+(`reports/PERF_ELL_EDGE_AGGREGATE.md`; finding: PyG ~2–5× faster than the nitrix
+reference on CPU). Modern PyG message-passes on torch-native `scatter_reduce`,
+so it installs pure-Python via uv (the same refs env) — **not** the pixi escape
+hatch; pixi stays reserved for genuinely conda-only compiled extensions.
+
+The **op_matrix feed** (`tools/op_matrix_feed.py`) reads the accumulated rows
+and emits the `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's
 `docs/op_matrix.json` wants (ratio = nitrix.min / reference.min at the
 representative point; `<1` = nitrix faster) — never mutating nitrix (`--apply`
 writes a merged copy for review).

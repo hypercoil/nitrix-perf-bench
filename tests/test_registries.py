@@ -55,11 +55,12 @@ def test_torch_provider_is_uv_isolated():
     assert p.framework == 'torch' and p.isolation == 'uv'
 
 
-def test_pyg_provider_is_pixi_with_reason():
-    # PyG's compiled extensions are the genuine pixi case; it must carry the
-    # audit-trail reason and runs under torch's sync hook.
+def test_pyg_provider_is_uv_and_torch_framework():
+    # Modern PyG message-passes on torch-native scatter_reduce -> pure-Python
+    # uv install (no compiled torch-scatter), so it is NOT the pixi case; it
+    # shares torch's framework (sync hook + host conversion).
     p = provider('pyg')
-    assert p.isolation == 'pixi' and p.pixi_reason
+    assert p.isolation == 'uv'
     assert framework_of('pyg') == 'torch'
 
 

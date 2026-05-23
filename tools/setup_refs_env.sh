@@ -2,10 +2,12 @@
 # Build the P2 cross-framework "refs" worker env (torch + jax + nitrix).
 #
 # Why a separate env: nitrix's own env is jax-only and must NEVER import torch
-# (DESIGN §7); the torch reference baseline therefore runs in its *own*
+# (DESIGN §7); the torch / PyG reference baselines therefore run in their *own*
 # subprocess under *this* interpreter, selected by the runner via
-# `NPERF_PYTHON_TORCH`.  It is a superset env (torch for the baseline, jax +
-# nitrix for the shared fp64 oracle every worker rebuilds).
+# `NPERF_PYTHON_TORCH`.  It is a superset env (torch + torch_geometric for the
+# baselines, jax + nitrix for the shared fp64 oracle every worker rebuilds).
+# torch_geometric >=2.3 message-passes on torch-native scatter_reduce, so it
+# installs pure-Python here -- no compiled torch-scatter/torch-sparse, no pixi.
 #
 # This env is a host artifact, NOT committed.  It lives off the tiny root
 # overlay (see TARGET below) because torch is ~1 GB.  Treat the target dir as
@@ -37,27 +39,30 @@ echo "nitrix src: $NITRIX_SRC"
 echo "torch     : $TORCH_SPEC (cpu)"
 
 if [ -x "$TARGET/bin/python" ] && \
-   "$TARGET/bin/python" -c 'import torch, jax, nitrix' 2>/dev/null; then
-  echo "refs env already complete (torch + jax + nitrix import) -- skipping."
+   "$TARGET/bin/python" -c 'import torch, torch_geometric, jax, nitrix' \
+     2>/dev/null; then
+  echo "refs env already complete (torch+pyg+jax+nitrix import) -- skipping."
   exit 0
 fi
 
 uv venv "$TARGET" --python 3.13
 
-# One resolve so torch+cpu (only on the pytorch index) and jax/numpy/nitrix
-# (PyPI) land as a consistent set.  unsafe-best-match lets uv pick the +cpu
-# local-version torch from the extra index.
+# One resolve so torch+cpu (only on the pytorch index) and jax/numpy/nitrix/
+# torch_geometric (PyPI) land as a consistent set.  unsafe-best-match lets uv
+# pick the +cpu local-version torch from the extra index.  torch_geometric is
+# pure-Python (no compiled torch-scatter/sparse), so it needs nothing special.
 uv pip install --python "$TARGET/bin/python" \
   --extra-index-url https://download.pytorch.org/whl/cpu \
   --index-strategy unsafe-best-match \
-  "$TORCH_SPEC" "$JAX_SPEC" "numpy>=2" -e "$NITRIX_SRC"
+  "$TORCH_SPEC" "$JAX_SPEC" "numpy>=2" torch_geometric -e "$NITRIX_SRC"
 
 echo "--- verify ---"
 # Pin cpu for the probe: this is a cpu jaxlib, and some hosts export
 # JAX_PLATFORMS=cuda, which would make jax.devices() raise on a cpu build.
 JAX_PLATFORMS=cpu "$TARGET/bin/python" - <<'PY'
-import torch, jax, nitrix
+import torch, torch_geometric, jax, nitrix
 print('torch ', torch.__version__, '| cuda', torch.cuda.is_available())
+print('pyg   ', torch_geometric.__version__)
 print('jax   ', jax.__version__, '| devices', jax.devices())
 print('nitrix', getattr(nitrix, '__version__', '?'))
 PY

@@ -294,25 +294,35 @@ nitrix-perf-bench/
   `CUDA_VISIBLE_DEVICES`).  **Durable accumulation store done** (`store.py`:
   per-run files, `--store` / `--render-from <dir> --latest` / `--prune-keep`).
   **P1 complete** modulo the cross-machine store *transport* policy (§8).
-- **P2 (in progress)** — multi-framework refs in isolated envs + op_matrix
-  feed.  **torch done**: a `torch` provider (uv-isolated — torch CPU wheels are
-  on the PyTorch index, so it is a separate *interpreter*, not a separate
-  package manager) drives a `torch-dense` baseline (the same
-  materialise-then-reduce a torch practitioner writes for a non-real semiring
-  matmul); it runs in its own subprocess via a **framework-aware interpreter
-  resolution** (`NPERF_PYTHON_TORCH`, built reproducibly by
-  `tools/setup_refs_env.sh`), and a missing refs env records a clean
-  `env_failed` row rather than failing the sweep.  The combined CPU+A10G report
-  shows it (`reports/PERF_SEMIRING_MATMUL.md`).  **PyG** is the genuine §7 pixi
-  case (compiled `torch-scatter`/`torch-sparse` extensions): its provider is
-  registered with the audit-trail `pixi_reason`, and it lands as a baseline with
-  the sparse / ELL case (PyG's message-passing idiom is scatter-reduce, not
-  dense) on a host with a conda/pixi env.  **op_matrix feed done**
-  (`tools/op_matrix_feed.py`): reads the accumulated rows and emits, per op, the
-  `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's `docs/op_matrix.json` wants
-  (ratio = nitrix-primary.min / reference.min at the representative point;
-  `<1` = nitrix faster).  It never mutates nitrix — `--apply` writes a merged
-  *copy* for review, so the op_matrix change is nitrix's own commit.
+- **P2 (essentially done)** — multi-framework refs in isolated envs +
+  op_matrix feed.  Both cross-framework providers are **uv-isolated separate
+  interpreters** (not a separate package manager), selected per attempt by a
+  **framework-aware interpreter resolution** (`NPERF_PYTHON_TORCH`), and built
+  reproducibly by `tools/setup_refs_env.sh`; a missing refs env records a clean
+  `env_failed` row rather than failing the sweep.
+  - **torch** — a `torch-dense` baseline (the materialise-then-reduce a torch
+    practitioner writes for a non-real semiring matmul) on the dense
+    `semiring_matmul` case; combined CPU+A10G report
+    (`reports/PERF_SEMIRING_MATMUL.md`).
+  - **PyG** — on the `ell_edge_aggregate` case, where it is the *natural*
+    reference (nitrix's `semiring_ell_edge_aggregate` is message passing:
+    gather ELL neighbours → per-edge `edge_fn` → semiring reduce, exactly PyG's
+    `message`/`aggregate`).  A `pyg` baseline (torch `MessagePassing`, a
+    GCN-style linear `edge_fn` so JAX / torch / fp64-oracle compute identical
+    math) competes against `nitrix-jax` for REAL (`aggr='add'`) and
+    TROPICAL_MAX_PLUS (`aggr='max'`); report `reports/PERF_ELL_EDGE_AGGREGATE.md`
+    (finding: PyG ~2–5× faster than the nitrix reference on CPU).  Modern PyG
+    message-passes on torch-native `scatter_reduce`, so it installs pure-Python
+    via uv — **not** the pixi escape hatch (forcing pixi would fabricate the
+    need the `pixi_reason` guard prevents).  §7 pixi stays reserved for if a
+    baseline ever needs the *compiled* `torch-scatter`/`torch-sparse`
+    extensions with no portable PyPI wheel for the torch/CUDA pin.
+  - **op_matrix feed** (`tools/op_matrix_feed.py`): reads the accumulated rows
+    and emits, per op, the `perf_{cpu,gpu}_{baseline,ratio}` fields nitrix's
+    `docs/op_matrix.json` wants (ratio = nitrix-primary.min / reference.min at
+    the representative point; `<1` = nitrix faster).  It never mutates nitrix —
+    `--apply` writes a merged *copy* for review, so the op_matrix change is
+    nitrix's own commit.
 - **P3** — HTML `/site` + regression `gate` + decision-input bundles.
 
 ## 7. Environment-manager decision

@@ -14,7 +14,13 @@ from typing import Any, Dict, List, Tuple
 import jax
 import numpy as np
 
-from .cases import BuiltPoint, Case, semiring_matmul, throwaway
+from .cases import (
+    BuiltPoint,
+    Case,
+    ell_edge_aggregate,
+    semiring_matmul,
+    throwaway,
+)
 from .core import (
     METRICS,
     AttemptRecord,
@@ -56,7 +62,8 @@ def _validate_case(case: Case) -> Case:
 CASES: Dict[str, Case] = {
     c.name: c
     for c in (_validate_case(throwaway.CASE),
-              _validate_case(semiring_matmul.CASE))
+              _validate_case(semiring_matmul.CASE),
+              _validate_case(ell_edge_aggregate.CASE))
 }
 
 
