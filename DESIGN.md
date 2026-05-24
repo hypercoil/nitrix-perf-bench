@@ -331,7 +331,14 @@ nitrix-perf-bench/
     the representative point; `<1` = nitrix faster).  It never mutates nitrix —
     `--apply` writes a merged *copy* for review, so the op_matrix change is
     nitrix's own commit.
-- **P3** — HTML `/site` + regression `gate` + decision-input bundles.
+- **P3 (in progress)** — HTML `/site` + regression `gate` + decision-input
+  bundles.  **Gate done** (`gate.py`, SCHEMA §F): `--gate-baseline` diffs the
+  current rows against a stored baseline on `steady_time` **min** (tight) *and*
+  **p95** (loose) and fires if either trips; status transitions are first-class
+  (`ok→fail` regresses with no ratio; the reverse does not), `new`/`dropped`
+  keys are reported but don't fail by default; ratios are computed + stored in
+  the machine-readable artifact (L1) and the renderer only presents them (§G);
+  exits nonzero for CI.  Remaining: decision-input bundles, HTML `/site`.
 
 ## 7. Environment-manager decision
 

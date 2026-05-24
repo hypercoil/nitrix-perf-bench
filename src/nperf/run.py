@@ -16,6 +16,10 @@ its memory metrics are process high-water marks, so the renderer flags them.
 `--store` ingests a run into the durable per-run store (`store.py`);
 `--render-from <files/dirs>` re-renders (and combines) saved L4 rows — no
 measurement — with `--latest` to collapse to current state per key.
+`--gate-baseline <files/dirs>` enters **gate mode** (`gate.py`, SCHEMA §F): no
+measurement — diff `--gate-current` (default: the store) against the baseline
+on `steady_time` min + p95, write the artifact + markdown diff, and exit
+nonzero if any key regressed (a CI check).
 
 Worker interpreter resolution (per *attempt*, by framework + platform): a
 framework the base env doesn't ship (torch, pyg) resolves
@@ -39,7 +43,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import store
+from . import gate, store
 from .core import (
     AttemptRecord,
     Status,
@@ -56,7 +60,7 @@ from .measure import (
     platform_from,
 )
 from .providers import framework_of
-from .report import render_markdown
+from .report import render_gate, render_markdown
 from .schedule import ResourcePool, resource_of, run_scheduled
 
 _SRC = str(Path(__file__).resolve().parents[1])  # `src` dir, for PYTHONPATH
@@ -276,6 +280,42 @@ def run_case_inprocess(
     return records
 
 
+def _run_gate(args: Any) -> None:
+    '''Gate mode (SCHEMA §F): compare current rows against a baseline, write a
+    machine-readable artifact + a markdown diff, and exit **nonzero** if any
+    key regressed (so CI fails the PR).  Inputs are .jsonl files or store dirs,
+    combined like ``--render-from``; current defaults to the whole store.'''
+    def _read(paths: List[str]) -> List[Dict[str, Any]]:
+        rows: List[Dict[str, Any]] = []
+        for f in store.expand_inputs(paths):
+            rows.extend(read_jsonl(f))
+        return rows
+
+    current_inputs = args.gate_current or [store.STORE_DEFAULT]
+    base_rows = _read(args.gate_baseline)
+    curr_rows = _read(current_inputs)
+    if not base_rows:
+        raise SystemExit(f'gate: no baseline rows in {args.gate_baseline}')
+    if not curr_rows:
+        raise SystemExit(f'gate: no current rows in {current_inputs}')
+    artifact = gate.compare(
+        base_rows, curr_rows,
+        min_threshold=args.gate_min, p95_threshold=args.gate_p95,
+    )
+    out = Path(args.gate_out or 'results/gate.json')
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(artifact, indent=2) + '\n')
+    report_path = Path(args.report or 'results/gate.md')
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    md = render_gate(artifact)
+    report_path.write_text(md)
+    print(md)
+    s = artifact['summary']
+    print(f"Gate {s['verdict'].upper()}: {s['n_regressed']} regressed of "
+          f"{s['n_compared']} compared. Artifact {out}, report {report_path}.")
+    raise SystemExit(0 if s['verdict'] == 'pass' else 1)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--case', default='semiring_matmul', choices=sorted(CASES))
@@ -326,7 +366,29 @@ def main() -> None:
                          f'(default DIR: {store.STORE_DEFAULT})')
     ap.add_argument('--prune-keep', type=int, default=None, metavar='N',
                     help='with --store: keep only the N most recent runs')
+    # Regression gate (mode; SCHEMA §F). --gate-baseline triggers it.
+    ap.add_argument('--gate-baseline', nargs='+', default=None, metavar='PATH',
+                    help='regression gate: stored baseline rows (.jsonl files '
+                         'or store dirs); presence selects gate mode and '
+                         'exits nonzero if the current run regressed')
+    ap.add_argument('--gate-current', nargs='+', default=None, metavar='PATH',
+                    help='gate: current rows to test (default: the store)')
+    ap.add_argument('--gate-min', type=float,
+                    default=gate.DEFAULT_MIN_THRESHOLD, metavar='X',
+                    help='gate: tight min-ratio threshold (default '
+                         f'{gate.DEFAULT_MIN_THRESHOLD})')
+    ap.add_argument('--gate-p95', type=float,
+                    default=gate.DEFAULT_P95_THRESHOLD, metavar='X',
+                    help='gate: loose p95-ratio threshold (default '
+                         f'{gate.DEFAULT_P95_THRESHOLD})')
+    ap.add_argument('--gate-out', default=None, metavar='PATH',
+                    help='gate: machine-readable artifact (default '
+                         'results/gate.json)')
     args = ap.parse_args()
+
+    if args.gate_baseline is not None:
+        _run_gate(args)
+        return
 
     if args.render_from is not None:
         files = store.expand_inputs(args.render_from)

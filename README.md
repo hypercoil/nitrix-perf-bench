@@ -112,6 +112,12 @@ NPERF_PYTHON_JAX_CUDA12=/path/to/cuda-env/bin/python \
 uv run nperf --platforms jax-cpu --store           # ingest a CPU run
 uv run nperf --render-from results/store/semiring_matmul --latest \
   --report reports/combined.md                      # newest per (plat,param,baseline)
+
+# Regression gate (P3): diff a current run against a stored baseline on
+# steady_time min (tight) + p95 (loose); exits nonzero if either trips -> CI.
+uv run nperf --gate-baseline reports/semiring_matmul.jsonl \
+  --gate-current results/store/semiring_matmul \
+  --gate-out results/gate.json --report results/gate.md
 ```
 
 `--platforms` is a comma-list of worker env-groups (`jax-cpu` / `jax-cuda12`);
@@ -125,6 +131,9 @@ fans GPU attempts across N devices (default: auto-probed), one lock each;
 N` caps history. `--out`/`--report` default to `results/<case>.{jsonl,md}`;
 `--quick` runs the representative point, `--point '<json>'` a single explicit
 one, `--in-process` uses the P0 driver, `--render-from <files/dirs> [--latest]`
-re-renders (and combines) saved rows. Tests: `JAX_PLATFORMS=cpu uv run pytest`
-(CPU-only; schema, fidelity, case build, worker round-trip, scheduler
-invariants, multi-platform, registries, store).
+re-renders (and combines) saved rows. `--gate-baseline <files/dirs>` runs the
+regression gate (`--gate-current`, default the store; `--gate-min`/`--gate-p95`
+thresholds; `--gate-out` artifact) and exits nonzero on a regression. Tests:
+`JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case build,
+worker round-trip, scheduler invariants, multi-platform, registries, store,
+gate).
