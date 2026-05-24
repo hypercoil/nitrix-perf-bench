@@ -161,10 +161,13 @@ def _fmt_fid(row: Dict[str, Any]) -> str:
     fid = row.get('fidelity') or {}
     if not fid:
         return '—'
-    mark = '✓' if fid.get('status') == 'pass' else '✗'
+    status = fid.get('status')
+    if status == 'inconclusive':  # no cross-impl oracle
+        return 'n/a'
+    mark = '✓' if status == 'pass' else '✗'
     r = fid.get('rel_to_tol')
     if r is None:
-        return f"{mark} {fid.get('status')}"
+        return f'{mark} {status}'
     return f'{mark} {r:.3g}'
 
 

@@ -40,9 +40,11 @@ def _fmt_fidelity(rec: Dict[str, Any]) -> str:
     fid = rec.get('fidelity')
     if not fid:
         return '—'
-    tag = {'pass': '✓', 'fail': '✗', 'inconclusive': '?'}.get(
-        fid.get('status'), '?'
-    )
+    status = fid.get('status')
+    # No cross-impl oracle: numerical check is N/A (there is no rel_to_tol).
+    if status == 'inconclusive':
+        return 'n/a (no oracle)'
+    tag = {'pass': '✓', 'fail': '✗'}.get(status, '?')
     # Headline = error as a multiple of allowed tolerance (pass <=> <= 1).
     return f"{tag} {fid.get('rel_to_tol', float('nan')):.2g}×tol"
 

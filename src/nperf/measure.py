@@ -20,11 +20,14 @@ from .cases import (
     corr,
     cov,
     dilate,
+    distance_transform,
     ell_edge_aggregate,
     erode,
     gaussian,
+    median_filter,
     residualise,
     semiring_matmul,
+    spatial_transform,
     throwaway,
 )
 from .core import (
@@ -75,7 +78,10 @@ CASES: Dict[str, Case] = {
               _validate_case(residualise.CASE),
               _validate_case(gaussian.CASE),
               _validate_case(erode.CASE),
-              _validate_case(dilate.CASE))
+              _validate_case(dilate.CASE),
+              _validate_case(distance_transform.CASE),
+              _validate_case(spatial_transform.CASE),
+              _validate_case(median_filter.CASE))
 }
 
 
@@ -138,8 +144,11 @@ def measure_attempt(
     The per-attempt lifecycle the schema depends on: ``jax.clear_caches()``
     first (cold compile, annex §D), time the warm steady state, compare to the
     shared fp64 oracle, and on the fidelity gate *refuse the ratio but record
-    the absolutes* (DESIGN §1).  Any exception becomes a classified status
-    row — failure is data, never fatal.
+    the absolutes* (DESIGN §1).  When the case has **no cross-impl oracle**
+    (``built.fp64_reference is None`` -- baselines compute the same task but
+    not bit-identical results), the row is still OK with an *inconclusive*
+    fidelity block (the perf ratio stays a fair task-level comparison).  Any
+    exception becomes a classified status row — failure is data, never fatal.
     '''
     # The case-local baseline name maps to (provider_id, run_fn); the provider
     # registry says which framework runs it (sync hook / jit).
@@ -161,9 +170,6 @@ def measure_attempt(
         out = run_fn(*args)
         sync(out)
         out_host = _host_f64(out, framework)
-        fid = compare(
-            out_host, built.fp64_reference, rtol=case.rtol, atol=case.atol,
-        )
         # Units come from the metric registry (single source of truth).
         metrics = {
             'steady_time': {**dist.summary(),
@@ -180,6 +186,21 @@ def measure_attempt(
                 'unit': METRICS['throughput'].unit,
             },
         }
+        # No cross-implementation oracle: the case's baselines compute the same
+        # *task* but not bit-identical results (e.g. a different boundary
+        # convention), so there is no fp64 ground truth both should match.  The
+        # measurement is still OK and the perf ratio is still a fair task-level
+        # comparison; only the numerical check is N/A -- recorded as an
+        # inconclusive fidelity block (SCHEMA §C/§F), not a gate failure.
+        if built.fp64_reference is None:
+            fid = {'status': 'inconclusive',
+                   'reason': built.fidelity_note or 'no_cross_impl_oracle'}
+            return AttemptRecord(
+                **base, status=Status.OK, metrics=metrics, fidelity=fid,
+            )
+        fid = compare(
+            out_host, built.fp64_reference, rtol=case.rtol, atol=case.atol,
+        )
         if fid['status'] == 'pass':
             return AttemptRecord(
                 **base, status=Status.OK, metrics=metrics, fidelity=fid,

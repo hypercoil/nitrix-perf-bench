@@ -195,6 +195,21 @@ against the *identical* truth, and fp64 is not recomputed per baseline.
    coupled).  `oracle.baseline` names it, and the fidelity number is explicitly
    "agreement with X", not "error vs truth".
 
+**No cross-implementation oracle** (a distinct case from the above): the
+competing baselines compute the *same task* but legitimately **not the same
+function** — e.g. a different boundary convention (nitrix's NaN-pad
+shrink-window `median_filter` vs scipy's `reflect`), so no single fp64 ground
+truth exists that both should match.  The case sets `fp64_reference = None` with
+a `fidelity_note`; the attempt is **`status = ok`** (it measured fine) with
+`fidelity = {status: inconclusive, reason}` and **no `rel_to_tol`**.  Crucially
+the **perf ratio is still emitted** — it is a fair *task-level* comparison —
+unlike `fidelity_failed`/`fidelity_inconclusive` *status* rows, which refuse it.
+The honesty is that the fidelity column reads `n/a (no oracle)` so a fast number
+is never mistaken for a verified-correct one.  (An *approximate* op with a
+bounded error — e.g. nitrix's quasi-Euclidean `distance_transform`, exact to
+~1 voxel — is **not** this case: it keeps the exact oracle and an
+op-appropriate tolerance, so the gate still verifies it.)
+
 `output_independent` is declared by the case (or its fidelity adapter); the
 adapter also owns layout/index normalisation (NCHW↔NHWC, PyG↔nitrix indexing)
 and sets `layout_normalised` before comparing.

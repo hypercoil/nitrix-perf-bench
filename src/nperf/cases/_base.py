@@ -27,10 +27,17 @@ class BuiltPoint:
     baselines: Dict[str, Tuple[str, Callable[..., Any]]]
     # framework -> on-device args (host->device transfer excluded from timing)
     inputs_for: Callable[[str], Tuple[Any, ...]]
-    # ground-truth output, host fp64, computed once for this param point
+    # ground-truth output, host fp64, computed once for this param point.
+    # ``None`` means there is **no cross-implementation oracle** (the baselines
+    # compute the same task but not bit-identical results -- e.g. a different
+    # boundary convention); the attempt is then OK with an *inconclusive*
+    # fidelity block instead of a gate comparison (see measure_attempt).
     fp64_reference: Any
     # baseline name that ratios are computed against
     ratio_reference: str
+    # when fp64_reference is None: the human reason the comparison is N/A
+    # (recorded as fidelity.reason): why the baselines legitimately differ.
+    fidelity_note: Optional[str] = None
 
 
 @dataclass
