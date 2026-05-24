@@ -17,7 +17,10 @@ import numpy as np
 from .cases import (
     BuiltPoint,
     Case,
+    corr,
+    cov,
     ell_edge_aggregate,
+    residualise,
     semiring_matmul,
     throwaway,
 )
@@ -63,7 +66,10 @@ CASES: Dict[str, Case] = {
     c.name: c
     for c in (_validate_case(throwaway.CASE),
               _validate_case(semiring_matmul.CASE),
-              _validate_case(ell_edge_aggregate.CASE))
+              _validate_case(ell_edge_aggregate.CASE),
+              _validate_case(cov.CASE),
+              _validate_case(corr.CASE),
+              _validate_case(residualise.CASE))
 }
 
 
