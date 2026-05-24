@@ -5,6 +5,13 @@
 # source of truth is the committed ``reports/*.jsonl``, so the published page is
 # always reproducible from data.
 #
+# Structure: a `build` job (the only one that uploads the Pages artifact) feeds
+# a `deploy` job (the canonical GitHub Pages split).  Re-running a workflow
+# reuses the same run id, so a prior attempt's `github-pages` artifact lingers
+# and `deploy-pages` aborts with "Multiple artifacts named github-pages ...
+# count is 2"; the build job deletes any stale one before uploading, so exactly
+# one ever exists.
+#
 # One-time setup in the repo:
 #   1. Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
 #   2. nitrix is a sibling *path* dependency (../nitrix) AND the source of the
@@ -23,23 +30,23 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Least privilege + the Pages deploy permissions.
+# build needs contents:read (+ actions:write to prune stale artifacts);
+# deploy needs pages:write + id-token:write.
 permissions:
   contents: read
+  actions: write
   pages: write
   id-token: write
 
-# One live deploy at a time; newer pushes supersede in-flight builds.
+# One Pages deployment at a time; do NOT cancel an in-flight deploy (canonical
+# Pages setting — a queued run waits rather than killing a live publish).
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: Checkout nitrix-perf-bench
         uses: actions/checkout@v4
@@ -74,11 +81,35 @@ jobs:
           fi
           echo "site clean (no host paths / credentials)"
 
+      - name: Prune stale Pages artifact from earlier run attempts
+        # A re-run keeps the same run id, so a previous attempt's
+        # "github-pages" artifact survives and would collide with the upload
+        # below (deploy-pages: "Multiple artifacts ... count is 2").  Delete any
+        # before uploading so the run has exactly one.  Best-effort.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(gh api --paginate \
+            "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+            --jq '.artifacts[] | select(.name=="github-pages") | .id') || ids=""
+          for id in $ids; do
+            echo "deleting stale github-pages artifact $id"
+            gh api -X DELETE \
+              "repos/${{ github.repository }}/actions/artifacts/$id" || true
+          done
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: nitrix-perf-bench/site
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
