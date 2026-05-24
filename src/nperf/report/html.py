@@ -258,6 +258,13 @@ table.rows th,table.rows td{border-bottom:1px solid #eee;padding:5px 8px;
 table.rows th{cursor:pointer;background:#f4f4f4;user-select:none;
   position:sticky;top:0}
 table.rows tr.notok td{color:#999;font-style:italic}
+table.rows .ok{color:#228833;font-weight:600}
+table.rows .bad{color:#cc3311;font-weight:600;cursor:help}
+footer{padding:8px 4px 40px;color:#444}
+footer h2{font-size:15px}
+footer ul{padding-left:18px}
+footer li{margin:4px 0}
+a{color:#3366bb}
 svg.plot{max-width:100%;height:auto;background:#fff;margin:8px 0}
 svg.plot .grid{stroke:#eee;stroke-width:1}
 svg.plot .axis{stroke:#666;stroke-width:1}
@@ -297,8 +304,105 @@ def _prov_line(prov: Dict[str, Any]) -> str:
             f"{prov.get('os', '?')} · jax {prov.get('jax_version', '?')}")
 
 
-def render_site(rows: List[Dict[str, Any]]) -> str:
-    '''Render the whole self-contained ``/site`` page from L4 rows.'''
+def _cap_glyph(status: Any) -> str:
+    '''nitrix capability-probe status -> glyph (error text kept as a title).'''
+    s = str(status)
+    if s == 'pass':
+        return '<span class="ok">✓</span>'
+    if s in ('n/a', 'not-run', 'None', ''):
+        return '<span class="muted">—</span>'
+    return f'<span class="bad" title="{_esc(s)}">✗</span>'
+
+
+def _qual_to_case() -> Dict[str, str]:
+    '''Map each benchmarked op qualname -> its case name (lazy: pulls jax).'''
+    from ..measure import CASES
+    return {c.op_qualname: c.name for c in CASES.values() if c.op_qualname}
+
+
+def _capability_section(
+    capability: Dict[str, Any], cases_present: List[Optional[str]]
+) -> str:
+    '''The nitrix capability matrix (jit/grad/vmap probes) as the overview,
+    with a link from each op perf-bench also benchmarks to its section.'''
+    ops = capability.get('ops') or []
+    if not ops:
+        return ''
+    q2c = _qual_to_case()
+    present = set(cases_present)
+    host = capability.get('host') or {}
+    rows_html: List[str] = []
+    for op in sorted(ops, key=lambda o: o.get('qualname', '')):
+        qual = op.get('qualname', '')
+        case = q2c.get(qual)
+        bench = (f'<a href="#{_esc(case)}">⚡ benchmarked</a>'
+                 if case in present else '<span class="muted">—</span>')
+        inv = '; '.join(op.get('invariants') or [])
+        rows_html.append(
+            f'<tr><td><code>{_esc(qual)}</code></td>'
+            f'<td>{_cap_glyph(op.get("jit"))}</td>'
+            f'<td>{_cap_glyph(op.get("grad"))}</td>'
+            f'<td>{_cap_glyph(op.get("vmap"))}</td>'
+            f'<td>{_cap_glyph(op.get("jit_of_grad"))}</td>'
+            f'<td>{_esc(inv)}</td><td>{bench}</td></tr>'
+        )
+    cap_host = _esc(host.get('device') or host.get('platform') or '')
+    return (
+        '<section id="capability"><h2>Capability matrix '
+        '<span class="muted">(from nitrix)</span></h2>'
+        '<p class="muted">jit / grad / vmap / jit(grad) probes + invariants, '
+        'sourced from nitrix\'s own op_matrix (capability lives with nitrix; '
+        f'perf lives here). Probed on {cap_host}. '
+        '⚡ links to this suite\'s benchmark for that op.</p>'
+        '<input class="filter" placeholder="filter ops…" '
+        'oninput="filterRows(this)">'
+        '<table class="rows"><thead><tr>'
+        '<th onclick="sortTable(this)">op</th>'
+        '<th onclick="sortTable(this)">jit</th>'
+        '<th onclick="sortTable(this)">grad</th>'
+        '<th onclick="sortTable(this)">vmap</th>'
+        '<th onclick="sortTable(this)">jit(grad)</th>'
+        '<th onclick="sortTable(this)">invariants</th>'
+        '<th onclick="sortTable(this)">perf</th>'
+        f'</tr></thead><tbody>{"".join(rows_html)}</tbody></table></section>'
+    )
+
+
+_CAVEATS = [
+    'Numbers are <b>device- and env-specific</b>: ratios are computed '
+    '<b>within a platform</b> (never across), on <code>min</code>, and stored '
+    'in L1 — this page does no metric arithmetic.',
+    '<code>steady</code> is the post-warm-up min/median; <code>compile</code> '
+    'is the <b>cold</b> first-call cost (cleared cache per attempt), not a '
+    'steady-state number.',
+    '<code>fidelity</code> is <code>rel_to_tol</code> (tolerance-relative, '
+    '✓ ⟺ ≤ 1×tol) vs an fp64 oracle — a bare relative error is meaningless '
+    'for zero-centred outputs.',
+    'Memory is <b>per-attempt</b> (each attempt ran in its own process): jax '
+    'baselines report jax HBM, torch baselines report torch\'s allocator, CPU '
+    'rows report host RSS.',
+    'fp32 matmul precision is forced to <code>highest</code> (true fp32, no '
+    'TF32 downgrade); the fp64 oracle runs under x64 — both recorded in '
+    'provenance.',
+]
+
+
+def _caveats_footer() -> str:
+    items = ''.join(f'<li>{c}</li>' for c in _CAVEATS)
+    return (f'<footer><h2>How to read these numbers</h2><ul>{items}</ul>'
+            '<p class="muted">Generated from committed L4 result rows; the '
+            'page is reproducible from that data and is never hand-edited.'
+            '</p></footer>')
+
+
+def render_site(
+    rows: List[Dict[str, Any]], *,
+    capability: Optional[Dict[str, Any]] = None,
+) -> str:
+    '''Render the whole self-contained ``/site`` page from L4 rows.
+
+    ``capability`` (nitrix's parsed ``op_matrix.json``) is overlaid as the
+    overview when given — capability stays nitrix's, perf stays ours.'''
     current = latest(rows)
     cases = sorted({r.get('case') for r in current})
     prov = rows[0].get('provenance', {}) if rows else {}
@@ -312,6 +416,8 @@ def render_site(rows: List[Dict[str, Any]]) -> str:
         f'{len(current)} current rows across {len(cases)} case(s) · '
         'generated from L4 rows (no hand-edited values)</div></header><main>',
     ]
+    if capability:
+        parts.append(_capability_section(capability, cases))
     for case in cases:
         cur_c = [r for r in current if r.get('case') == case]
         all_c = [r for r in rows if r.get('case') == case]
@@ -325,5 +431,6 @@ def render_site(rows: List[Dict[str, Any]]) -> str:
             f'{_history(all_c)}'
             '</section>'
         )
+    parts.append(_caveats_footer())
     parts.append(f'<script>{_SCRIPT}</script></main></body></html>')
     return ''.join(parts)

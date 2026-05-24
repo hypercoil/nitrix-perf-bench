@@ -366,6 +366,10 @@ def main() -> None:
                          'site) from --render-from rows (or the whole store); '
                          'tables show current state, plots include history; '
                          'git-ignored')
+    ap.add_argument('--op-matrix', default=None, metavar='PATH',
+                    help="with --site: overlay nitrix's capability op_matrix "
+                         '.json as the overview (default: '
+                         '../nitrix/docs/op_matrix.json if present)')
     ap.add_argument('--store', nargs='?', const=store.STORE_DEFAULT,
                     default=None, metavar='DIR',
                     help='also ingest this run durably into the store '
@@ -406,12 +410,23 @@ def main() -> None:
             site_rows.extend(read_jsonl(path))
         if not site_rows:
             raise SystemExit(f'no rows for --site in {inputs}')
+        # Overlay nitrix's capability matrix (capability stays nitrix's; perf
+        # is ours).  Default to the sibling checkout if present; absent -> the
+        # site just omits the capability section.
+        cap_path = Path(
+            args.op_matrix
+            or (_SRC and Path(_SRC).parent.parent / 'nitrix' / 'docs'
+                / 'op_matrix.json')
+        )
+        capability = (json.loads(cap_path.read_text())
+                      if cap_path.exists() else None)
         site_dir = Path(args.site)
         site_dir.mkdir(parents=True, exist_ok=True)
         index = site_dir / 'index.html'
-        index.write_text(render_site(site_rows))
+        index.write_text(render_site(site_rows, capability=capability))
+        cap_note = '' if capability is None else ' + nitrix capability matrix'
         print(f'Wrote site -> {index} ({len(site_rows)} rows from '
-              f'{len(store.expand_inputs(inputs))} file(s)).')
+              f'{len(store.expand_inputs(inputs))} file(s){cap_note}).')
         return
 
     if args.render_from is not None:

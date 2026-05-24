@@ -58,6 +58,41 @@ def test_site_is_self_contained_and_covers_cases():
     assert 'no hand-edited values' in html and 'def765' in html
 
 
+def test_caveats_footer_always_present():
+    rows = [_row('semiring_matmul', 'jax-cpu', 'nitrix-jax', 1e-3, 256)]
+    assert 'How to read these numbers' in render_site(rows)
+
+
+def test_capability_overlay_links_benchmarked_ops():
+    rows = [_row('semiring_matmul', 'jax-cpu', 'nitrix-jax', 1e-3, 256)]
+    capability = {
+        'host': {'device': 'NVIDIA A10G (gpu)'},
+        'ops': [
+            # benchmarked here -> should get a ⚡ link to #semiring_matmul
+            {'qualname': 'nitrix.semiring.semiring_matmul', 'jit': 'pass',
+             'grad': 'pass', 'vmap': 'pass', 'jit_of_grad': 'pass',
+             'invariants': ['associative']},
+            # not benchmarked + a failing probe -> no link, shows ✗
+            {'qualname': 'nitrix.linalg.symmetric', 'jit': 'pass',
+             'grad': 'TypeError: x', 'vmap': 'n/a', 'jit_of_grad': 'pass',
+             'invariants': []},
+        ],
+    }
+    html = render_site(rows, capability=capability)
+    assert 'Capability matrix' in html
+    assert 'nitrix.semiring.semiring_matmul' in html
+    assert 'nitrix.linalg.symmetric' in html
+    assert 'href="#semiring_matmul"' in html      # benchmarked op links down
+    assert 'NVIDIA A10G' in html                  # capability host shown
+    # a failing probe renders the ✗ glyph with the error as a title.
+    assert 'title="TypeError: x"' in html
+
+
+def test_no_capability_section_without_capability():
+    rows = [_row('semiring_matmul', 'jax-cpu', 'nitrix-jax', 1e-3, 256)]
+    assert 'Capability matrix' not in render_site(rows)
+
+
 def test_history_plot_appears_only_with_multiple_runs():
     one_run = [_row('c', 'jax-cpu', 'nitrix-jax', 1e-3, 256, run_id='r1')]
     assert 'History over runs' not in render_site(one_run)

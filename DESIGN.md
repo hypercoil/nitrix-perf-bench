@@ -347,8 +347,13 @@ nitrix-perf-bench/
   (`report/html.py`, `nperf --site [DIR]`): a single self-contained page (no
   CDN / build step) — per-case sortable/filterable tables + inline-SVG plots
   (time-vs-size log-log, history-over-runs), all from L4 rows; the SVG axis
-  scaling is a pure presentation transform (§G).  ``/site`` is git-ignored;
-  the renderer is the artifact.
+  scaling is a pure presentation transform (§G).  It **overlays nitrix's
+  capability matrix** (`--op-matrix`: nitrix's `op_matrix.json` — jit/grad/vmap
+  probes + invariants) as the overview, linking each benchmarked op to its
+  perf section: capability stays nitrix's, perf stays here, one dashboard.  A
+  caveats footer travels with the numbers, and the page is self-contained
+  (no external refs) + scrubbed of host paths, so it is safe to host (CI →
+  GitHub Pages).  ``/site`` is git-ignored; the renderer is the artifact.
 
 ## 7. Environment-manager decision
 
