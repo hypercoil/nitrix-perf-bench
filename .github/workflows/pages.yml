@@ -1,0 +1,84 @@
+# Build the nitrix-perf-bench HTML /site from committed L4 rows (+ nitrix's
+# capability op_matrix) and publish it to GitHub Pages.
+#
+# The site is generated, never committed (``/site`` is git-ignored): the single
+# source of truth is the committed ``reports/*.jsonl``, so the published page is
+# always reproducible from data.
+#
+# One-time setup in the repo:
+#   1. Settings -> Pages -> Build and deployment -> Source: "GitHub Actions".
+#   2. nitrix is a sibling *path* dependency (../nitrix) AND the source of the
+#      capability matrix, so it is checked out alongside.  If nitrix lives under
+#      a different owner, or is private and this repo's GITHUB_TOKEN can't read
+#      it, set:
+#        - NITRIX_REPO  variable  (e.g. "myorg/nitrix"; defaults to
+#          "<this-owner>/nitrix")
+#        - NITRIX_TOKEN secret    (a PAT with read access to nitrix; falls back
+#          to the default GITHUB_TOKEN, which only works if nitrix is public or
+#          in the same repo's permissions)
+name: site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege + the Pages deploy permissions.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One live deploy at a time; newer pushes supersede in-flight builds.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout nitrix-perf-bench
+        uses: actions/checkout@v4
+        with:
+          path: nitrix-perf-bench
+
+      - name: Checkout nitrix (sibling path dep + capability matrix)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.NITRIX_REPO || format('{0}/nitrix', github.repository_owner) }}
+          token: ${{ secrets.NITRIX_TOKEN || github.token }}
+          path: nitrix
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build site from committed rows + nitrix capability matrix
+        working-directory: nitrix-perf-bench
+        env:
+          JAX_PLATFORMS: cpu  # CI runners are CPU-only
+        run: |
+          uv run nperf --site site \
+            --render-from reports \
+            --op-matrix ../nitrix/docs/op_matrix.json
+
+      - name: Guard — fail if anything host-specific leaked into the page
+        working-directory: nitrix-perf-bench
+        run: |
+          if grep -qiE '/(root|home|output|opt|tmp)/|NPERF_PYTHON|CUDA_VISIBLE|cpu_affinity|\b(secret|password|api[_-]?key)\b|BEGIN [A-Z ]*PRIVATE KEY' site/index.html; then
+            echo "::error::potential host path / credential in published site"
+            exit 1
+          fi
+          echo "site clean (no host paths / credentials)"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: nitrix-perf-bench/site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
