@@ -52,6 +52,10 @@ PROVIDERS: Dict[str, Provider] = {
     for p in (
         Provider('jax', 'jax', description='in-tree JAX (uv group)'),
         Provider('numpy', 'numpy', description='host NumPy (uv)'),
+        # SciPy references (ndimage / signal / sparse): host, numpy-array
+        # semantics, no device sync -> the numpy framework + base env.  A
+        # distinct id so the baseline's library is attributable.
+        Provider('scipy', 'numpy', description='host SciPy (uv)'),
         # P2 cross-framework refs.  torch's *CPU* wheel is on the PyTorch
         # index and uv-installable, so it is a uv env -- a separate
         # interpreter (built by tools/setup_refs_env.sh; the runner selects

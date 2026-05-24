@@ -34,8 +34,16 @@ def _size(param: Dict[str, Any]) -> int:
     (excluding ``seed``).  Presentation-only ordering, not a reported value.'''
     p = 1
     for k, v in param.items():
-        if k != 'seed' and isinstance(v, int) and not isinstance(v, bool):
+        if k == 'seed':
+            continue
+        if isinstance(v, bool):
+            continue
+        if isinstance(v, int):
             p *= v
+        elif isinstance(v, (list, tuple)):  # e.g. shape=[64, 64, 64]
+            for e in v:
+                if isinstance(e, int) and not isinstance(e, bool):
+                    p *= e
     return p
 
 

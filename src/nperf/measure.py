@@ -19,7 +19,10 @@ from .cases import (
     Case,
     corr,
     cov,
+    dilate,
     ell_edge_aggregate,
+    erode,
+    gaussian,
     residualise,
     semiring_matmul,
     throwaway,
@@ -69,7 +72,10 @@ CASES: Dict[str, Case] = {
               _validate_case(ell_edge_aggregate.CASE),
               _validate_case(cov.CASE),
               _validate_case(corr.CASE),
-              _validate_case(residualise.CASE))
+              _validate_case(residualise.CASE),
+              _validate_case(gaussian.CASE),
+              _validate_case(erode.CASE),
+              _validate_case(dilate.CASE))
 }
 
 
