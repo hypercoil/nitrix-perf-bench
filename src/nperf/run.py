@@ -60,7 +60,7 @@ from .measure import (
     platform_from,
 )
 from .providers import framework_of
-from .report import render_gate, render_markdown
+from .report import render_gate, render_markdown, render_site
 from .schedule import ResourcePool, resource_of, run_scheduled
 
 _SRC = str(Path(__file__).resolve().parents[1])  # `src` dir, for PYTHONPATH
@@ -360,6 +360,12 @@ def main() -> None:
     ap.add_argument('--latest', action='store_true',
                     help='with --render-from: keep only the newest row per '
                          '(case, platform, param, baseline) across runs')
+    ap.add_argument('--site', nargs='?', const='site', default=None,
+                    metavar='DIR',
+                    help='render the self-contained HTML /site (default dir: '
+                         'site) from --render-from rows (or the whole store); '
+                         'tables show current state, plots include history; '
+                         'git-ignored')
     ap.add_argument('--store', nargs='?', const=store.STORE_DEFAULT,
                     default=None, metavar='DIR',
                     help='also ingest this run durably into the store '
@@ -388,6 +394,24 @@ def main() -> None:
 
     if args.gate_baseline is not None:
         _run_gate(args)
+        return
+
+    if args.site is not None:
+        # Site mode: read rows (the explicit --render-from set, else the whole
+        # store) WITHOUT collapsing -- render_site keeps current state for the
+        # tables and uses every run for the history plots.
+        inputs = args.render_from or [store.STORE_DEFAULT]
+        site_rows: List[Dict[str, Any]] = []
+        for path in store.expand_inputs(inputs):
+            site_rows.extend(read_jsonl(path))
+        if not site_rows:
+            raise SystemExit(f'no rows for --site in {inputs}')
+        site_dir = Path(args.site)
+        site_dir.mkdir(parents=True, exist_ok=True)
+        index = site_dir / 'index.html'
+        index.write_text(render_site(site_rows))
+        print(f'Wrote site -> {index} ({len(site_rows)} rows from '
+              f'{len(store.expand_inputs(inputs))} file(s)).')
         return
 
     if args.render_from is not None:

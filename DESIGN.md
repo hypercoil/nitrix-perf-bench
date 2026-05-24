@@ -331,7 +331,7 @@ nitrix-perf-bench/
     the representative point; `<1` = nitrix faster).  It never mutates nitrix —
     `--apply` writes a merged *copy* for review, so the op_matrix change is
     nitrix's own commit.
-- **P3 (in progress)** — HTML `/site` + regression `gate` + decision-input
+- **P3 (done)** — HTML `/site` + regression `gate` + decision-input
   bundles.  **Gate done** (`gate.py`, SCHEMA §F): `--gate-baseline` diffs the
   current rows against a stored baseline on `steady_time` **min** (tight) *and*
   **p95** (loose) and fires if either trips; status transitions are first-class
@@ -343,7 +343,12 @@ nitrix-perf-bench/
   baselines' ratios, each one's fidelity + threshold check, and the per-run
   trend — and emit **no recommendation** (the verdict stays a human layer,
   DESIGN §1/§5).  The case→op mapping now lives on `Case.op_qualname` (one home
-  the bundle and the op_matrix feed share).  Remaining: HTML `/site`.
+  the bundle and the op_matrix feed share).  **HTML `/site` done**
+  (`report/html.py`, `nperf --site [DIR]`): a single self-contained page (no
+  CDN / build step) — per-case sortable/filterable tables + inline-SVG plots
+  (time-vs-size log-log, history-over-runs), all from L4 rows; the SVG axis
+  scaling is a pure presentation transform (§G).  ``/site`` is git-ignored;
+  the renderer is the artifact.
 
 ## 7. Environment-manager decision
 

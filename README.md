@@ -7,7 +7,7 @@ multi-outcome, multi-platform, with structured results as the source of truth.
 - **Row schema + worker lifecycle (implementation contract):**
   [`SCHEMA_AND_LIFECYCLE.md`](SCHEMA_AND_LIFECYCLE.md)
 
-## Status: P2 essentially done (torch + PyG refs)
+## Status: P3 done (gate · bundles · HTML site)
 
 The L4 result schema is **frozen at `schema_version = 1`** (additive-only;
 `SCHEMA_AND_LIFECYCLE.md`). The first **real** nitrix case ships —
@@ -118,6 +118,14 @@ uv run nperf --render-from results/store/semiring_matmul --latest \
 uv run nperf --gate-baseline reports/semiring_matmul.jsonl \
   --gate-current results/store/semiring_matmul \
   --gate-out results/gate.json --report results/gate.md
+
+# Decision-input bundle (P3): structured evidence for a human call, no verdict.
+python tools/decision_bundle.py --case semiring_matmul \
+  --from results/store/semiring_matmul
+
+# HTML site (P3): one self-contained page (tables + inline-SVG plots) from the
+# whole store (or --render-from <rows>); /site is git-ignored.
+uv run nperf --site site --render-from results/store
 ```
 
 `--platforms` is a comma-list of worker env-groups (`jax-cpu` / `jax-cuda12`);
@@ -133,7 +141,10 @@ N` caps history. `--out`/`--report` default to `results/<case>.{jsonl,md}`;
 one, `--in-process` uses the P0 driver, `--render-from <files/dirs> [--latest]`
 re-renders (and combines) saved rows. `--gate-baseline <files/dirs>` runs the
 regression gate (`--gate-current`, default the store; `--gate-min`/`--gate-p95`
-thresholds; `--gate-out` artifact) and exits nonzero on a regression. Tests:
+thresholds; `--gate-out` artifact) and exits nonzero on a regression; `--site
+[DIR]` renders the self-contained HTML site. The op_matrix feed
+(`tools/op_matrix_feed.py`) and decision-input bundles
+(`tools/decision_bundle.py`) are sibling L5 artifacts over the same rows. Tests:
 `JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case build,
 worker round-trip, scheduler invariants, multi-platform, registries, store,
-gate).
+gate, bundle, html).
