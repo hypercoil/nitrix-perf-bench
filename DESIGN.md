@@ -338,7 +338,12 @@ nitrix-perf-bench/
   (`ok→fail` regresses with no ratio; the reverse does not), `new`/`dropped`
   keys are reported but don't fail by default; ratios are computed + stored in
   the machine-readable artifact (L1) and the renderer only presents them (§G);
-  exits nonzero for CI.  Remaining: decision-input bundles, HTML `/site`.
+  exits nonzero for CI.  **Decision-input bundles done** (`bundle.py` +
+  `tools/decision_bundle.py`): per op at one point, package the competing
+  baselines' ratios, each one's fidelity + threshold check, and the per-run
+  trend — and emit **no recommendation** (the verdict stays a human layer,
+  DESIGN §1/§5).  The case→op mapping now lives on `Case.op_qualname` (one home
+  the bundle and the op_matrix feed share).  Remaining: HTML `/site`.
 
 ## 7. Environment-manager decision
 

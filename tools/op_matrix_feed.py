@@ -41,11 +41,8 @@ from nperf import store  # noqa: E402
 from nperf.core import read_jsonl  # noqa: E402
 from nperf.measure import CASES  # noqa: E402
 
-# A case measures one nitrix op; the op_matrix is keyed by the public qualname.
-CASE_QUALNAME: Dict[str, str] = {
-    'semiring_matmul': 'nitrix.semiring.semiring_matmul',
-    'ell_edge_aggregate': 'nitrix.semiring.semiring_ell_edge_aggregate',
-}
+# A case measures one nitrix op; the case -> qualname mapping lives on the Case
+# itself (Case.op_qualname), the single home shared with the bundle.
 
 # perf-bench platform -> op_matrix device axis.
 PLATFORM_DEVICE = {'jax-cpu': 'cpu', 'jax-cuda12': 'gpu'}
@@ -99,7 +96,9 @@ def _device_ratio(
 def build_fragment(
     rows: List[Dict[str, Any]], case: str, reference: str
 ) -> Dict[str, Any]:
-    rep = CASES[case].representative
+    c = CASES[case]
+    rep = c.representative
+    qualname = c.op_qualname or case
     rep_rows = [
         r for r in rows
         if r.get('case') == case and _same_point(r['param_point'], rep)
@@ -122,7 +121,7 @@ def build_fragment(
         entry[f'perf_{device}_ratio'] = res['ratio']
         if res.get('note'):
             entry['_meta'].setdefault('notes', {})[device] = res['note']
-    return {CASE_QUALNAME[case]: entry}
+    return {qualname: entry}
 
 
 def _apply(op_matrix_path: Path, fragment: Dict[str, Any]) -> Dict[str, Any]:

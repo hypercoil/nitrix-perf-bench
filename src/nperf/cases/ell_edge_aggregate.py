@@ -174,6 +174,7 @@ _SHAPES = [
 
 CASE = Case(
     name='ell_edge_aggregate',
+    op_qualname='nitrix.semiring.semiring_ell_edge_aggregate',
     # out[i] depends only on row i's neighbours -> bounded input subset; the
     # fp64 oracle is computed in full (it is cheap), annex §C.
     output_independent=True,

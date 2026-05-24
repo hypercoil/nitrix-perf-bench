@@ -244,6 +244,7 @@ _SHAPES = [(256, 256, 256), (512, 512, 512)]
 
 CASE = Case(
     name='semiring_matmul',
+    op_qualname='nitrix.semiring.semiring_matmul',
     # Each C[i, j] depends only on row i of A and column j of B -> a bounded,
     # identifiable input subset, so fp64 subsampling would be *valid* (annex
     # §C).  We use fp64_full anyway because the fori_loop oracle is cheap.

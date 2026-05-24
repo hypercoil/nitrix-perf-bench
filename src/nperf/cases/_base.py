@@ -17,7 +17,7 @@ baselines), and which baseline ratios are taken against.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -44,3 +44,7 @@ class Case:
     # per-case fidelity tolerance (np.allclose semantics)
     rtol: float = 1e-3
     atol: float = 1e-4
+    # the public nitrix op this case measures (its op_matrix qualname); the
+    # single home for the case -> op mapping the op_matrix feed and the
+    # decision-input bundle both read.  None for the throwaway smoke case.
+    op_qualname: Optional[str] = None
