@@ -354,6 +354,15 @@ nitrix-perf-bench/
   caveats footer travels with the numbers, and the page is self-contained
   (no external refs) + scrubbed of host paths, so it is safe to host (CI →
   GitHub Pages).  ``/site`` is git-ignored; the renderer is the artifact.
+- **P4 — finish the op-matrix perf migration.**  This suite is now the perf
+  home, but covers 2 ops (`semiring_matmul`, `ell_edge_aggregate`); nitrix's
+  in-tree `bench/` still characterises ~30 (the `PERF_AUDIT` numpy/scipy/sklearn
+  refs, plus CONV / LOBPCG / TRILINEAR).  Port each as a case here (its
+  baselines + external reference + fp64 oracle), growing
+  nitrix's `MIGRATED_TO_PERFBENCH` set; when it covers the catalogue, nitrix's
+  op_matrix drops its perf columns entirely (capability-only) and `bench/`
+  retires.  Cleanly sliceable — one op per case — and tracked as nitrix
+  **BACKLOG B11**.  Capability probes stay in nitrix; only perf moves.
 
 ## 7. Environment-manager decision
 
