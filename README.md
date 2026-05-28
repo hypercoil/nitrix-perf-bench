@@ -138,8 +138,12 @@ fans GPU attempts across N devices (default: auto-probed), one lock each;
 `--store [DIR]` ingests the run durably (default `results/store`); `--prune-keep
 N` caps history. `--out`/`--report` default to `results/<case>.{jsonl,md}`;
 `--quick` runs the representative point, `--point '<json>'` a single explicit
-one, `--in-process` uses the P0 driver, `--render-from <files/dirs> [--latest]`
-re-renders (and combines) saved rows. `--gate-baseline <files/dirs>` runs the
+one, `--baselines A,B` / `--skip-baselines X,Y` select (allowlist) / drop
+(denylist) baselines — a dropped baseline is **recorded as a `skipped` row**
+(omission is data, DESIGN §1), so you can dodge a pathological cold compile
+(e.g. `--skip-baselines naive-dense`) without a silent gap. `--in-process`
+uses the P0 driver, `--render-from <files/dirs> [--latest]` re-renders (and
+combines) saved rows. `--gate-baseline <files/dirs>` runs the
 regression gate (`--gate-current`, default the store; `--gate-min`/`--gate-p95`
 thresholds; `--gate-out` artifact) and exits nonzero on a regression; `--site
 [DIR]` renders the self-contained HTML site. The op_matrix feed

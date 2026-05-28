@@ -73,6 +73,46 @@ _BASE_FRAMEWORKS = frozenset({'jax', 'numpy'})
 
 
 # --------------------------------------------------------------------------- #
+# Baseline selection (skip the pathological cold compiles on demand)          #
+# --------------------------------------------------------------------------- #
+def _select_baselines(
+    all_names: List[str],
+    allow: Optional[frozenset],
+    skip: frozenset,
+) -> List[str]:
+    '''Resolve which of a point's baselines to *measure* (order preserved).
+
+    ``allow`` (``--baselines``) is an allowlist (``None`` = all); ``skip``
+    (``--skip-baselines``) is a denylist applied after.  A name that is not
+    selected is **not dropped silently** -- the caller records a ``skipped``
+    row for it (DESIGN §1: omission is data), so deliberately skipping a
+    pathological baseline (e.g. ``naive-dense``'s ~10-min cold compile) leaves
+    a visible, explained gap in the store without paying to measure it.'''
+    return [
+        n for n in all_names
+        if (allow is None or n in allow) and n not in skip
+    ]
+
+
+def _warn_baseline_selectors(
+    case_name: str, seen: set, allow: Optional[frozenset], skip: frozenset,
+    ref_skipped: set,
+) -> None:
+    '''Loud, not silent (SPEC-style): warn on selector names that match no
+    baseline (typo-proofing) and when a *ratio reference* was skipped (its
+    points then carry no ratios).'''
+    unknown = ((allow or frozenset()) | skip) - seen
+    if unknown:
+        print(f'warning: baseline selector(s) {sorted(unknown)} match no '
+              f'baseline in case {case_name!r} (known: {sorted(seen)})',
+              file=sys.stderr)
+    if ref_skipped:
+        print(f'warning: ratio reference(s) {sorted(ref_skipped)} skipped in '
+              f'{case_name!r}; those points carry absolute metrics but no '
+              'ratio.', file=sys.stderr)
+
+
+# --------------------------------------------------------------------------- #
 # Subprocess orchestration                                                    #
 # --------------------------------------------------------------------------- #
 def _worker_python(platform: str, framework: str = 'jax') -> str:
@@ -203,21 +243,29 @@ def run_case_subprocess(
     case: Any, *, platforms: List[str], warmup: int, repeats: int,
     run_id: str, timeout: float, cpu_slots: int, max_parallel: Optional[int],
     gpu_settle_s: float, n_gpus: int = 1,
+    allow: Optional[frozenset] = None, skip: frozenset = frozenset(),
 ) -> List[AttemptRecord]:
     # Fan attempts across the requested platforms: for each param point (oracle
-    # built once, shared) and each platform, emit the platform's baselines as a
-    # contiguous group tagged with the physical resource it contends for.  The
-    # scheduler then overlaps distinct resources (e.g. CPU and a GPU) while the
-    # device lock / CPU slots serialise within a resource.
+    # built once, shared) and each platform, emit the platform's *selected*
+    # baselines as a contiguous group tagged with the physical resource it
+    # contends for.  The scheduler then overlaps distinct resources (e.g. CPU
+    # and a GPU) while the device lock / CPU slots serialise within a resource.
     specs: List[Dict[str, Any]] = []
-    groups: List[tuple] = []  # (start, n_baselines, ratio_reference)
+    groups: List[tuple] = []  # (start, n_selected, ratio_reference)
+    skipped: List[AttemptRecord] = []  # config-skipped baselines (recorded)
+    seen: set = set()
+    ref_skipped: set = set()
     for param in case.param_points:
         built = case.build(param)
         names = list(built.baselines)
+        seen.update(names)
+        selected = _select_baselines(names, allow, skip)
+        if built.ratio_reference not in selected:
+            ref_skipped.add(built.ratio_reference)
         for platform in platforms:
             resource = resource_of(platform)
             start = len(specs)
-            for name in names:
+            for name in selected:
                 specs.append(dict(
                     run_id=run_id, case=case.name, param_point=param,
                     baseline=name, platform=platform, warmup=warmup,
@@ -225,7 +273,19 @@ def run_case_subprocess(
                     framework=framework_of(built.baselines[name][0]),
                     resource=resource,
                 ))
-            groups.append((start, len(names), built.ratio_reference))
+            groups.append((start, len(selected), built.ratio_reference))
+            # Omission is data (DESIGN §1): a recorded ``skipped`` row per
+            # unselected baseline -- no worker spawned, no cold compile paid.
+            for name in names:
+                if name not in selected:
+                    skipped.append(AttemptRecord(
+                        run_id=run_id, case=case.name, param_point=param,
+                        baseline=name, platform=platform,
+                        framework=framework_of(built.baselines[name][0]),
+                        status=Status.SKIPPED,
+                        failure_detail={'reason': 'skipped_by_config'},
+                    ))
+    _warn_baseline_selectors(case.name, seen, allow, skip, ref_skipped)
 
     resources = {resource_of(p) for p in platforms}
     gpu_present = 'gpu' in resources
@@ -250,9 +310,12 @@ def run_case_subprocess(
 
     # Ratios are computed *within* each (param point, platform) group -- a GPU
     # kernel must be rated against its platform's own reference, never across
-    # platforms.  Then stamp the scheduler regime onto every row's provenance.
+    # platforms.  (Group slices index the measured records; skipped rows are
+    # appended after, so they never shift a slice.)  Then stamp the scheduler
+    # regime onto every row's provenance.
     for start, n_baselines, ratio_reference in groups:
         attach_ratios(records[start:start + n_baselines], ratio_reference)
+    records.extend(skipped)
     for rec in records:
         rec.provenance['scheduler'] = sched
     return records
@@ -264,19 +327,38 @@ def run_case_subprocess(
 def run_case_inprocess(
     case: Any, *, platform: str, warmup: int, repeats: int,
     prov: Dict[str, Any], run_id: str,
+    allow: Optional[frozenset] = None, skip: frozenset = frozenset(),
 ) -> List[AttemptRecord]:
     records: List[AttemptRecord] = []
+    seen: set = set()
+    ref_skipped: set = set()
     for param in case.param_points:
         built = case.build(param)
+        names = list(built.baselines)
+        seen.update(names)
+        selected = _select_baselines(names, allow, skip)
+        if built.ratio_reference not in selected:
+            ref_skipped.add(built.ratio_reference)
         attempts = [
             measure_attempt(
                 case, param, built, name, platform=platform, run_id=run_id,
                 prov=prov, warmup=warmup, repeats=repeats,
             )
-            for name in built.baselines
+            for name in selected
         ]
         attach_ratios(attempts, built.ratio_reference)
+        # Omission is data (DESIGN §1): record the skipped baselines too.
+        for name in names:
+            if name not in selected:
+                attempts.append(AttemptRecord(
+                    run_id=run_id, case=case.name, param_point=param,
+                    baseline=name, platform=platform,
+                    framework=framework_of(built.baselines[name][0]),
+                    status=Status.SKIPPED, provenance=prov,
+                    failure_detail={'reason': 'skipped_by_config'},
+                ))
         records.extend(attempts)
+    _warn_baseline_selectors(case.name, seen, allow, skip, ref_skipped)
     return records
 
 
@@ -330,6 +412,13 @@ def main() -> None:
                     help='representative param point only')
     ap.add_argument('--point', default=None, metavar='JSON',
                     help='run a single explicit param point (JSON)')
+    ap.add_argument('--baselines', default=None, metavar='A,B',
+                    help='allowlist: measure only these case-local baselines '
+                         '(comma-list); the rest are recorded as skipped rows')
+    ap.add_argument('--skip-baselines', default=None, metavar='X,Y',
+                    help='denylist: skip these baselines (comma-list) -- '
+                         'recorded as skipped rows, no worker/compile paid '
+                         '(e.g. naive-dense, to dodge its slow cold compile)')
     ap.add_argument('--in-process', action='store_true',
                     help='P0 in-process driver (no spawn; memory = proc HWM)')
     ap.add_argument('--cpu-slots', type=int, default=1,
@@ -454,6 +543,16 @@ def main() -> None:
     elif args.quick:
         case = replace(case, param_points=[case.representative])
 
+    # Baseline selection (skip pathological cold compiles on demand): allowlist
+    # then denylist; unselected baselines become recorded ``skipped`` rows.
+    allow = (
+        frozenset(b.strip() for b in args.baselines.split(',') if b.strip())
+        if args.baselines else None
+    )
+    skip = frozenset(
+        b.strip() for b in (args.skip_baselines or '').split(',') if b.strip()
+    )
+
     if args.in_process:
         # The orchestrator *is* the measurer here; it needs the target backend.
         import jax
@@ -465,6 +564,7 @@ def main() -> None:
         records = run_case_inprocess(
             case, platform=platform_from(prov), warmup=args.warmup,
             repeats=args.repeats, prov=prov, run_id=run_id,
+            allow=allow, skip=skip,
         )
     else:
         # Orchestrator only coordinates + builds oracles on CPU; the workers
@@ -485,6 +585,7 @@ def main() -> None:
             repeats=args.repeats, run_id=run_id, timeout=args.worker_timeout,
             cpu_slots=args.cpu_slots, max_parallel=args.max_parallel,
             gpu_settle_s=args.gpu_settle, n_gpus=n_gpus,
+            allow=allow, skip=skip,
         )
 
     # Report provenance = the rows' own (worker-captured authoritative device).
