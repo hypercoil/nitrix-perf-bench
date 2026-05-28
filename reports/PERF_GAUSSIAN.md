@@ -4,12 +4,13 @@
 
 ## Host
 
-- nitrix: e6787f80311a5b43a0810179cc6ebc802a92a3d3 | bench: ddf01cd928b0c356b2c7a1ac7c089eca3207435e
-- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-24T04:27:22.413375+00:00
+- nitrix: fcbe94d384b8576bb7f2f515756b521236682272 | bench: f9cc83fb07be9f33fba7916ff60a91d3d5136274
+- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-28T23:14:06.750495+00:00
 
 ### Platforms
 
-- **jax-cpu** — cpu (cpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=1
+- **jax-cpu** — cpu (cpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=2
+- **jax-cuda12** — NVIDIA L4 (gpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=2
 
 ## Measurements
 
@@ -17,12 +18,18 @@
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
-| gaussian | jax-cpu | shape=[256, 256],sigma=1.5 | `nitrix-jax` | ok | 3.13 ms / 3.77 ms | 231.16 ms | 256 MB (rss) | ✓ 0.00075×tol | 1.00x vs nitrix-jax |
-| gaussian | jax-cpu | shape=[256, 256],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 852.3 µs / 867.9 µs | 884.5 µs | 173 MB (rss) | ✓ 0.00021×tol | 0.27x vs nitrix-jax |
-| gaussian | jax-cpu | shape=[64, 64, 64],sigma=1.5 | `nitrix-jax` | ok | 24.72 ms / 31.76 ms | 206.57 ms | 328 MB (rss) | ✓ 0.00056×tol | 1.00x vs nitrix-jax |
-| gaussian | jax-cpu | shape=[64, 64, 64],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 10.03 ms / 11.69 ms | 10.80 ms | 182 MB (rss) | ✓ 0.00016×tol | 0.41x vs nitrix-jax |
-| gaussian | jax-cpu | shape=[64, 64],sigma=1.5 | `nitrix-jax` | ok | 462.6 µs / 480.1 µs | 124.03 ms | 225 MB (rss) | ✓ 0.00047×tol | 1.00x vs nitrix-jax |
-| gaussian | jax-cpu | shape=[64, 64],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 78.9 µs / 83.2 µs | 107.1 µs | 173 MB (rss) | ✓ 0.00019×tol | 0.17x vs nitrix-jax |
+| gaussian | jax-cpu | shape=[256, 256],sigma=1.5 | `nitrix-jax` | ok | 3.20 ms / 3.71 ms | 165.96 ms | 527 MB (rss) | ✓ 0.00075×tol | 1.00x vs nitrix-jax |
+| gaussian | jax-cpu | shape=[256, 256],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 731.9 µs / 930.5 µs | 1.07 ms | 455 MB (rss) | ✓ 0.00021×tol | 0.23x vs nitrix-jax |
+| gaussian | jax-cuda12 | shape=[256, 256],sigma=1.5 | `nitrix-jax` | ok | 129.9 µs / 133.1 µs | 540.93 ms | 69.21 MB (hbm) | ✓ 0.00072×tol | 1.00x vs nitrix-jax |
+| gaussian | jax-cuda12 | shape=[256, 256],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 702.2 µs / 707.3 µs | 1.08 ms | 0.26 MB (hbm) | ✓ 0.00021×tol | 5.41x vs nitrix-jax |
+| gaussian | jax-cpu | shape=[64, 64, 64],sigma=1.5 | `nitrix-jax` | ok | 17.83 ms / 19.85 ms | 184.25 ms | 597 MB (rss) | ✓ 0.00056×tol | 1.00x vs nitrix-jax |
+| gaussian | jax-cpu | shape=[64, 64, 64],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 4.68 ms / 4.75 ms | 4.78 ms | 455 MB (rss) | ✓ 0.00016×tol | 0.26x vs nitrix-jax |
+| gaussian | jax-cuda12 | shape=[64, 64, 64],sigma=1.5 | `nitrix-jax` | ok | 162.9 µs / 168.8 µs | 677.59 ms | 615.65 MB (hbm) | ✓ 0.00055×tol | 1.00x vs nitrix-jax |
+| gaussian | jax-cuda12 | shape=[64, 64, 64],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 4.65 ms / 4.71 ms | 4.76 ms | 1.05 MB (hbm) | ✓ 0.00016×tol | 28.52x vs nitrix-jax |
+| gaussian | jax-cpu | shape=[64, 64],sigma=1.5 | `nitrix-jax` | ok | 367.5 µs / 378.8 µs | 123.29 ms | 506 MB (rss) | ✓ 0.00047×tol | 1.00x vs nitrix-jax |
+| gaussian | jax-cpu | shape=[64, 64],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 90.3 µs / 93.1 µs | 143.9 µs | 455 MB (rss) | ✓ 0.00019×tol | 0.25x vs nitrix-jax |
+| gaussian | jax-cuda12 | shape=[64, 64],sigma=1.5 | `nitrix-jax` | ok | 121.1 µs / 126.0 µs | 1.306 s | 75.81 MB (hbm) | ✓ 0.00042×tol | 1.00x vs nitrix-jax |
+| gaussian | jax-cuda12 | shape=[64, 64],sigma=1.5 | `scipy.ndimage.gaussian_filter` | ok | 96.8 µs / 100.1 µs | 135.2 µs | 0.02 MB (hbm) | ✓ 0.00019×tol | 0.80x vs nitrix-jax |
 
 ## Notes
 
