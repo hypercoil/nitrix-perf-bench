@@ -48,6 +48,17 @@ from nperf.measure import CASES  # noqa: E402
 PLATFORM_DEVICE = {'jax-cpu': 'cpu', 'jax-cuda12': 'gpu'}
 
 
+def authoritative_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    '''Rows that may bless the op_matrix: drop rows from a ``fast`` run
+    (``--skip-slow``), which deliberately omits slow baselines and so is not
+    authoritative coverage.  Rows without a ``coverage_mode`` (pre-guard runs)
+    count as full.  COVERAGE_MANDATE §7.'''
+    return [
+        r for r in rows
+        if (r.get('provenance') or {}).get('coverage_mode') != 'fast'
+    ]
+
+
 def _point_keys(rep: Dict[str, Any]) -> Dict[str, Any]:
     '''The representative point sans ``seed`` (the case-agnostic identity).'''
     return {k: v for k, v in rep.items() if k != 'seed'}
@@ -159,8 +170,22 @@ def main() -> None:
     rows: List[Dict[str, Any]] = []
     for f in files:
         rows.extend(read_jsonl(f))
+    # Authoritative-only: a ``fast`` run (--skip-slow) deliberately omits slow
+    # baselines, so it must not bless nitrix's op_matrix.  Drop fast rows; the
+    # feed then reflects the latest *full* run (COVERAGE_MANDATE §7).  Rows
+    # without a coverage_mode (pre-guard runs) are treated as full.
+    n_all = len(rows)
+    rows = authoritative_rows(rows)
+    n_fast = n_all - len(rows)
+    if n_fast:
+        print(f'note: ignored {n_fast} row(s) from fast (--skip-slow) runs; '
+              'the feed uses full runs only.', file=sys.stderr)
     rows = store.latest(rows)
     if not rows:
+        if n_all:
+            raise SystemExit(
+                f'all {n_all} row(s) in {args.inputs} are from fast '
+                '(--skip-slow) runs -- run a full sweep to feed op_matrix.')
         raise SystemExit(f'no rows in {args.inputs}')
 
     fragment = build_fragment(rows, args.case, args.reference)

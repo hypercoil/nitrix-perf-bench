@@ -141,9 +141,12 @@ N` caps history. `--out`/`--report` default to `results/<case>.{jsonl,md}`;
 one, `--baselines A,B` / `--skip-baselines X,Y` select (allowlist) / drop
 (denylist) baselines — a dropped baseline is **recorded as a `skipped` row**
 (omission is data, DESIGN §1), so you can dodge a pathological cold compile
-(e.g. `--skip-baselines naive-dense`) without a silent gap. `--in-process`
-uses the P0 driver, `--render-from <files/dirs> [--latest]` re-renders (and
-combines) saved rows. `--gate-baseline <files/dirs>` runs the
+(e.g. `--skip-baselines naive-dense`) without a silent gap. `--skip-slow` drops
+the case's *declared* `slow_baselines` for fast dev cycles and stamps the run
+`coverage_mode=fast`, so the op_matrix feed + regression gate **refuse to treat
+it as authoritative** — run the full sweep (omit `--skip-slow`) at sprint end
+(`COVERAGE_MANDATE.md` §7). `--in-process` uses the P0 driver, `--render-from
+<files/dirs> [--latest]` re-renders (and combines) saved rows. `--gate-baseline <files/dirs>` runs the
 regression gate (`--gate-current`, default the store; `--gate-min`/`--gate-p95`
 thresholds; `--gate-out` artifact) and exits nonzero on a regression; `--site
 [DIR]` renders the self-contained HTML site. The op_matrix feed

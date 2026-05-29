@@ -79,7 +79,7 @@ from nitrix.semiring import (
     semiring_matmul,
 )
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, SlowBaseline
 
 # Algebras under test, keyed by their nitrix ``Semiring.name`` so a param point
 # stays a plain filterable string.  ``boolean`` / ``tropical_min_plus`` exist
@@ -262,4 +262,20 @@ CASE = Case(
     build=_build,
     rtol=1e-3,
     atol=1e-4,
+    # The materialise-then-reduce baseline pays a pathological COLD compile
+    # (XLA fusing a large reduction over the O(m·k·n) operand): ~300-580s at
+    # 512³, worst for logsumexp.  Its steady state is fast and a *finding*, but
+    # the cold compile dominates a sweep -- so dev cycles drop it with
+    # --skip-slow and a full sweep at sprint end re-measures it (see
+    # COVERAGE_MANDATE §7).
+    slow_baselines=(
+        SlowBaseline(
+            'naive-dense',
+            'XLA GPU cold-compile of the reduction over the materialised '
+            'O(m·k·n) combine tensor: ~432s on L4, ~580s on A10G at 512³ log '
+            '(measured) -- GPU-specific; the same compile is ~0.3s on CPU '
+            '(CPU cost is in steady state, ~285ms). Steady state is fast; the '
+            'GPU cold compile is what makes a GPU sweep impractical.',
+        ),
+    ),
 )

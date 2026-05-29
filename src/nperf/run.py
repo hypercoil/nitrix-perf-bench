@@ -94,6 +94,14 @@ def _select_baselines(
     ]
 
 
+def _skip_reason(name: str, slow: frozenset) -> str:
+    '''Why a baseline was skipped: ``slow_skipped`` (a declared slow baseline
+    dropped by ``--skip-slow``) vs ``skipped_by_config`` (an explicit
+    ``--baselines``/``--skip-baselines`` choice).  The distinction lets the
+    coverage layer tell a dev-cycle slow-skip from a deliberate exclusion.'''
+    return 'slow_skipped' if name in slow else 'skipped_by_config'
+
+
 def _warn_baseline_selectors(
     case_name: str, seen: set, allow: Optional[frozenset], skip: frozenset,
     ref_skipped: set,
@@ -244,6 +252,7 @@ def run_case_subprocess(
     run_id: str, timeout: float, cpu_slots: int, max_parallel: Optional[int],
     gpu_settle_s: float, n_gpus: int = 1,
     allow: Optional[frozenset] = None, skip: frozenset = frozenset(),
+    slow: frozenset = frozenset(),
 ) -> List[AttemptRecord]:
     # Fan attempts across the requested platforms: for each param point (oracle
     # built once, shared) and each platform, emit the platform's *selected*
@@ -259,7 +268,7 @@ def run_case_subprocess(
         built = case.build(param)
         names = list(built.baselines)
         seen.update(names)
-        selected = _select_baselines(names, allow, skip)
+        selected = _select_baselines(names, allow, skip | slow)
         if built.ratio_reference not in selected:
             ref_skipped.add(built.ratio_reference)
         for platform in platforms:
@@ -283,7 +292,7 @@ def run_case_subprocess(
                         baseline=name, platform=platform,
                         framework=framework_of(built.baselines[name][0]),
                         status=Status.SKIPPED,
-                        failure_detail={'reason': 'skipped_by_config'},
+                        failure_detail={'reason': _skip_reason(name, slow)},
                     ))
     _warn_baseline_selectors(case.name, seen, allow, skip, ref_skipped)
 
@@ -328,6 +337,7 @@ def run_case_inprocess(
     case: Any, *, platform: str, warmup: int, repeats: int,
     prov: Dict[str, Any], run_id: str,
     allow: Optional[frozenset] = None, skip: frozenset = frozenset(),
+    slow: frozenset = frozenset(),
 ) -> List[AttemptRecord]:
     records: List[AttemptRecord] = []
     seen: set = set()
@@ -336,7 +346,7 @@ def run_case_inprocess(
         built = case.build(param)
         names = list(built.baselines)
         seen.update(names)
-        selected = _select_baselines(names, allow, skip)
+        selected = _select_baselines(names, allow, skip | slow)
         if built.ratio_reference not in selected:
             ref_skipped.add(built.ratio_reference)
         attempts = [
@@ -355,7 +365,7 @@ def run_case_inprocess(
                     baseline=name, platform=platform,
                     framework=framework_of(built.baselines[name][0]),
                     status=Status.SKIPPED, provenance=prov,
-                    failure_detail={'reason': 'skipped_by_config'},
+                    failure_detail={'reason': _skip_reason(name, slow)},
                 ))
         records.extend(attempts)
     _warn_baseline_selectors(case.name, seen, allow, skip, ref_skipped)
@@ -419,6 +429,13 @@ def main() -> None:
                     help='denylist: skip these baselines (comma-list) -- '
                          'recorded as skipped rows, no worker/compile paid '
                          '(e.g. naive-dense, to dodge its slow cold compile)')
+    ap.add_argument('--skip-slow', action='store_true',
+                    help="skip the case's declared slow_baselines (known-slow "
+                         'measurements) for fast dev cycles -- recorded as '
+                         'slow_skipped rows, and the run is stamped '
+                         'coverage_mode=fast so the op_matrix feed + gate '
+                         "refuse to bless it (omit the flag for the full, "
+                         'authoritative sweep at sprint end)')
     ap.add_argument('--in-process', action='store_true',
                     help='P0 in-process driver (no spawn; memory = proc HWM)')
     ap.add_argument('--cpu-slots', type=int, default=1,
@@ -552,6 +569,17 @@ def main() -> None:
     skip = frozenset(
         b.strip() for b in (args.skip_baselines or '').split(',') if b.strip()
     )
+    # --skip-slow expands the case's declared slow baselines into the denylist
+    # (labelled slow_skipped, distinct from explicit skips).  A run that skips
+    # any slow baseline is NOT authoritative coverage -> stamp coverage_mode so
+    # the op_matrix feed + gate can refuse to bless it (COVERAGE_MANDATE §7).
+    slow = (
+        frozenset(s.baseline for s in case.slow_baselines)
+        if args.skip_slow else frozenset()
+    )
+    coverage_mode = (
+        'fast' if (args.skip_slow and case.slow_baselines) else 'full'
+    )
 
     if args.in_process:
         # The orchestrator *is* the measurer here; it needs the target backend.
@@ -564,7 +592,7 @@ def main() -> None:
         records = run_case_inprocess(
             case, platform=platform_from(prov), warmup=args.warmup,
             repeats=args.repeats, prov=prov, run_id=run_id,
-            allow=allow, skip=skip,
+            allow=allow, skip=skip, slow=slow,
         )
     else:
         # Orchestrator only coordinates + builds oracles on CPU; the workers
@@ -585,8 +613,14 @@ def main() -> None:
             repeats=args.repeats, run_id=run_id, timeout=args.worker_timeout,
             cpu_slots=args.cpu_slots, max_parallel=args.max_parallel,
             gpu_settle_s=args.gpu_settle, n_gpus=n_gpus,
-            allow=allow, skip=skip,
+            allow=allow, skip=skip, slow=slow,
         )
+
+    # Stamp the run's coverage mode onto every row: ``fast`` iff a declared
+    # slow baseline was skipped (so the run is not authoritative coverage),
+    # else ``full``.  The op_matrix feed + gate read it (COVERAGE_MANDATE §7).
+    for r in records:
+        r.provenance['coverage_mode'] = coverage_mode
 
     # Report provenance = the rows' own (worker-captured authoritative device).
     report_prov = records[0].provenance if records else {}

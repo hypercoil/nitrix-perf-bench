@@ -97,8 +97,17 @@ def compare(
                     _compare_ok_pair(b, c, min_threshold, p95_threshold)
                 )
             elif bs == 'ok' and cs != 'ok':
-                entry.update(kind='status_regression', baseline_status=bs,
-                             current_status=cs, regressed=True)
+                # A deliberately-skipped current row (--skip-baselines /
+                # --skip-slow) is an *omission*, not a slowdown: it must not
+                # trip the gate, else a fast dev run false-fails against a full
+                # baseline.  A genuine ok->{oom, compile_error, …} still
+                # regresses.
+                if cs == 'skipped':
+                    entry.update(kind='skipped_current', baseline_status=bs,
+                                 current_status=cs, regressed=False)
+                else:
+                    entry.update(kind='status_regression', baseline_status=bs,
+                                 current_status=cs, regressed=True)
             elif bs != 'ok' and cs == 'ok':
                 entry.update(kind='recovered', baseline_status=bs,
                              current_status=cs, regressed=False)

@@ -16,8 +16,22 @@ baselines), and which baseline ratios are taken against.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+
+@dataclass(frozen=True)
+class SlowBaseline:
+    '''A baseline whose *measurement* is pathologically expensive (not its
+    steady state) -- e.g. a cold compile of minutes -- so a dev-cycle run may
+    skip it via ``--skip-slow`` (`run.py`).
+
+    ``reason`` is the audit trail (why + the measured cost, like a provider's
+    ``pixi_reason``): slowness is *evidence-based and hardware-dependent*, so
+    record the number and the device it was seen on, and re-evaluate on
+    re-bench rather than treating the entry as eternal.'''
+    baseline: str
+    reason: str
 
 
 @dataclass
@@ -51,6 +65,12 @@ class Case:
     # per-case fidelity tolerance (np.allclose semantics)
     rtol: float = 1e-3
     atol: float = 1e-4
+    # baselines whose *measurement* is pathologically slow (cold compile, …);
+    # ``--skip-slow`` drops these for fast dev cycles (recorded as skipped
+    # rows, and the run is stamped ``coverage_mode = fast`` so the op_matrix
+    # feed / gate refuse to treat it as authoritative -- run a full sweep at
+    # sprint end).
+    slow_baselines: Tuple[SlowBaseline, ...] = field(default_factory=tuple)
     # the public nitrix op this case measures (its op_matrix qualname); the
     # single home for the case -> op mapping the op_matrix feed and the
     # decision-input bundle both read.  None for the throwaway smoke case.
