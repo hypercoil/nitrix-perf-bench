@@ -206,6 +206,20 @@ port to ~15 lines and consistent.
   not silently lose a platform); regression cadence; a *ships-with-a-case* SLA
   so coverage tracks the catalogue as `nitrix` grows (SPEC v0.3 §12).
 
+**Shipped (2026-05-29) — the slow-baseline dev-cycle guard.** Sprints run a
+fast inner loop / comprehensive outer loop: skip known-slow benchmarks during
+iteration, run the full matrix at sprint end. `Case.slow_baselines` declares the
+known-slow baselines (each with an evidence-based, *device-stamped* reason —
+e.g. `semiring_matmul`'s `naive-dense`, whose ~432 s (L4) / ~580 s (A10G) cold
+compile at 512³ log is GPU-specific, ~0.3 s on CPU). `--skip-slow` drops them,
+recording each as a `slow_skipped` row and stamping the run `coverage_mode=fast`.
+The load-bearing guard against "fast by default → slow ops never measured": the
+**op_matrix feed ignores `fast` rows** (only a full run blesses the matrix) and
+the **regression gate treats a deliberately-skipped current row as an omission,
+not a regression** (so a fast run can detect regressions on its subset without
+false-failing the skipped slow baselines). Authoritative coverage = a full
+sweep (omit `--skip-slow`).
+
 ## 8. Cross-references
 
 - [`DESIGN.md`](DESIGN.md) §1 (two-tier coverage), §4 (feedback loop), §6/P4
