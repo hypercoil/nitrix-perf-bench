@@ -28,6 +28,9 @@ from .cases import (
     residualise,
     semiring_matmul,
     spatial_transform,
+    symlog,
+    sympower,
+    symsqrt,
     throwaway,
 )
 from .core import (
@@ -85,7 +88,10 @@ CASES: Dict[str, Case] = {
               _validate_case(dilate.CASE),
               _validate_case(distance_transform.CASE),
               _validate_case(spatial_transform.CASE),
-              _validate_case(median_filter.CASE))
+              _validate_case(median_filter.CASE),
+              _validate_case(symlog.CASE),
+              _validate_case(symsqrt.CASE),
+              _validate_case(sympower.CASE))
 }
 
 
@@ -120,6 +126,24 @@ def classify_message(msg: str) -> Tuple[Status, Dict[str, Any]]:
     # failed to compile -- the hardware is absent -- so this is a recorded
     # *skip*, not a compile_error.  Message-heuristic, same style as OOM above.
     if 'visible' in low and ('gpu' in low or 'device' in low):
+        return Status.SKIPPED, {
+            'reason': 'backend_unavailable', 'message': msg,
+        }
+    # A genuine GPU cuSolver failure (e.g. jax's GPU eigh/solvers on this CUDA
+    # stack -- a *jaxlib* bug; cupy's eigh works on the identical bundled
+    # wheels).  PRECISE on purpose: only a real cuSolver signature trips this,
+    # so the reason name stays accurate and no unrelated GPU failure is
+    # mislabelled (jax-ml/jax #29042; the gpu-eigh-blocker note).
+    if 'cusolver' in low or 'gpusolverdncreate' in low:
+        return Status.SKIPPED, {
+            'reason': 'gpu_solver_unavailable', 'message': msg,
+        }
+    # A requested device backend is absent in this single-backend worker --
+    # e.g. nitrix's safe_eigh CPU fallback finding no CPU device on a gpu-only
+    # worker ("Unknown backend cpu").  Accurate + generic; NOT solver-specific
+    # (the underlying cause -- here the cuSolver bug -- is documented per case,
+    # not asserted from this string).
+    if 'unknown backend' in low:
         return Status.SKIPPED, {
             'reason': 'backend_unavailable', 'message': msg,
         }

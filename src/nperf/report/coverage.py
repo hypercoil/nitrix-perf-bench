@@ -67,6 +67,11 @@ class OpCoverage:
     ref_strength: str    # none|internal_only|floor_only|strong_ref
     precision: str       # unmeasured|f32_only|multi_dtype
     provisional: bool    # latest rows from a fast (--skip-slow) run
+    # nitrix's GPU attempt was skipped for an involuntary backend/solver reason
+    # while a strong GPU ref ran -- GPU-capable but nitrix-blocked (e.g. the
+    # jaxlib cuSOLVER blocker).  ``gpu_block_reason`` is the *recorded* reason.
+    gpu_blocked: bool = False
+    gpu_block_reason: Optional[str] = None
     # apples-to-apples GPU bar at the representative point, if a strong GPU ref
     # ran: the STORED ratio ``strong_ref.min / nitrix.min`` -- < 1 == nitrix
     # slower (a deficit).  None when no strong GPU ref was measured.
@@ -96,6 +101,41 @@ def _coverage_status(rows: List[Dict[str, Any]]) -> str:
     if cpu:
         return CPU_ONLY
     return UNMEASURED
+
+
+# nitrix GPU attempt skipped for an *involuntary* backend/solver reason (not a
+# config/slow opt-out).  Reason-robust: a set, so a future failure mode is
+# easy to add and the report shows the *recorded* reason, never an assumed one.
+_BLOCKED_REASONS = frozenset({'gpu_solver_unavailable', 'backend_unavailable'})
+
+
+def _gpu_block_reason(rows: List[Dict[str, Any]]) -> Optional[str]:
+    '''If nitrix's GPU attempt was skipped for an involuntary backend/solver
+    reason AND a strong external GPU ref ran ok on GPU, return that recorded
+    reason -- the GPU is provably capable of the op but nitrix's path can't use
+    it (e.g. the jaxlib cuSOLVER blocker for the eigh family).  Else ``None``.
+
+    Requiring a working strong GPU ref is what distinguishes "blocked but
+    GPU-capable" from "nitrix can't GPU this and nor can anything" -- and the
+    reason is read from the row, never assumed, so it stays honest if the
+    surfaced failure changes.'''
+    reason = None
+    for r in rows:
+        if (r.get('platform') == _GPU and r.get('baseline') == _NITRIX
+                and r.get('status') == 'skipped'):
+            rs = (r.get('failure_detail') or {}).get('reason')
+            if rs in _BLOCKED_REASONS:
+                reason = rs
+                break
+    if reason is None:
+        return None
+    strong_ran = any(
+        r.get('platform') == _GPU and r.get('status') == 'ok'
+        and _ref_class(r.get('baseline', ''),
+                       r.get('framework', '')) == 'strong'
+        for r in rows
+    )
+    return reason if strong_ran else None
 
 
 def _ref_strength(rows: List[Dict[str, Any]]) -> str:
@@ -163,6 +203,7 @@ def build_coverage(
                 precision='unmeasured', provisional=False))
             continue
         gpu_ref, gpu_ratio = _gpu_bar(crows, cc[1])
+        block_reason = _gpu_block_reason(crows)
         out.append(OpCoverage(
             qualname=q, runtime=runtime, has_case=True,
             coverage=_coverage_status(crows),
@@ -171,6 +212,8 @@ def build_coverage(
             provisional=any(
                 (r.get('provenance') or {}).get('coverage_mode') == 'fast'
                 for r in crows),
+            gpu_blocked=block_reason is not None,
+            gpu_block_reason=block_reason,
             gpu_ref=gpu_ref, gpu_ref_ratio=gpu_ratio))
     return out
 
@@ -182,6 +225,8 @@ def _priority(oc: OpCoverage) -> Optional[str]:
     weighting is a future input (mandate §2.2/§4).'''
     if not oc.runtime:
         return None
+    if oc.gpu_blocked:
+        return None                    # tracked in the GPU-blocked section
     if oc.coverage in (UNMEASURED, CPU_ONLY, GPU_ONLY):
         return 'high'                  # no data, or missing a platform
     if oc.ref_strength != STRONG_REF:
@@ -194,6 +239,7 @@ def _op_json(r: OpCoverage) -> Dict[str, Any]:
         'qualname': r.qualname, 'runtime': r.runtime, 'has_case': r.has_case,
         'coverage': r.coverage, 'ref_strength': r.ref_strength,
         'precision': r.precision, 'provisional': r.provisional,
+        'gpu_blocked': r.gpu_blocked, 'gpu_block_reason': r.gpu_block_reason,
         'gpu_ref': r.gpu_ref, 'gpu_ref_ratio': r.gpu_ref_ratio,
         'nitrix_slower_on_gpu': r.nitrix_slower_on_gpu,
     }
@@ -218,6 +264,7 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
         return sum(1 for r in runtime if pred(r))
 
     lagging, under = _lagging(records), _under(records)
+    blocked = [r for r in records if r.gpu_blocked]
     return {
         'source': 'nitrix-perf-bench coverage-&-deficit report',
         'convention': 'gpu_ref_ratio = strong_ref.min / nitrix.min '
@@ -228,9 +275,11 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
             'multiplatform': _n(lambda r: r.coverage == MULTIPLATFORM),
             'with_strong_gpu_ref': _n(lambda r: r.ref_strength == STRONG_REF),
             'lagging_on_gpu': len(lagging),
+            'gpu_blocked_upstream': len(blocked),
             'constructors': sum(1 for r in records if not r.runtime),
         },
         'lagging': [_op_json(r) for r in lagging],
+        'gpu_blocked': [_op_json(r) for r in blocked],
         'under_covered': [{**_op_json(r), 'priority': p} for r, p in under],
         'ops': [_op_json(r) for r in records],
     }
@@ -253,6 +302,7 @@ def render_markdown(records: List[OpCoverage]) -> str:
     multi = sum(1 for r in runtime if r.coverage == MULTIPLATFORM)
     strong = sum(1 for r in runtime if r.ref_strength == STRONG_REF)
     lagging, under = _lagging(records), _under(records)
+    blocked = [r for r in records if r.gpu_blocked]
     won = sorted(
         (r for r in records if r.ref_strength == STRONG_REF
          and r.gpu_ref_ratio is not None and not r.nitrix_slower_on_gpu),
@@ -273,6 +323,7 @@ def render_markdown(records: List[OpCoverage]) -> str:
         f'- **multiplatform** (CPU + GPU): {multi} / {len(runtime)}',
         f'- **with a strong on-target GPU ref**: {strong} / {len(runtime)}',
         f'- **lagging on the GPU**: {len(lagging)}',
+        f'- **GPU blocked upstream** (jaxlib cuSOLVER): {len(blocked)}',
         '',
         '## Lagging on the deployment target (GPU) — ranked',
         '',
@@ -295,6 +346,23 @@ def render_markdown(records: List[OpCoverage]) -> str:
     else:
         lines.append('_No op measured against a strong on-target GPU ref '
                      'yet._')
+    if blocked:
+        lines += [
+            '',
+            '## GPU blocked — nitrix path skipped, a GPU ref works',
+            '',
+            "nitrix's GPU attempt was skipped for the recorded reason below, "
+            'while a strong external GPU ref **did** run ok on the GPU -- so '
+            'the GPU is capable of the op but nitrix\'s path is not using it. '
+            'For the eigh family the cause is the jaxlib cuSOLVER bug '
+            '(jax-ml/jax #29042; CuPy works on identical wheels); these are '
+            'benchmarked on CPU and the fix is upstream.',
+            '',
+            '| op | nitrix on GPU (skipped) |',
+            '|---|---|',
+        ]
+        for r in blocked:
+            lines.append(f'| `{r.qualname}` | {r.gpu_block_reason} |')
     lines += [
         '',
         '## Under-covered — ranked by priority',

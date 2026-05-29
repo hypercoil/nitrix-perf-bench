@@ -16,6 +16,7 @@ _CATALOGUE = [
     {'qualname': 'pkg.laggard', 'jit': 'pass'},
     {'qualname': 'pkg.floor_only', 'jit': 'pass'},
     {'qualname': 'pkg.cpu_only', 'jit': 'pass'},
+    {'qualname': 'pkg.gpu_blocked', 'jit': 'pass'},
     {'qualname': 'pkg.unmeasured', 'jit': 'pass'},
     {'qualname': 'pkg.constructor', 'jit': 'n/a'},
 ]
@@ -24,6 +25,7 @@ _OP2CASE = {
     'pkg.laggard': ('laggard', _REP),
     'pkg.floor_only': ('floor_only', _REP),
     'pkg.cpu_only': ('cpu_only', _REP),
+    'pkg.gpu_blocked': ('blk', _REP),
     # pkg.unmeasured + pkg.constructor: no case
 }
 
@@ -38,6 +40,15 @@ def _row(case, baseline, framework, platform, *, ratio=None, cmode='full'):
     if ratio is not None:
         r['ratio'] = {'vs': 'nitrix-jax', 'metric': 'min', 'value': ratio}
     return r
+
+
+def _skip(case, baseline, framework, platform, reason):
+    return {
+        'case': case, 'baseline': baseline, 'framework': framework,
+        'platform': platform, 'status': 'skipped', 'param_point': dict(_REP),
+        'failure_detail': {'reason': reason},
+        'provenance': {'coverage_mode': 'full'},
+    }
 
 
 def _rows():
@@ -58,6 +69,11 @@ def _rows():
         # cpu_only: nitrix measured only on CPU
         _row('cpu_only', 'nitrix-jax', 'jax', 'jax-cpu'),
         _row('cpu_only', 'numpy.w', 'numpy', 'jax-cpu', ratio=2.0),
+        # gpu_blocked: nitrix GPU skipped (backend_unavailable) but a strong
+        # GPU ref (cupy) ran ok -> GPU-capable, nitrix-blocked
+        _row('blk', 'nitrix-jax', 'jax', 'jax-cpu'),
+        _skip('blk', 'nitrix-jax', 'jax', 'jax-cuda12', 'backend_unavailable'),
+        _row('blk', 'cupy.blk', 'cupy', 'jax-cuda12'),  # ran ok (no ratio)
     ]
 
 
@@ -84,10 +100,11 @@ def test_lagging_and_summary_json():
     doc = cov.render_json(_build())
     assert [d['qualname'] for d in doc['lagging']] == ['pkg.laggard']
     s = doc['summary']
-    assert s['runtime_ops'] == 5 and s['constructors'] == 1
+    assert s['runtime_ops'] == 6 and s['constructors'] == 1
     assert s['multiplatform'] == 3            # winner, laggard, floor_only
-    assert s['with_strong_gpu_ref'] == 2      # winner, laggard
+    assert s['with_strong_gpu_ref'] == 3      # winner, laggard, gpu_blocked
     assert s['lagging_on_gpu'] == 1
+    assert s['gpu_blocked_upstream'] == 1     # pkg.gpu_blocked
 
 
 def test_under_covered_priorities():
@@ -111,8 +128,33 @@ def test_provisional_from_fast_run():
     assert recs['pkg.winner'].provisional is False
 
 
+def test_gpu_blocked_detection():
+    recs = {r.qualname: r for r in _build()}
+    b = recs['pkg.gpu_blocked']
+    assert b.gpu_blocked is True
+    assert b.gpu_block_reason == 'backend_unavailable'  # the recorded reason
+    assert b.ref_strength == cov.STRONG_REF             # cupy ran ok on GPU
+    doc = cov.render_json(_build())
+    assert [d['qualname'] for d in doc['gpu_blocked']] == ['pkg.gpu_blocked']
+    # blocked ops are tracked separately, not in the under-covered list
+    assert 'pkg.gpu_blocked' not in {
+        d['qualname'] for d in doc['under_covered']}
+
+
+def test_config_skip_is_not_gpu_blocked():
+    # a deliberate skip (skipped_by_config) is voluntary, not an upstream
+    # block -- it must NOT read as gpu_blocked even with a working GPU ref.
+    rows = _rows()
+    for r in rows:
+        if r['case'] == 'blk' and r.get('status') == 'skipped':
+            r['failure_detail']['reason'] = 'skipped_by_config'
+    recs = {r.qualname: r for r in _build(rows)}
+    assert recs['pkg.gpu_blocked'].gpu_blocked is False
+
+
 def test_markdown_renders():
     md = cov.render_markdown(_build())
     assert 'coverage & deficit' in md
     assert 'Lagging on the deployment target' in md
     assert 'pkg.laggard' in md
+    assert 'GPU blocked' in md and 'pkg.gpu_blocked' in md
