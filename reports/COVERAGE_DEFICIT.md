@@ -5,10 +5,11 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 52 (+ 7 host-side constructors, apart)
-- **measured** (≥1 platform): 11 / 52
-- **multiplatform** (CPU + GPU): 11 / 52
-- **with a strong on-target GPU ref**: 9 / 52
+- **measured** (≥1 platform): 14 / 52
+- **multiplatform** (CPU + GPU): 14 / 52
+- **with a strong on-target GPU ref**: 12 / 52
 - **lagging on the GPU**: 5
+- **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
 
@@ -40,10 +41,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.linalg.rbf_kernel` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.recondition_eigenspaces` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.sym2vec` | unmeasured | none | unmeasured |
-| high | `nitrix.linalg.symlog` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.symmetric` | unmeasured | none | unmeasured |
-| high | `nitrix.linalg.sympower` | unmeasured | none | unmeasured |
-| high | `nitrix.linalg.symsqrt` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.toeplitz_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.vec2sym` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_pool_with_indices_nd` | unmeasured | none | unmeasured |
