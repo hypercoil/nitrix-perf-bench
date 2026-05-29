@@ -40,11 +40,23 @@ where = ["src"]
 [dependency-groups]
 jax-cpu = ["jax == 0.10.0", "nitrix"]
 jax-cuda12 = ["jax[cuda12] == 0.10.0", "nitrix"]
+# GPU reference env (Phase B): CuPy is the GPU twin of numpy/scipy -- the
+# apples-to-apples on-target reference for the audit ops (cupy.cov, cuSOLVER
+# lstsq, cupyx.scipy.ndimage).  Isolated from the main jax env in its own venv
+# (UV_PROJECT_ENVIRONMENT), per DESIGN §7 / COVERAGE_MANDATE Thrust 3.  A
+# superset: jax + nitrix (every worker rebuilds the shared oracle / inputs) +
+# cupy for the baseline.  cupy-cuda12x coexists with jax[cuda12] (same CUDA-12
+# family; cf. the jax+torch refs precedent), and is GPU-only so its provider is
+# marked requires='gpu' (skipped, not run, on the CPU platform).
+refs-cupy = ["jax[cuda12] == 0.10.0", "nitrix", "cupy-cuda12x"]
 dev = ["pytest", "ruff"]
 
 [tool.uv]
 default-groups = ["jax-cpu", "dev"]
-conflicts = [[{ group = "jax-cpu" }, { group = "jax-cuda12" }]]
+conflicts = [
+    [{ group = "jax-cpu" }, { group = "jax-cuda12" }],
+    [{ group = "jax-cpu" }, { group = "refs-cupy" }],
+]
 
 [tool.uv.sources]
 nitrix = { path = "../nitrix", editable = true }

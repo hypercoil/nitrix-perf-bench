@@ -59,7 +59,7 @@ from .measure import (
     measure_attempt,
     platform_from,
 )
-from .providers import framework_of
+from .providers import framework_of, requires_of
 from .report import render_gate, render_markdown, render_site
 from .schedule import ResourcePool, resource_of, run_scheduled
 
@@ -100,6 +100,17 @@ def _skip_reason(name: str, slow: frozenset) -> str:
     ``--baselines``/``--skip-baselines`` choice).  The distinction lets the
     coverage layer tell a dev-cycle slow-skip from a deliberate exclusion.'''
     return 'slow_skipped' if name in slow else 'skipped_by_config'
+
+
+def _platform_applicable(provider_id: str, resource: str) -> bool:
+    '''Whether a baseline's provider can run on a platform's resource class.
+
+    A provider that ``requires`` a resource the platform lacks (a GPU-only ref
+    like cupy on the ``cpu`` platform) is not applicable -- the runner records
+    it ``platform_not_applicable`` rather than spawning a worker that would
+    fail or, worse, silently run on the wrong device.'''
+    req = requires_of(provider_id)
+    return req is None or req == resource
 
 
 def _warn_baseline_selectors(
@@ -274,7 +285,13 @@ def run_case_subprocess(
         for platform in platforms:
             resource = resource_of(platform)
             start = len(specs)
-            for name in selected:
+            # Within the selected set, drop baselines whose provider can't run
+            # on this platform's resource (a GPU-only ref on the cpu platform).
+            applicable = [
+                n for n in selected
+                if _platform_applicable(built.baselines[n][0], resource)
+            ]
+            for name in applicable:
                 specs.append(dict(
                     run_id=run_id, case=case.name, param_point=param,
                     baseline=name, platform=platform, warmup=warmup,
@@ -282,17 +299,22 @@ def run_case_subprocess(
                     framework=framework_of(built.baselines[name][0]),
                     resource=resource,
                 ))
-            groups.append((start, len(selected), built.ratio_reference))
+            groups.append((start, len(applicable), built.ratio_reference))
             # Omission is data (DESIGN §1): a recorded ``skipped`` row per
-            # unselected baseline -- no worker spawned, no cold compile paid.
+            # baseline not run here -- a config/slow skip, or not applicable to
+            # this platform's resource -- no worker spawned.
             for name in names:
-                if name not in selected:
+                if name not in applicable:
+                    reason = (
+                        _skip_reason(name, slow) if name not in selected
+                        else 'platform_not_applicable'
+                    )
                     skipped.append(AttemptRecord(
                         run_id=run_id, case=case.name, param_point=param,
                         baseline=name, platform=platform,
                         framework=framework_of(built.baselines[name][0]),
                         status=Status.SKIPPED,
-                        failure_detail={'reason': _skip_reason(name, slow)},
+                        failure_detail={'reason': reason},
                     ))
     _warn_baseline_selectors(case.name, seen, allow, skip, ref_skipped)
 
@@ -342,6 +364,7 @@ def run_case_inprocess(
     records: List[AttemptRecord] = []
     seen: set = set()
     ref_skipped: set = set()
+    resource = resource_of(platform)
     for param in case.param_points:
         built = case.build(param)
         names = list(built.baselines)
@@ -349,23 +372,30 @@ def run_case_inprocess(
         selected = _select_baselines(names, allow, skip | slow)
         if built.ratio_reference not in selected:
             ref_skipped.add(built.ratio_reference)
+        applicable = [
+            n for n in selected
+            if _platform_applicable(built.baselines[n][0], resource)
+        ]
         attempts = [
             measure_attempt(
                 case, param, built, name, platform=platform, run_id=run_id,
                 prov=prov, warmup=warmup, repeats=repeats,
             )
-            for name in selected
+            for name in applicable
         ]
         attach_ratios(attempts, built.ratio_reference)
-        # Omission is data (DESIGN §1): record the skipped baselines too.
+        # Omission is data (DESIGN §1): record the skipped baselines too --
+        # config/slow skips and providers not applicable to this resource.
         for name in names:
-            if name not in selected:
+            if name not in applicable:
+                reason = (_skip_reason(name, slow) if name not in selected
+                          else 'platform_not_applicable')
                 attempts.append(AttemptRecord(
                     run_id=run_id, case=case.name, param_point=param,
                     baseline=name, platform=platform,
                     framework=framework_of(built.baselines[name][0]),
                     status=Status.SKIPPED, provenance=prov,
-                    failure_detail={'reason': _skip_reason(name, slow)},
+                    failure_detail={'reason': reason},
                 ))
         records.extend(attempts)
     _warn_baseline_selectors(case.name, seen, allow, skip, ref_skipped)

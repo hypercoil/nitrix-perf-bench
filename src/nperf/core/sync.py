@@ -38,9 +38,24 @@ def torch_sync(out: Any) -> None:
         torch.cuda.synchronize()
 
 
+def cupy_sync(out: Any) -> None:
+    '''Block on a CuPy result before the clock stops.
+
+    CuPy kernel launches are async on the default stream, so a GPU timing is
+    only honest after a device synchronise.  Imported lazily so the (jax-only)
+    base env never needs cupy to load this module; cupy lives in its own
+    refs-cupy env (DESIGN §7 / COVERAGE_MANDATE Thrust 3).
+    '''
+    import cupy as cp
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
 # torch (above) lands with the P2 cross-framework refs; ``pyg`` reuses it.
+# cupy (Phase B) is the GPU reference for the audit ops (requires a GPU).
 SYNC: Dict[str, Callable[[Any], None]] = {
     'jax': jax_sync,
     'numpy': numpy_sync,
     'torch': torch_sync,
+    'cupy': cupy_sync,
 }

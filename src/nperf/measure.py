@@ -52,6 +52,10 @@ def _host_f64(out: Any, framework: str) -> np.ndarray:
     being handed a torch output, so the base env never needs it here.'''
     if framework == 'torch':
         return out.detach().cpu().numpy().astype(np.float64)
+    if framework == 'cupy':
+        import cupy as cp
+
+        return cp.asnumpy(out).astype(np.float64)
     return np.asarray(out, dtype=np.float64)
 
 

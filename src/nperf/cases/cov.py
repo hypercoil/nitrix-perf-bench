@@ -9,8 +9,13 @@ would otherwise reach for (here numpy).  Both are scored against an fp64 oracle
 round-off, and the ratio (``--reference numpy.cov``) reads as "nitrix is N×
 numpy" -- exactly the op_matrix's perf cell.
 
-numpy is a core dep, so the reference runs in the same worker env as the jax
-baseline; no refs env is needed (unlike torch / PyG).
+numpy is a core dep, so the CPU reference runs in the same worker env as the
+jax baseline; no refs env is needed (unlike torch / PyG).  The GPU reference is
+``cupy.cov`` -- CuPy's ``cov``, the on-device twin of ``numpy.cov`` -- which
+gives the *apples-to-apples* GPU comparison the numpy/scipy CPU floor cannot
+(Phase B / COVERAGE_MANDATE Thrust 3).  Its provider is GPU-only
+(``requires='gpu'``): it runs in the isolated refs-cupy env and is recorded
+``platform_not_applicable`` on the CPU platform.
 """
 from __future__ import annotations
 
@@ -24,6 +29,14 @@ from nitrix.stats import cov
 from ._base import BuiltPoint, Case
 
 
+def _cupy_cov(x: Any) -> Any:
+    '''CuPy ``cov`` (GPU); cupy imported lazily so only the cupy worker (the
+    refs-cupy env) needs it -- the jax / numpy workers never import it.'''
+    import cupy as cp
+
+    return cp.cov(x, bias=False)
+
+
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     c, n_obs = param['c'], param['n_obs']
     rng = np.random.default_rng(param.get('seed', 0))
@@ -34,11 +47,18 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     ref = np.cov(X.astype(np.float64), bias=False)
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            import cupy as cp
+
+            xc = cp.asarray(X)
+            cp.cuda.runtime.deviceSynchronize()  # H2D out of the timed region
+            return (xc,)
         return (X,) if framework == 'numpy' else (jx,)
 
     baselines = {
         'nitrix-jax': ('jax', lambda x: cov(x)),
         'numpy.cov': ('numpy', lambda x: np.cov(x, bias=False)),
+        'cupy.cov': ('cupy', _cupy_cov),  # GPU on-target ref (requires gpu)
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,
