@@ -29,7 +29,16 @@ class SlowBaseline:
     ``reason`` is the audit trail (why + the measured cost, like a provider's
     ``pixi_reason``): slowness is *evidence-based and hardware-dependent*, so
     record the number and the device it was seen on, and re-evaluate on
-    re-bench rather than treating the entry as eternal.'''
+    re-bench rather than treating the entry as eternal.
+
+    Known limitation (deferred, no action yet): slowness is currently
+    **platform-flat** -- ``--skip-slow`` drops the baseline on *every*
+    platform, even when it is slow on only one.  Measured counter-example:
+    ``naive-dense`` costs ~432s to compile on the L4 GPU but only ~0.3s on CPU,
+    so a GPU-driven skip needlessly drops the cheap, useful CPU measurement.  A
+    ``platforms: Optional[Tuple[str, ...]]`` field to scope the skip is the
+    refinement; deferred because dev cycles run both platforms together and the
+    GPU compile is the long pole, so the flat skip is acceptable for now.'''
     baseline: str
     reason: str
 
