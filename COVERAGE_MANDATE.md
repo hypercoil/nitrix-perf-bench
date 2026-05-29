@@ -263,6 +263,18 @@ Infra: runner classification `gpu_solver_unavailable` (genuine cuSOLVER) /
 this family, since nitrix runs). The CuPy ref's d≥256 failures are recorded
 (`gpu_solver_unavailable`), so the apples-to-apples GPU bar holds at d=64.
 
+**Shipped (2026-05-29) — Tier-2 stats/signal: the Hilbert family.**
+`analytic_signal` / `hilbert_transform` / `envelope` ported (nitrix-jax +
+`scipy.signal.hilbert` CPU floor + `cupyx.scipy.signal.hilbert` GPU ref + fp64
+scipy oracle). FFT-based, so — unlike the eigh family — **GPU-pure** (no
+cuSOLVER): a clean apples-to-apples GPU bar at every size. Finding: nitrix is
+**≈ CuPy on the L4** (par to ~13% faster — both FFT-bound) and ~1.6–2.3× faster
+than scipy on CPU; nitrix's `analytic_signal` carries ~7× the HBM of CuPy's (a
+materialisation note). Added **complex-aware fidelity** (compare via
+`|out − ref|`) for `analytic_signal`'s complex output — also unblocks
+`complex_decompose`. Coverage: **17/52 runtime ops multiplatform, 15 with a
+strong GPU ref**.
+
 ## 8. Cross-references
 
 - [`DESIGN.md`](DESIGN.md) §1 (two-tier coverage), §4 (feedback loop), §6/P4
