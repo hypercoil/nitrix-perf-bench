@@ -20,7 +20,16 @@ import numpy as np
 import scipy.ndimage as spnd
 from nitrix.morphology import distance_transform
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
+
+
+def _cupy_distance_transform(m: Any) -> Any:
+    '''GPU exact EDT (cupyx.scipy.ndimage); cupy lazy (refs-cupy env).  Like
+    scipy this is the *exact* EDT (not nitrix's quasi-Euclidean iterative DT),
+    so it sits within the case's 1-voxel tolerance of the oracle.'''
+    from cupyx.scipy import ndimage as cnd
+
+    return cnd.distance_transform_edt(m > 0.5)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -32,12 +41,16 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     ref = spnd.distance_transform_edt(mask > 0.5)  # exact EDT (fp64 oracle)
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            return to_cupy(mask)
         return (mask,) if framework == 'numpy' else (jx,)
 
     baselines = {
         'nitrix-jax': ('jax', lambda m: distance_transform(m)),
         'scipy.ndimage.distance_transform_edt': (
             'scipy', lambda m: spnd.distance_transform_edt(m > 0.5)),
+        'cupyx.scipy.ndimage.distance_transform_edt': (
+            'cupy', _cupy_distance_transform),  # GPU on-target ref (exact EDT)
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

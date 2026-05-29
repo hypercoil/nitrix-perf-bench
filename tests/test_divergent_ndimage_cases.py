@@ -15,6 +15,7 @@ from nperf import measure
 from nperf.cases import distance_transform, median_filter, spatial_transform
 from nperf.core import Status
 from nperf.core.fidelity import compare
+from nperf.providers import requires_of
 
 
 @pytest.mark.parametrize('mod,param', [
@@ -24,8 +25,10 @@ from nperf.core.fidelity import compare
 def test_clean_ops_match_oracle(mod, param):
     built = mod._build(param)
     assert built.fp64_reference is not None
-    for name, (framework, fn) in built.baselines.items():
-        out = np.asarray(fn(*built.inputs_for(framework)), dtype=np.float64)
+    for name, (provider_id, fn) in built.baselines.items():
+        if requires_of(provider_id) == 'gpu':
+            continue  # GPU-only ref (cupy): needs a device + the refs env
+        out = np.asarray(fn(*built.inputs_for(provider_id)), dtype=np.float64)
         fid = compare(out, built.fp64_reference,
                       rtol=mod.CASE.rtol, atol=mod.CASE.atol)
         assert fid['status'] == 'pass', (
@@ -43,11 +46,18 @@ def test_no_oracle_path_is_ok_inconclusive_with_ratio():
     case = measure.CASES['median_filter']
     param = {'shape': [24, 24], 'size': 3, 'seed': 0}
     built = case.build(param)
+    # the GPU-only cupy ref isn't runnable in the unit env; the runner gates
+    # it by platform (platform_not_applicable), but measure_attempt is called
+    # directly here, so filter it out.
+    cpu_baselines = [
+        n for n in built.baselines
+        if requires_of(built.baselines[n][0]) != 'gpu'
+    ]
     recs = [
         measure.measure_attempt(
             case, param, built, name, platform='jax-cpu', run_id='t',
             prov={}, warmup=1, repeats=2)
-        for name in built.baselines
+        for name in cpu_baselines
     ]
     for r in recs:
         assert r.status == Status.OK

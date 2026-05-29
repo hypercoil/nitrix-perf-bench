@@ -24,7 +24,16 @@ import numpy as np
 import scipy.ndimage as spnd
 from nitrix.morphology import median_filter
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
+
+
+def _cupy_median(x: Any, size: int) -> Any:
+    '''GPU median_filter (cupyx.scipy.ndimage); cupy lazy (refs-cupy env).
+    Reflect boundary like scipy -- so, like scipy, it differs from nitrix's
+    NaN-pad shrink-window at borders; this case has no oracle, perf only.'''
+    from cupyx.scipy import ndimage as cnd
+
+    return cnd.median_filter(x, size=size)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -35,12 +44,16 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     jx = jax.block_until_ready(jnp.asarray(X))
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            return to_cupy(X)
         return (X,) if framework == 'numpy' else (jx,)
 
     baselines = {
         'nitrix-jax': ('jax', lambda x: median_filter(x, size=size)),
         'scipy.ndimage.median_filter': (
             'scipy', lambda x: spnd.median_filter(x, size=size)),
+        'cupyx.scipy.ndimage.median_filter': (
+            'cupy', lambda x: _cupy_median(x, size)),  # GPU ref (perf only)
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

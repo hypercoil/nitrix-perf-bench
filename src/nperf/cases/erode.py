@@ -17,7 +17,14 @@ import numpy as np
 import scipy.ndimage as spnd
 from nitrix.morphology import erode
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
+
+
+def _cupy_erode(x: Any, size: int) -> Any:
+    '''GPU grey_erosion (cupyx.scipy.ndimage); cupy lazy (refs-cupy env).'''
+    from cupyx.scipy import ndimage as cnd
+
+    return cnd.grey_erosion(x, size=size)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -30,12 +37,16 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     ref = spnd.grey_erosion(X.astype(np.float64), size=size)  # fp64 oracle
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            return to_cupy(X)
         return (X,) if framework == 'numpy' else (jx,)
 
     baselines = {
         'nitrix-jax': ('jax', lambda x: erode(x, size=size)),
         'scipy.ndimage.grey_erosion': (
             'scipy', lambda x: spnd.grey_erosion(x, size=size)),
+        'cupyx.scipy.ndimage.grey_erosion': (
+            'cupy', lambda x: _cupy_erode(x, size)),  # GPU on-target ref
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

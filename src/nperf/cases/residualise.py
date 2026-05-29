@@ -17,13 +17,22 @@ import jax.numpy as jnp
 import numpy as np
 from nitrix.linalg import residualise
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
 
 
 def _np_residualise(Y: np.ndarray, X: np.ndarray) -> np.ndarray:
     '''lstsq solve-then-project: β = argmin ||Xᵀβ − Yᵀ||; residual Y − proj.'''
     x_t = X.T  # (N, K)
     betas, _, _, _ = np.linalg.lstsq(x_t, Y.T, rcond=None)
+    return Y - (x_t @ betas).T
+
+
+def _cupy_residualise(Y: Any, X: Any) -> Any:
+    '''The same lstsq solve-then-project on the GPU (cuSOLVER); cupy lazy.'''
+    import cupy as cp
+
+    x_t = X.T
+    betas = cp.linalg.lstsq(x_t, Y.T, rcond=None)[0]
     return Y - (x_t @ betas).T
 
 
@@ -40,6 +49,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
         # residualise(Y, X): the (Y, X) order both run_fns take.
+        if framework == 'cupy':
+            return to_cupy(Y, X)
         return (Y, X) if framework == 'numpy' else (jx_y, jx_x)
 
     baselines = {
@@ -48,6 +59,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             lambda y, x: residualise(y, x, method='cholesky'),
         ),
         'numpy.linalg.lstsq': ('numpy', _np_residualise),
+        'cupy.linalg.lstsq': ('cupy', _cupy_residualise),  # GPU ref (cuSOLVER)
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

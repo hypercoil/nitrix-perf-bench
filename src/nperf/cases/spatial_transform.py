@@ -19,13 +19,23 @@ import numpy as np
 import scipy.ndimage as spnd
 from nitrix.geometry import spatial_transform
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
 
 
 def _scipy_map(img: np.ndarray, deform: np.ndarray) -> np.ndarray:
     '''map_coordinates on the single channel, returned channel-last (H,W,1).'''
     coords = deform.transpose(2, 0, 1)  # (ndim, H, W)
     out = spnd.map_coordinates(img[..., 0], coords, order=1, mode='constant')
+    return out[..., None]
+
+
+def _cupy_map(img: Any, deform: Any) -> Any:
+    '''The same linear map_coordinates on the GPU (cupyx.scipy.ndimage); cupy
+    lazy (refs-cupy env).  Same convention (absolute coords, constant mode).'''
+    from cupyx.scipy import ndimage as cnd
+
+    coords = deform.transpose(2, 0, 1)
+    out = cnd.map_coordinates(img[..., 0], coords, order=1, mode='constant')
     return out[..., None]
 
 
@@ -46,6 +56,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     ref = _scipy_map(img.astype(np.float64), deform.astype(np.float64))
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            return to_cupy(img, deform)
         return (img, deform) if framework == 'numpy' else (img_j, def_j)
 
     baselines = {
@@ -54,6 +66,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             lambda im, df: spatial_transform(im, df, mode='constant'),
         ),
         'scipy.ndimage.map_coordinates': ('scipy', _scipy_map),
+        'cupyx.scipy.ndimage.map_coordinates': (
+            'cupy', _cupy_map),  # GPU on-target ref
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

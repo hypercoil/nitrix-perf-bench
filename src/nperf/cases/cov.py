@@ -26,7 +26,7 @@ import jax.numpy as jnp
 import numpy as np
 from nitrix.stats import cov
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
 
 
 def _cupy_cov(x: Any) -> Any:
@@ -48,11 +48,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
         if framework == 'cupy':
-            import cupy as cp
-
-            xc = cp.asarray(X)
-            cp.cuda.runtime.deviceSynchronize()  # H2D out of the timed region
-            return (xc,)
+            return to_cupy(X)
         return (X,) if framework == 'numpy' else (jx,)
 
     baselines = {

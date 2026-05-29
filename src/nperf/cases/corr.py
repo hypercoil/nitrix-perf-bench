@@ -14,7 +14,14 @@ import jax.numpy as jnp
 import numpy as np
 from nitrix.stats import corr
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
+
+
+def _cupy_corrcoef(x: Any) -> Any:
+    '''CuPy ``corrcoef`` (GPU); cupy imported lazily (refs-cupy env only).'''
+    import cupy as cp
+
+    return cp.corrcoef(x)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -26,11 +33,14 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     ref = np.corrcoef(X.astype(np.float64))  # fp64 oracle
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            return to_cupy(X)
         return (X,) if framework == 'numpy' else (jx,)
 
     baselines = {
         'nitrix-jax': ('jax', lambda x: corr(x)),
         'numpy.corrcoef': ('numpy', lambda x: np.corrcoef(x)),
+        'cupy.corrcoef': ('cupy', _cupy_corrcoef),  # GPU on-target ref
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

@@ -17,7 +17,14 @@ import numpy as np
 import scipy.ndimage as spnd
 from nitrix.smoothing import gaussian
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, to_cupy
+
+
+def _cupy_gaussian(x: Any, sigma: float) -> Any:
+    '''GPU gaussian_filter (cupyx.scipy.ndimage); cupy lazy (refs-cupy env).'''
+    from cupyx.scipy import ndimage as cnd
+
+    return cnd.gaussian_filter(x, sigma=sigma)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -31,12 +38,16 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     ref = spnd.gaussian_filter(X.astype(np.float64), sigma=sigma)
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
+        if framework == 'cupy':
+            return to_cupy(X)
         return (X,) if framework == 'numpy' else (jx,)
 
     baselines = {
         'nitrix-jax': ('jax', lambda x: gaussian(x, sigma=sigma)),
         'scipy.ndimage.gaussian_filter': (
             'scipy', lambda x: spnd.gaussian_filter(x, sigma=sigma)),
+        'cupyx.scipy.ndimage.gaussian_filter': (
+            'cupy', lambda x: _cupy_gaussian(x, sigma)),  # GPU on-target ref
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,

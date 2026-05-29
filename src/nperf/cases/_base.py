@@ -20,6 +20,20 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
+def to_cupy(*arrays: Any) -> Tuple[Any, ...]:
+    '''Host arrays -> on-device CuPy arrays, synchronised so the H2D transfer
+    sits *outside* the timed region (mirrors the ``jax.block_until_ready`` on
+    the jax inputs in a case ``build``).  ``cupy`` is imported lazily, so only
+    the cupy worker (the refs-cupy env) ever needs it -- a jax/numpy worker
+    that calls a case's ``inputs_for`` for its own framework never imports it.
+    Used by the audit cases' GPU reference (Phase B).'''
+    import cupy as cp
+
+    out = tuple(cp.asarray(a) for a in arrays)
+    cp.cuda.runtime.deviceSynchronize()
+    return out
+
+
 @dataclass(frozen=True)
 class SlowBaseline:
     '''A baseline whose *measurement* is pathologically expensive (not its

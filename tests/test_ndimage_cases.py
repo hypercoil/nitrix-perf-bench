@@ -13,7 +13,7 @@ import pytest
 
 from nperf.cases import dilate, erode, gaussian
 from nperf.core.fidelity import compare
-from nperf.providers import framework_of
+from nperf.providers import framework_of, requires_of
 
 _CASES = [
     (gaussian, {'shape': [32, 32], 'sigma': 1.5, 'seed': 0},
@@ -32,16 +32,22 @@ def test_scipy_provider_is_numpy_framework():
 @pytest.mark.parametrize('mod,param,refname', _CASES)
 def test_baseline_shape(mod, param, refname):
     built = mod._build(param)
-    assert set(built.baselines) == {'nitrix-jax', refname}
+    names = set(built.baselines)
+    assert {'nitrix-jax', refname} <= names
     assert built.baselines[refname][0] == 'scipy'
     assert built.ratio_reference == 'nitrix-jax'
+    # any extra baseline is a GPU-only on-target ref (cupy).
+    for extra in names - {'nitrix-jax', refname}:
+        assert requires_of(built.baselines[extra][0]) == 'gpu'
 
 
 @pytest.mark.parametrize('mod,param,refname', _CASES)
 def test_both_baselines_match_oracle(mod, param, refname):
     built = mod._build(param)
-    for name, (framework, fn) in built.baselines.items():
-        out = np.asarray(fn(*built.inputs_for(framework)), dtype=np.float64)
+    for name, (provider_id, fn) in built.baselines.items():
+        if requires_of(provider_id) == 'gpu':
+            continue  # GPU-only ref (cupy): needs a device + the refs env
+        out = np.asarray(fn(*built.inputs_for(provider_id)), dtype=np.float64)
         fid = compare(out, built.fp64_reference,
                       rtol=mod.CASE.rtol, atol=mod.CASE.atol)
         assert fid['status'] == 'pass', (
