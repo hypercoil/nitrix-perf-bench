@@ -55,6 +55,19 @@ def test_zero_centred_does_not_blow_up_rel_to_tol():
     assert np.isfinite(fid['max_rel'])
 
 
+def test_complex_output_compared_by_magnitude():
+    # complex outputs (e.g. analytic_signal) compare via |out - ref|; the
+    # headline stays well-defined -- a tiny complex perturbation passes, a
+    # large one fails on the right element count.
+    ref = np.array([1 + 2j, -3 + 1j, 0.5 - 0.5j])
+    ok = compare(ref + 1e-6, ref, rtol=1e-3, atol=1e-4)
+    assert ok['status'] == 'pass' and ok['rel_to_tol'] < 1.0
+    bad = ref.copy()
+    bad[0] = ref[0] + 1.0j
+    fid = compare(bad, ref, rtol=1e-3, atol=1e-4)
+    assert fid['status'] == 'fail' and fid['n_mismatched'] == 1
+
+
 def test_shape_mismatch_raises():
     with pytest.raises(ValueError, match='shape mismatch'):
         compare(np.zeros((3, 3)), np.zeros((3, 4)), rtol=1e-3, atol=1e-4)

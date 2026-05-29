@@ -17,13 +17,16 @@ import numpy as np
 from .cases import (
     BuiltPoint,
     Case,
+    analytic_signal,
     corr,
     cov,
     dilate,
     distance_transform,
     ell_edge_aggregate,
+    envelope,
     erode,
     gaussian,
+    hilbert_transform,
     median_filter,
     residualise,
     semiring_matmul,
@@ -47,19 +50,24 @@ from .providers import framework_of
 
 
 def _host_f64(out: Any, framework: str) -> np.ndarray:
-    '''Bring a baseline output to host as fp64 for the fidelity compare.
+    '''Bring a baseline output to host at high precision for the fidelity
+    compare: fp64, or **complex128** for a complex output (e.g.
+    ``analytic_signal``).
 
     torch tensors (possibly on cuda, possibly autograd-tracked) need an
     explicit ``detach().cpu().numpy()`` -- ``np.asarray`` rejects a cuda
-    tensor.  jax arrays / numpy convert directly.  torch is imported only by
-    being handed a torch output, so the base env never needs it here.'''
+    tensor.  cupy needs ``cp.asnumpy``.  jax arrays / numpy convert directly.
+    torch / cupy are imported only when handed such an output, so the base env
+    never needs them here.'''
     if framework == 'torch':
-        return out.detach().cpu().numpy().astype(np.float64)
-    if framework == 'cupy':
+        arr = out.detach().cpu().numpy()
+    elif framework == 'cupy':
         import cupy as cp
 
-        return cp.asnumpy(out).astype(np.float64)
-    return np.asarray(out, dtype=np.float64)
+        arr = cp.asnumpy(out)
+    else:
+        arr = np.asarray(out)
+    return arr.astype(np.complex128 if np.iscomplexobj(arr) else np.float64)
 
 
 def _validate_case(case: Case) -> Case:
@@ -91,7 +99,10 @@ CASES: Dict[str, Case] = {
               _validate_case(median_filter.CASE),
               _validate_case(symlog.CASE),
               _validate_case(symsqrt.CASE),
-              _validate_case(sympower.CASE))
+              _validate_case(sympower.CASE),
+              _validate_case(analytic_signal.CASE),
+              _validate_case(hilbert_transform.CASE),
+              _validate_case(envelope.CASE))
 }
 
 

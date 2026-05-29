@@ -32,8 +32,13 @@ def compare(
     here.  The adapter is responsible for layout / index normalisation before
     calling this; we only verify shapes match.
     '''
-    out_a = np.asarray(out, dtype=np.float64)
-    ref_a = np.asarray(ref, dtype=np.float64)
+    # fp64, or complex128 for complex outputs (e.g. analytic_signal): the error
+    # magnitudes below (np.abs) are real either way, so rel_to_tol / max_abs
+    # stay well-defined -- a complex output is compared by |out - ref|.
+    hp = (np.complex128 if np.iscomplexobj(out) or np.iscomplexobj(ref)
+          else np.float64)
+    out_a = np.asarray(out, dtype=hp)
+    ref_a = np.asarray(ref, dtype=hp)
     if out_a.shape != ref_a.shape:
         raise ValueError(
             f'fidelity.compare: shape mismatch {out_a.shape} vs {ref_a.shape}'
