@@ -4,8 +4,8 @@
 
 ## Host
 
-- nitrix: fcbe94d384b8576bb7f2f515756b521236682272 | bench: f9cc83fb07be9f33fba7916ff60a91d3d5136274
-- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-28T23:12:33.151568+00:00
+- nitrix: fcbe94d384b8576bb7f2f515756b521236682272 | bench: 74c2a463e4261e4ded1c4c38d8d6b1febd26235c
+- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-29T01:39:15.885931+00:00
 
 ### Platforms
 
@@ -18,18 +18,24 @@
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
-| residualise | jax-cpu | V=1000,N=400,K=24 | `nitrix-jax` | ok | 936.1 µs / 975.2 µs | 475.21 ms | 1817 MB (rss) | ✓ 0.0038×tol | 1.00x vs nitrix-jax |
-| residualise | jax-cpu | V=1000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 7.79 ms / 14.51 ms | 23.10 ms | 1817 MB (rss) | ✓ 0.0017×tol | 8.32x vs nitrix-jax |
-| residualise | jax-cuda12 | V=1000,N=400,K=24 | `nitrix-jax` | ok | 169.3 µs / 173.0 µs | 729.12 ms | 76.60 MB (hbm) | ✓ 0.0028×tol | 1.00x vs nitrix-jax |
-| residualise | jax-cuda12 | V=1000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 7.64 ms / 9.90 ms | 16.22 ms | 2.10 MB (hbm) | ✓ 0.0017×tol | 45.12x vs nitrix-jax |
-| residualise | jax-cpu | V=10000,N=400,K=24 | `nitrix-jax` | ok | 10.87 ms / 12.99 ms | 618.44 ms | 1817 MB (rss) | ✓ 0.0061×tol | 1.00x vs nitrix-jax |
-| residualise | jax-cpu | V=10000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 109.46 ms / 162.03 ms | 140.38 ms | 1817 MB (rss) | ✓ 0.0022×tol | 10.07x vs nitrix-jax |
-| residualise | jax-cuda12 | V=10000,N=400,K=24 | `nitrix-jax` | ok | 358.5 µs / 369.2 µs | 975.27 ms | 120.12 MB (hbm) | ✓ 0.0041×tol | 1.00x vs nitrix-jax |
-| residualise | jax-cuda12 | V=10000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 98.51 ms / 237.55 ms | 1.252 s | 16.82 MB (hbm) | ✓ 0.0022×tol | 274.78x vs nitrix-jax |
-| residualise | jax-cpu | V=100000,N=400,K=24 | `nitrix-jax` | ok | 215.36 ms / 223.34 ms | 1.134 s | 1817 MB (rss) | ✓ 0.0071×tol | 1.00x vs nitrix-jax |
-| residualise | jax-cpu | V=100000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 3.042 s / 3.579 s | 2.994 s | 1873 MB (rss) | ✓ 0.0025×tol | 14.12x vs nitrix-jax |
-| residualise | jax-cuda12 | V=100000,N=400,K=24 | `nitrix-jax` | ok | 5.57 ms / 5.61 ms | 663.37 ms | 861.14 MB (hbm) | ✓ 0.0089×tol | 1.00x vs nitrix-jax |
-| residualise | jax-cuda12 | V=100000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 1.657 s / 3.524 s | 3.929 s | 268.47 MB (hbm) | ✓ 0.0025×tol | 297.68x vs nitrix-jax |
+| residualise | jax-cpu | V=1000,N=400,K=24 | `cupy.linalg.lstsq` | skipped | — | — | — | — | — |
+| residualise | jax-cpu | V=1000,N=400,K=24 | `nitrix-jax` | ok | 939.5 µs / 1.07 ms | 395.38 ms | 1818 MB (rss) | ✓ 0.0038×tol | 1.00x vs nitrix-jax |
+| residualise | jax-cpu | V=1000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 7.63 ms / 13.49 ms | 22.44 ms | 1818 MB (rss) | ✓ 0.0017×tol | 8.13x vs nitrix-jax |
+| residualise | jax-cuda12 | V=1000,N=400,K=24 | `cupy.linalg.lstsq` | ok | 2.00 ms / 2.02 ms | 17.026 s | 2.10 MB (hbm) | ✓ 0.0078×tol | 11.82x vs nitrix-jax |
+| residualise | jax-cuda12 | V=1000,N=400,K=24 | `nitrix-jax` | ok | 169.5 µs / 175.3 µs | 676.15 ms | 76.60 MB (hbm) | ✓ 0.0028×tol | 1.00x vs nitrix-jax |
+| residualise | jax-cuda12 | V=1000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 7.90 ms / 21.12 ms | 9.14 ms | 2.10 MB (hbm) | ✓ 0.0017×tol | 46.61x vs nitrix-jax |
+| residualise | jax-cpu | V=10000,N=400,K=24 | `cupy.linalg.lstsq` | skipped | — | — | — | — | — |
+| residualise | jax-cpu | V=10000,N=400,K=24 | `nitrix-jax` | ok | 29.77 ms / 60.09 ms | 717.72 ms | 1818 MB (rss) | ✓ 0.0061×tol | 1.00x vs nitrix-jax |
+| residualise | jax-cpu | V=10000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 100.71 ms / 130.79 ms | 121.60 ms | 1818 MB (rss) | ✓ 0.0022×tol | 3.38x vs nitrix-jax |
+| residualise | jax-cuda12 | V=10000,N=400,K=24 | `cupy.linalg.lstsq` | ok | 2.36 ms / 2.40 ms | 334.78 ms | 16.82 MB (hbm) | ✓ 0.0098×tol | 6.81x vs nitrix-jax |
+| residualise | jax-cuda12 | V=10000,N=400,K=24 | `nitrix-jax` | ok | 347.1 µs / 350.1 µs | 965.91 ms | 120.12 MB (hbm) | ✓ 0.0089×tol | 1.00x vs nitrix-jax |
+| residualise | jax-cuda12 | V=10000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 136.69 ms / 399.79 ms | 245.84 ms | 16.82 MB (hbm) | ✓ 0.0022×tol | 393.76x vs nitrix-jax |
+| residualise | jax-cpu | V=100000,N=400,K=24 | `cupy.linalg.lstsq` | skipped | — | — | — | — | — |
+| residualise | jax-cpu | V=100000,N=400,K=24 | `nitrix-jax` | ok | 210.13 ms / 220.86 ms | 1.075 s | 1818 MB (rss) | ✓ 0.0071×tol | 1.00x vs nitrix-jax |
+| residualise | jax-cpu | V=100000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 2.865 s / 3.449 s | 2.537 s | 1864 MB (rss) | ✓ 0.0025×tol | 13.64x vs nitrix-jax |
+| residualise | jax-cuda12 | V=100000,N=400,K=24 | `cupy.linalg.lstsq` | ok | 12.81 ms / 13.43 ms | 438.00 ms | 268.47 MB (hbm) | ✓ 0.012×tol | 2.29x vs nitrix-jax |
+| residualise | jax-cuda12 | V=100000,N=400,K=24 | `nitrix-jax` | ok | 5.60 ms / 5.63 ms | 689.56 ms | 861.14 MB (hbm) | ✓ 0.0089×tol | 1.00x vs nitrix-jax |
+| residualise | jax-cuda12 | V=100000,N=400,K=24 | `numpy.linalg.lstsq` | ok | 1.607 s / 3.359 s | 3.365 s | 268.47 MB (hbm) | ✓ 0.0025×tol | 286.99x vs nitrix-jax |
 
 ## Notes
 

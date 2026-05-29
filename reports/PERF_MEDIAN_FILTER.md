@@ -4,8 +4,8 @@
 
 ## Host
 
-- nitrix: fcbe94d384b8576bb7f2f515756b521236682272 | bench: f9cc83fb07be9f33fba7916ff60a91d3d5136274
-- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-28T23:16:03.600733+00:00
+- nitrix: fcbe94d384b8576bb7f2f515756b521236682272 | bench: 74c2a463e4261e4ded1c4c38d8d6b1febd26235c
+- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-29T01:44:10.288576+00:00
 
 ### Platforms
 
@@ -18,14 +18,18 @@
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
-| median_filter | jax-cpu | shape=[256, 256],size=3 | `nitrix-jax` | ok | 28.30 ms / 30.90 ms | 206.64 ms | 514 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| median_filter | jax-cpu | shape=[256, 256],size=3 | `scipy.ndimage.median_filter` | ok | 7.21 ms / 7.53 ms | 7.40 ms | 447 MB (rss) | n/a (no oracle) | 0.25x vs nitrix-jax |
-| median_filter | jax-cuda12 | shape=[256, 256],size=3 | `nitrix-jax` | ok | 310.0 µs / 316.8 µs | 533.07 ms | 72.09 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| median_filter | jax-cuda12 | shape=[256, 256],size=3 | `scipy.ndimage.median_filter` | ok | 7.19 ms / 7.26 ms | 7.37 ms | 0.26 MB (hbm) | n/a (no oracle) | 23.20x vs nitrix-jax |
-| median_filter | jax-cpu | shape=[64, 64],size=3 | `nitrix-jax` | ok | 1.75 ms / 1.78 ms | 142.36 ms | 505 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| median_filter | jax-cpu | shape=[64, 64],size=3 | `scipy.ndimage.median_filter` | ok | 429.4 µs / 437.9 µs | 613.6 µs | 447 MB (rss) | n/a (no oracle) | 0.25x vs nitrix-jax |
-| median_filter | jax-cuda12 | shape=[64, 64],size=3 | `nitrix-jax` | ok | 128.8 µs / 146.2 µs | 456.91 ms | 33.87 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| median_filter | jax-cuda12 | shape=[64, 64],size=3 | `scipy.ndimage.median_filter` | ok | 428.3 µs / 432.0 µs | 695.9 µs | 0.02 MB (hbm) | n/a (no oracle) | 3.33x vs nitrix-jax |
+| median_filter | jax-cpu | shape=[256, 256],size=3 | `cupyx.scipy.ndimage.median_filter` | skipped | — | — | — | — | — |
+| median_filter | jax-cpu | shape=[256, 256],size=3 | `nitrix-jax` | ok | 27.72 ms / 28.46 ms | 195.59 ms | 508 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| median_filter | jax-cpu | shape=[256, 256],size=3 | `scipy.ndimage.median_filter` | ok | 7.18 ms / 7.23 ms | 7.42 ms | 447 MB (rss) | n/a (no oracle) | 0.26x vs nitrix-jax |
+| median_filter | jax-cuda12 | shape=[256, 256],size=3 | `cupyx.scipy.ndimage.median_filter` | ok | 61.1 µs / 65.0 µs | 235.31 ms | 0.26 MB (hbm) | n/a (no oracle) | 0.19x vs nitrix-jax |
+| median_filter | jax-cuda12 | shape=[256, 256],size=3 | `nitrix-jax` | ok | 318.9 µs / 340.0 µs | 538.46 ms | 72.09 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| median_filter | jax-cuda12 | shape=[256, 256],size=3 | `scipy.ndimage.median_filter` | ok | 7.19 ms / 7.21 ms | 7.40 ms | 0.26 MB (hbm) | n/a (no oracle) | 22.53x vs nitrix-jax |
+| median_filter | jax-cpu | shape=[64, 64],size=3 | `cupyx.scipy.ndimage.median_filter` | skipped | — | — | — | — | — |
+| median_filter | jax-cpu | shape=[64, 64],size=3 | `nitrix-jax` | ok | 1.78 ms / 1.81 ms | 131.19 ms | 504 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| median_filter | jax-cpu | shape=[64, 64],size=3 | `scipy.ndimage.median_filter` | ok | 428.8 µs / 432.6 µs | 618.8 µs | 447 MB (rss) | n/a (no oracle) | 0.24x vs nitrix-jax |
+| median_filter | jax-cuda12 | shape=[64, 64],size=3 | `cupyx.scipy.ndimage.median_filter` | ok | 61.0 µs / 63.4 µs | 2.794 s | 0.02 MB (hbm) | n/a (no oracle) | 0.56x vs nitrix-jax |
+| median_filter | jax-cuda12 | shape=[64, 64],size=3 | `nitrix-jax` | ok | 108.0 µs / 109.4 µs | 502.89 ms | 33.87 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| median_filter | jax-cuda12 | shape=[64, 64],size=3 | `scipy.ndimage.median_filter` | ok | 428.5 µs / 435.4 µs | 615.2 µs | 0.02 MB (hbm) | n/a (no oracle) | 3.97x vs nitrix-jax |
 
 ## Notes
 
