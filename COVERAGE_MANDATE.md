@@ -220,6 +220,23 @@ not a regression** (so a fast run can detect regressions on its subset without
 false-failing the skipped slow baselines). Authoritative coverage = a full
 sweep (omit `--skip-slow`).
 
+**Shipped (2026-05-29) — Phase B: the GPU bar for the audit ops.** All 9 audit
+cases now carry a **CuPy on-target GPU reference** (`cupy.corrcoef`,
+`cupy.linalg.lstsq`/cuSOLVER, `cupyx.scipy.ndimage.*`) in an isolated
+`refs-cupy` env, gated GPU-only via `Provider.requires='gpu'` + a runner
+platform-applicability skip (`platform_not_applicable` off-GPU — critical
+because CuPy ignores `JAX_PLATFORMS`). The apples-to-apples `jax-cuda12` ratio
+replaces the misleading nitrix-GPU-vs-CPU-floor view and immediately surfaced
+**on-target deficits the floor hid**: nitrix wins on cov/corr/residualise
+(2–29×) and gaussian (~2×) but **lags CuPy** on erode/dilate (~1.2×),
+spatial_transform (~1.8×), median_filter (~2–5×), and distance_transform
+(~9–100×, the iterative-tropical vs exact-EDT mismatch) — plus a memory signal
+(nitrix morphology ~34–72 MB HBM vs CuPy <0.3 MB). These are exactly the
+"performance lagging on the deployment target" ops the mandate exists to find;
+they feed the nitrix agent as Pallas-kernel / algorithm candidates. *Still open
+in Phase B:* the `audit_case` builder and the Tier-2 backbone (new ops);
+torch-CUDA refs for conv/pooling are Phase C.
+
 ## 8. Cross-references
 
 - [`DESIGN.md`](DESIGN.md) §1 (two-tier coverage), §4 (feedback loop), §6/P4
