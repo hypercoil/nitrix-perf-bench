@@ -95,6 +95,14 @@ regressions-vs-target* — i.e. "the numerics most in need of improvement". It
 obeys the renderer no-arithmetic rule (SCHEMA §G): selection + already-stored
 ratios/targets only.
 
+**Shipped (2026-05-29):** `report/coverage.py` + `tools/coverage_report.py`
+(→ `reports/COVERAGE_DEFICIT.{md,json}`). "Lagging" is currently *slower than
+the strong on-target ref* (per-op **targets**, §2.4, will refine the bar); a
+`fast` run's ops are flagged **provisional**. First emission: 11/52 runtime ops
+multiplatform, 9 with a strong GPU ref, **5 lagging on the L4** — ranked
+`distance_transform` (~105×) ▸ `median_filter` (~5×) ▸ `spatial_transform`
+(~1.8×) ▸ `erode`/`dilate` (~1.2–1.3×).
+
 ### 2.3 References must include a strong on-target bar
 Keep the numpy / scipy / sklearn CPU references — they are the honest "what
 you'd write without nitrix" **floor** that feeds the op-matrix — but every
