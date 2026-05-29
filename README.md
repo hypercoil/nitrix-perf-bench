@@ -150,8 +150,11 @@ it as authoritative** — run the full sweep (omit `--skip-slow`) at sprint end
 regression gate (`--gate-current`, default the store; `--gate-min`/`--gate-p95`
 thresholds; `--gate-out` artifact) and exits nonzero on a regression; `--site
 [DIR]` renders the self-contained HTML site. The op_matrix feed
-(`tools/op_matrix_feed.py`) and decision-input bundles
-(`tools/decision_bundle.py`) are sibling L5 artifacts over the same rows. Tests:
+(`tools/op_matrix_feed.py`), decision-input bundles
+(`tools/decision_bundle.py`), and the **coverage-&-deficit report**
+(`tools/coverage_report.py` — joins the op catalogue with the store and ranks
+under-covered + on-target-lagging ops for the nitrix agent) are sibling L5
+artifacts over the same rows. Tests:
 `JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case build,
 worker round-trip, scheduler invariants, multi-platform, registries, store,
 gate, bundle, html).
