@@ -36,6 +36,7 @@ from .cases import (
     polynomial_detrend,
     precision,
     rbf_kernel,
+    reml_fit,
     residualise,
     semiring_matmul,
     spatial_transform,
@@ -120,7 +121,8 @@ CASES: Dict[str, Case] = {
               _validate_case(lomb_scargle_periodogram.CASE),
               _validate_case(precision.CASE),
               _validate_case(partialcov.CASE),
-              _validate_case(partialcorr.CASE))
+              _validate_case(partialcorr.CASE),
+              _validate_case(reml_fit.CASE))
 }
 
 

@@ -72,6 +72,14 @@ PROVIDERS: Dict[str, Provider] = {
         # semantics, no device sync -> numpy framework + base env), a distinct
         # id so the kernel CPU floor is attributable to the standard library.
         Provider('sklearn', 'numpy', description='host scikit-learn (uv)'),
+        # statsmodels reference (statsmodels.MixedLM -- the canonical CPU LME
+        # tool): host, numpy framework.  requires='cpu' so it runs ONLY on the
+        # CPU platform -- it has no GPU path and is *expensive* (per-voxel
+        # iterative fits), so running identical host work under the GPU
+        # platform label would just double the cost; the headline GPU-vs-CPU
+        # speedup is read cross-platform from nitrix's two rows + this one.
+        Provider('statsmodels', 'numpy', requires='cpu',
+                 description='host statsmodels MixedLM (uv); CPU-only ref'),
         # P2 cross-framework refs.  torch's *CPU* wheel is on the PyTorch
         # index and uv-installable, so it is a uv env -- a separate
         # interpreter (built by tools/setup_refs_env.sh; the runner selects

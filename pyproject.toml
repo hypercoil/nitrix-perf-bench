@@ -16,10 +16,14 @@ requires-python = ">=3.11"
 # ``sklearn`` providers), so they are core deps rather than per-platform group
 # entries.  sklearn is the recognised kernel reference -- using it as the CPU
 # floor (vs a hand-rolled numpy snippet) keeps the comparison defensible.
+# ``statsmodels`` is the canonical CPU LME reference (statsmodels.MixedLM, the
+# reml_fit baseline); it is imported lazily (only its baseline worker needs it),
+# but declared here for reproducibility.
 dependencies = [
     "numpy >= 2.0",
     "scipy >= 1.13",
     "scikit-learn >= 1.4",
+    "statsmodels >= 0.14",
 ]
 
 [project.scripts]
