@@ -72,6 +72,12 @@ PROVIDERS: Dict[str, Provider] = {
         # semantics, no device sync -> numpy framework + base env), a distinct
         # id so the kernel CPU floor is attributable to the standard library.
         Provider('sklearn', 'numpy', description='host scikit-learn (uv)'),
+        # nilearn reference (nilearn.connectome -- the canonical neuroimaging
+        # CPU floor for connectome ops like the tangent-space embedding): host,
+        # numpy framework + base env, same shape as sklearn/scipy.  A distinct
+        # id so the floor is attributable to the domain-standard tool (the
+        # first domain-tool reference; see DOMAIN_TOOL_BASELINES.md).
+        Provider('nilearn', 'numpy', description='host nilearn (uv)'),
         # statsmodels reference (statsmodels.MixedLM -- the canonical CPU LME
         # tool): host, numpy framework.  requires='cpu' so it runs ONLY on the
         # CPU platform -- it has no GPU path and is *expensive* (per-voxel

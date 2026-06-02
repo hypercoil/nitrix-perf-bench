@@ -45,6 +45,7 @@ from .cases import (
     symlog,
     sympower,
     symsqrt,
+    tangent_project_spd,
     throwaway,
     tsconv,
 )
@@ -112,6 +113,7 @@ CASES: Dict[str, Case] = {
               _validate_case(symlog.CASE),
               _validate_case(symsqrt.CASE),
               _validate_case(sympower.CASE),
+              _validate_case(tangent_project_spd.CASE),
               _validate_case(analytic_signal.CASE),
               _validate_case(hilbert_transform.CASE),
               _validate_case(envelope.CASE),
