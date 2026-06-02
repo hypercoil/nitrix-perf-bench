@@ -135,8 +135,8 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.signal.lomb_scargle_periodogram` | cupyx.scipy.signal.lombscargle | 109 | ~108.7x faster |
 | `nitrix.stats.cov` | cupy.cov | 29.1 | ~29.1x faster |
 | `nitrix.stats.corr` | cupy.corrcoef | 27.9 | ~27.9x faster |
-| `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 12.1 | ~12.1x faster |
-| `nitrix.linalg.residualise` | cupy.linalg.lstsq | 6.81 | ~6.8x faster |
+| `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 11.3 | ~11.3x faster |
+| `nitrix.linalg.residualise` | cupy.linalg.lstsq | 7.04 | ~7.0x faster |
 | `nitrix.linalg.rbf_kernel` | cupy.rbf_kernel | 3.2 | ~3.2x faster |
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
 | `nitrix.stats.partialcorr` | cupy.partialcorr | 2.33 | ~2.3x faster |

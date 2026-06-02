@@ -1636,7 +1636,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupy.linalg.lstsq",
-      "gpu_ref_ratio": 6.811282878005028,
+      "gpu_ref_ratio": 7.0421897454299875,
       "nitrix_slower_on_gpu": false
     },
     {
@@ -1916,7 +1916,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupy.lstsq_detrend",
-      "gpu_ref_ratio": 12.120498418005665,
+      "gpu_ref_ratio": 11.327219144067401,
       "nitrix_slower_on_gpu": false
     },
     {
