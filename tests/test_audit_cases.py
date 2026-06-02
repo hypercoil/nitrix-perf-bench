@@ -13,7 +13,7 @@ import pytest
 
 from nperf.cases import corr, cov, residualise
 from nperf.core.fidelity import compare
-from nperf.providers import requires_of
+from nperf.providers import framework_of, requires_of
 
 # (module, small param point, expected reference baseline name)
 _CASES = [
@@ -33,9 +33,11 @@ def test_baseline_shape(mod, param, refname):
     assert built.baselines[refname][0] == 'numpy'      # numpy provider
     assert built.baselines['nitrix-jax'][0] == 'jax'
     assert built.ratio_reference == 'nitrix-jax'
-    # ...and any extra baseline is a GPU-only on-target ref (e.g. cupy).
+    # ...and any extra baseline is a GPU-only on-target ref (cupy) or a CPU
+    # floor (the nilearn signal.clean confound-regression ref on residualise).
     for extra in names - {'nitrix-jax', refname}:
-        assert requires_of(built.baselines[extra][0]) == 'gpu'
+        prov = built.baselines[extra][0]
+        assert requires_of(prov) == 'gpu' or framework_of(prov) == 'numpy'
 
 
 @pytest.mark.parametrize('mod,param,refname', _CASES)

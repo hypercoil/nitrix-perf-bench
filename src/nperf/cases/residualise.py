@@ -18,6 +18,7 @@ import numpy as np
 from nitrix.linalg import residualise
 
 from ._base import BuiltPoint, Case, to_cupy
+from ._clean import nilearn_clean
 
 
 def _np_residualise(Y: np.ndarray, X: np.ndarray) -> np.ndarray:
@@ -59,6 +60,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             lambda y, x: residualise(y, x, method='cholesky'),
         ),
         'numpy.linalg.lstsq': ('numpy', _np_residualise),
+        'nilearn.signal_clean': (  # canonical fMRI confound-regression floor
+            'nilearn', lambda y, x: nilearn_clean(y, np.asarray(x).T)),
         'cupy.linalg.lstsq': ('cupy', _cupy_residualise),  # GPU ref (cuSOLVER)
     }
     return BuiltPoint(

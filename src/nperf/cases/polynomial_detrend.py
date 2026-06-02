@@ -21,6 +21,7 @@ import numpy as np
 from nitrix.signal import polynomial_detrend
 
 from ._base import BuiltPoint, Case, to_cupy
+from ._clean import nilearn_clean
 
 _DEGREE = 3
 
@@ -58,6 +59,12 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
     ref = _np_detrend(X.astype(np.float64), deg)  # fp64 oracle
 
+    # degree-d polynomial (Vandermonde) basis as nilearn confounds: clean's own
+    # detrend is linear-only, so a degree-d detrend is confound regression
+    # against this basis (time x (deg+1)).
+    tt = np.linspace(-1.0, 1.0, obs, dtype=np.float32)
+    vander = np.vander(tt, deg + 1, increasing=True)
+
     def inputs_for(framework: str) -> Tuple[Any, ...]:
         if framework == 'cupy':
             return to_cupy(X)
@@ -66,6 +73,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     baselines = {
         'nitrix-jax': ('jax', lambda x: polynomial_detrend(x, degree=deg)),
         'numpy.lstsq_detrend': ('numpy', lambda x: _np_detrend(x, deg)),
+        'nilearn.signal_clean': (  # detrend via polynomial-basis confounds
+            'nilearn', lambda x: nilearn_clean(x, vander)),
         'cupy.lstsq_detrend': ('cupy', lambda x: _cupy_detrend(x, deg)),  # GPU
     }
     return BuiltPoint(
