@@ -114,6 +114,14 @@ CUDA (edge-aggregate). These live in perf-bench's **isolated refs env** (DESIGN
 ratio is labelled with its reference strength, so a number that is green
 against a weak floor is never mistaken for a win against the real bar.
 
+**Floor-credibility upgrade (roadmap):** for a neuroimaging numerics library
+the most decision-relevant *floor* is not a hand-rolled numpy snippet but *the
+tool a practitioner actually runs*. [`DOMAIN_TOOL_BASELINES.md`](DOMAIN_TOOL_BASELINES.md)
+plans adding nilearn / SimpleITK / ANTsPy (in-memory, kernel-vs-kernel) and the
+binary suites FSL / AFNI / FreeSurfer / Connectome Workbench / SPM (end-to-end
+with an I/O floor) as references — a credibility upgrade to this floor, *not* a
+replacement for the strong on-target GPU bar above.
+
 ### 2.4 "Lagging" is defined by per-op targets, not eyeballed ratios
 `ratio < 1 = faster` against a weak reference is almost always green and
 therefore useless for triage. Each `Case` carries a typed, immutable
@@ -277,6 +285,9 @@ strong GPU ref**.
 
 ## 8. Cross-references
 
+- [`DOMAIN_TOOL_BASELINES.md`](DOMAIN_TOOL_BASELINES.md) — roadmap for the
+  canonical-domain-tool references that upgrade the §2.3 CPU floor (nilearn /
+  SimpleITK / ANTsPy / FSL / AFNI / FreeSurfer / Connectome Workbench / SPM).
 - [`DESIGN.md`](DESIGN.md) §1 (two-tier coverage), §4 (feedback loop), §6/P4
   (the migration this mandate steers).
 - [`SCHEMA_AND_LIFECYCLE.md`](SCHEMA_AND_LIFECYCLE.md) §A (row + `dtype` field),
