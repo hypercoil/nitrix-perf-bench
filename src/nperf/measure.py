@@ -29,7 +29,9 @@ from .cases import (
     hilbert_transform,
     linear_distance,
     linear_kernel,
+    lomb_scargle_periodogram,
     median_filter,
+    polynomial_detrend,
     rbf_kernel,
     residualise,
     semiring_matmul,
@@ -38,6 +40,7 @@ from .cases import (
     sympower,
     symsqrt,
     throwaway,
+    tsconv,
 )
 from .core import (
     METRICS,
@@ -108,7 +111,10 @@ CASES: Dict[str, Case] = {
               _validate_case(envelope.CASE),
               _validate_case(rbf_kernel.CASE),
               _validate_case(linear_kernel.CASE),
-              _validate_case(linear_distance.CASE))
+              _validate_case(linear_distance.CASE),
+              _validate_case(polynomial_detrend.CASE),
+              _validate_case(tsconv.CASE),
+              _validate_case(lomb_scargle_periodogram.CASE))
 }
 
 
