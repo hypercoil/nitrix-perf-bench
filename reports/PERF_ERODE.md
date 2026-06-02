@@ -4,8 +4,8 @@
 
 ## Host
 
-- nitrix: fcbe94d384b8576bb7f2f515756b521236682272 | bench: 74c2a463e4261e4ded1c4c38d8d6b1febd26235c
-- Linux-6.1.161-183.298.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-05-29T01:42:01.950650+00:00
+- nitrix: d0a9ca5fc20f2136415cfd5d76f4257fba31857a | bench: 44def4b7ce5c1f37844a65f1545ddc4ba9281c5b
+- Linux-6.1.170-213.321.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-06-02T22:35:55.769528+00:00
 
 ### Platforms
 
@@ -19,17 +19,21 @@
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
 | erode | jax-cpu | shape=[256, 256],size=3 | `cupyx.scipy.ndimage.grey_erosion` | skipped | — | — | — | — | — |
-| erode | jax-cpu | shape=[256, 256],size=3 | `nitrix-jax` | ok | 742.6 µs / 780.7 µs | 156.79 ms | 505 MB (rss) | ✓ 0×tol | 1.00x vs nitrix-jax |
-| erode | jax-cpu | shape=[256, 256],size=3 | `scipy.ndimage.grey_erosion` | ok | 1.31 ms / 1.36 ms | 1.40 ms | 449 MB (rss) | ✓ 0×tol | 1.76x vs nitrix-jax |
-| erode | jax-cuda12 | shape=[256, 256],size=3 | `cupyx.scipy.ndimage.grey_erosion` | ok | 119.3 µs / 123.4 µs | 304.48 ms | 0.26 MB (hbm) | ✓ 0×tol | 0.78x vs nitrix-jax |
-| erode | jax-cuda12 | shape=[256, 256],size=3 | `nitrix-jax` | ok | 153.6 µs / 156.0 µs | 627.84 ms | 72.09 MB (hbm) | ✓ 0×tol | 1.00x vs nitrix-jax |
-| erode | jax-cuda12 | shape=[256, 256],size=3 | `scipy.ndimage.grey_erosion` | ok | 1.23 ms / 1.26 ms | 1.38 ms | 0.26 MB (hbm) | ✓ 0×tol | 8.03x vs nitrix-jax |
+| erode | jax-cpu | shape=[256, 256],size=3 | `nitrix-jax` | ok | 756.1 µs / 838.0 µs | 151.68 ms | 698 MB (rss) | ✓ 0×tol | 1.00x vs nitrix-jax |
+| erode | jax-cpu | shape=[256, 256],size=3 | `scipy.ndimage.grey_erosion` | ok | 1.21 ms / 1.22 ms | 1.25 ms | 698 MB (rss) | ✓ 0×tol | 1.60x vs nitrix-jax |
+| erode | jax-cpu | shape=[256, 256],size=3 | `simpleitk.GrayscaleErode` | ok | 4.15 ms / 4.68 ms | 67.68 ms | 698 MB (rss) | ✓ 0×tol | 5.48x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[256, 256],size=3 | `cupyx.scipy.ndimage.grey_erosion` | ok | 119.8 µs / 126.0 µs | 143.20 ms | 0.26 MB (hbm) | ✓ 0×tol | 0.77x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[256, 256],size=3 | `nitrix-jax` | ok | 156.6 µs / 158.3 µs | 579.10 ms | 72.09 MB (hbm) | ✓ 0×tol | 1.00x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[256, 256],size=3 | `scipy.ndimage.grey_erosion` | ok | 1.21 ms / 1.22 ms | 1.25 ms | 0.26 MB (hbm) | ✓ 0×tol | 7.74x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[256, 256],size=3 | `simpleitk.GrayscaleErode` | ok | 3.26 ms / 3.32 ms | 61.14 ms | 0.26 MB (hbm) | ✓ 0×tol | 20.83x vs nitrix-jax |
 | erode | jax-cpu | shape=[64, 64],size=3 | `cupyx.scipy.ndimage.grey_erosion` | skipped | — | — | — | — | — |
-| erode | jax-cpu | shape=[64, 64],size=3 | `nitrix-jax` | ok | 58.1 µs / 59.5 µs | 119.32 ms | 507 MB (rss) | ✓ 0×tol | 1.00x vs nitrix-jax |
-| erode | jax-cpu | shape=[64, 64],size=3 | `scipy.ndimage.grey_erosion` | ok | 35.3 µs / 39.9 µs | 93.9 µs | 449 MB (rss) | ✓ 0×tol | 0.61x vs nitrix-jax |
-| erode | jax-cuda12 | shape=[64, 64],size=3 | `cupyx.scipy.ndimage.grey_erosion` | ok | 119.0 µs / 123.6 µs | 5.026 s | 0.02 MB (hbm) | ✓ 0×tol | 0.84x vs nitrix-jax |
-| erode | jax-cuda12 | shape=[64, 64],size=3 | `nitrix-jax` | ok | 142.2 µs / 152.3 µs | 834.33 ms | 33.87 MB (hbm) | ✓ 0×tol | 1.00x vs nitrix-jax |
-| erode | jax-cuda12 | shape=[64, 64],size=3 | `scipy.ndimage.grey_erosion` | ok | 58.4 µs / 60.9 µs | 109.3 µs | 0.02 MB (hbm) | ✓ 0×tol | 0.41x vs nitrix-jax |
+| erode | jax-cpu | shape=[64, 64],size=3 | `nitrix-jax` | ok | 57.6 µs / 58.6 µs | 113.17 ms | 698 MB (rss) | ✓ 0×tol | 1.00x vs nitrix-jax |
+| erode | jax-cpu | shape=[64, 64],size=3 | `scipy.ndimage.grey_erosion` | ok | 41.2 µs / 55.6 µs | 116.1 µs | 698 MB (rss) | ✓ 0×tol | 0.72x vs nitrix-jax |
+| erode | jax-cpu | shape=[64, 64],size=3 | `simpleitk.GrayscaleErode` | ok | 1.15 ms / 1.17 ms | 56.70 ms | 698 MB (rss) | ✓ 0×tol | 19.90x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[64, 64],size=3 | `cupyx.scipy.ndimage.grey_erosion` | ok | 117.9 µs / 123.7 µs | 556.58 ms | 0.02 MB (hbm) | ✓ 0×tol | 0.76x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[64, 64],size=3 | `nitrix-jax` | ok | 156.1 µs / 185.9 µs | 1.258 s | 33.87 MB (hbm) | ✓ 0×tol | 1.00x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[64, 64],size=3 | `scipy.ndimage.grey_erosion` | ok | 78.5 µs / 85.6 µs | 131.5 µs | 0.02 MB (hbm) | ✓ 0×tol | 0.50x vs nitrix-jax |
+| erode | jax-cuda12 | shape=[64, 64],size=3 | `simpleitk.GrayscaleErode` | ok | 1.17 ms / 1.25 ms | 58.12 ms | 0.02 MB (hbm) | ✓ 0×tol | 7.51x vs nitrix-jax |
 
 ## Notes
 

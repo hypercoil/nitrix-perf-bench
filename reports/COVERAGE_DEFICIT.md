@@ -17,12 +17,12 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 
 | # | op | strong GPU ref | ratio (ref/nitrix) | nitrix | note |
 |---|---|---|---:|---|---|
-| 1 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.00954 | ~104.8x slower |  |
-| 2 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.191 | ~5.2x slower |  |
+| 1 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.00922 | ~108.5x slower |  |
+| 2 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
 | 3 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
 | 4 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 5 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.777 | ~1.3x slower |  |
-| 6 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.825 | ~1.2x slower |  |
+| 5 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 6 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
 
 ## Under-covered — ranked by priority
 

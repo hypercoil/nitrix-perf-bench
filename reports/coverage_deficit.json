@@ -22,7 +22,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.distance_transform_edt",
-      "gpu_ref_ratio": 0.009541871762217411,
+      "gpu_ref_ratio": 0.009218079456153421,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -36,7 +36,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.median_filter",
-      "gpu_ref_ratio": 0.19145247557838516,
+      "gpu_ref_ratio": 0.20144154374132964,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -78,7 +78,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.grey_erosion",
-      "gpu_ref_ratio": 0.7766603483680802,
+      "gpu_ref_ratio": 0.7652837016841534,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -92,7 +92,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.grey_dilation",
-      "gpu_ref_ratio": 0.8251863548356068,
+      "gpu_ref_ratio": 0.795986929693759,
       "nitrix_slower_on_gpu": true
     }
   ],
@@ -1063,7 +1063,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.grey_dilation",
-      "gpu_ref_ratio": 0.8251863548356068,
+      "gpu_ref_ratio": 0.795986929693759,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -1077,7 +1077,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.grey_erosion",
-      "gpu_ref_ratio": 0.7766603483680802,
+      "gpu_ref_ratio": 0.7652837016841534,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -1091,7 +1091,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.distance_transform_edt",
-      "gpu_ref_ratio": 0.009541871762217411,
+      "gpu_ref_ratio": 0.009218079456153421,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -1105,7 +1105,7 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.median_filter",
-      "gpu_ref_ratio": 0.19145247557838516,
+      "gpu_ref_ratio": 0.20144154374132964,
       "nitrix_slower_on_gpu": true
     },
     {
