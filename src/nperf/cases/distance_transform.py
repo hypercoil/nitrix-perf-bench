@@ -21,6 +21,7 @@ import scipy.ndimage as spnd
 from nitrix.morphology import distance_transform
 
 from ._base import BuiltPoint, Case, to_cupy
+from ._itk import sitk_edt
 
 
 def _cupy_distance_transform(m: Any) -> Any:
@@ -49,6 +50,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'nitrix-jax': ('jax', lambda m: distance_transform(m)),
         'scipy.ndimage.distance_transform_edt': (
             'scipy', lambda m: spnd.distance_transform_edt(m > 0.5)),
+        'simpleitk.DanielssonDistanceMap': (  # ITK floor (exact EDT, verified)
+            'simpleitk', sitk_edt),
         'cupyx.scipy.ndimage.distance_transform_edt': (
             'cupy', _cupy_distance_transform),  # GPU on-target ref (exact EDT)
     }

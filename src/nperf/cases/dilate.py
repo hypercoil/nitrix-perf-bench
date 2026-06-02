@@ -17,6 +17,7 @@ import scipy.ndimage as spnd
 from nitrix.morphology import dilate
 
 from ._base import BuiltPoint, Case, to_cupy
+from ._itk import sitk_grey_morph
 
 
 def _cupy_dilate(x: Any, size: int) -> Any:
@@ -44,6 +45,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'nitrix-jax': ('jax', lambda x: dilate(x, size=size)),
         'scipy.ndimage.grey_dilation': (
             'scipy', lambda x: spnd.grey_dilation(x, size=size)),
+        'simpleitk.GrayscaleDilate': (  # ITK floor (exact match, verified)
+            'simpleitk', lambda x: sitk_grey_morph('dilate')(x, size)),
         'cupyx.scipy.ndimage.grey_dilation': (
             'cupy', lambda x: _cupy_dilate(x, size)),  # GPU on-target ref
     }

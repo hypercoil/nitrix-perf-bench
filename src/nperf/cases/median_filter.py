@@ -25,6 +25,7 @@ import scipy.ndimage as spnd
 from nitrix.morphology import median_filter
 
 from ._base import BuiltPoint, Case, to_cupy
+from ._itk import sitk_median
 
 
 def _cupy_median(x: Any, size: int) -> Any:
@@ -52,6 +53,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'nitrix-jax': ('jax', lambda x: median_filter(x, size=size)),
         'scipy.ndimage.median_filter': (
             'scipy', lambda x: spnd.median_filter(x, size=size)),
+        'simpleitk.Median': (  # ITK floor (interior-exact; perf only)
+            'simpleitk', lambda x: sitk_median(x, size)),
         'cupyx.scipy.ndimage.median_filter': (
             'cupy', lambda x: _cupy_median(x, size)),  # GPU ref (perf only)
     }

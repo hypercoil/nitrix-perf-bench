@@ -10,9 +10,11 @@ SimpleITK's iterative N4) stay quick.
 import numpy as np
 import pytest
 
+from nperf.cases import dilate, distance_transform, erode, median_filter
 from nperf.cases import histogram_match as hm
 from nperf.cases import n4_bias_field_correction as n4
 from nperf.cases._itk import bias_parity
+from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
 
 
@@ -69,3 +71,49 @@ def test_n4_sitk_parity():
 def test_op_qualnames():
     assert hm.CASE.op_qualname == 'nitrix.bias.histogram_match'
     assert n4.CASE.op_qualname == 'nitrix.bias.n4_bias_field_correction'
+
+
+# ---------------------------------------------------------------------------
+# SimpleITK morphology / distance floors added to existing cases
+# ---------------------------------------------------------------------------
+
+
+def test_itk_floor_baselines_registered():
+    for case, key in [(erode, 'simpleitk.GrayscaleErode'),
+                      (dilate, 'simpleitk.GrayscaleDilate'),
+                      (median_filter, 'simpleitk.Median'),
+                      (distance_transform,
+                       'simpleitk.DanielssonDistanceMap')]:
+        built = case._build(case.CASE.representative)
+        assert key in built.baselines
+        assert framework_of(built.baselines[key][0]) == 'numpy'
+
+
+def test_itk_floors_match_oracle():
+    '''The right-target check: each ITK floor matches the case's fp64 oracle
+    (erode/dilate/distance) -- so adding it is a fair comparison, not an
+    apples-to-oranges row.'''
+    pytest.importorskip('SimpleITK')
+    cases = [(erode, 'simpleitk.GrayscaleErode'),
+             (dilate, 'simpleitk.GrayscaleDilate'),
+             (distance_transform, 'simpleitk.DanielssonDistanceMap')]
+    for case, key in cases:
+        built = case._build(case.CASE.representative)
+        out = built.baselines[key][1](*built.inputs_for('numpy'))
+        fid = compare(np.asarray(out), built.fp64_reference,
+                      rtol=case.CASE.rtol, atol=case.CASE.atol)
+        assert fid['status'] == 'pass', (
+            f'{key}: rel_to_tol={fid["rel_to_tol"]:.3g}'
+        )
+
+
+def test_itk_median_floor_matches_interior():
+    '''median_filter has no oracle (boundary policies differ); the ITK floor
+    matches scipy in the interior -- the perf comparison is task-comparable.'''
+    pytest.importorskip('SimpleITK')
+    import scipy.ndimage as spnd
+    built = median_filter._build({'shape': [64, 64], 'size': 3, 'seed': 0})
+    (x,) = built.inputs_for('numpy')
+    itk = np.asarray(built.baselines['simpleitk.Median'][1](x))
+    sp = spnd.median_filter(np.asarray(x), size=3)
+    assert np.max(np.abs((itk - sp)[1:-1, 1:-1])) < 1e-5

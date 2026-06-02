@@ -36,9 +36,11 @@ def test_baseline_shape(mod, param, refname):
     assert {'nitrix-jax', refname} <= names
     assert built.baselines[refname][0] == 'scipy'
     assert built.ratio_reference == 'nitrix-jax'
-    # any extra baseline is a GPU-only on-target ref (cupy).
+    # extras are a GPU-only on-target ref (cupy) or a CPU floor (the SimpleITK
+    # imaging-standard reference added to erode/dilate).
     for extra in names - {'nitrix-jax', refname}:
-        assert requires_of(built.baselines[extra][0]) == 'gpu'
+        prov = built.baselines[extra][0]
+        assert requires_of(prov) == 'gpu' or framework_of(prov) == 'numpy'
 
 
 @pytest.mark.parametrize('mod,param,refname', _CASES)

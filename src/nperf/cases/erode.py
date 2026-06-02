@@ -18,6 +18,7 @@ import scipy.ndimage as spnd
 from nitrix.morphology import erode
 
 from ._base import BuiltPoint, Case, to_cupy
+from ._itk import sitk_grey_morph
 
 
 def _cupy_erode(x: Any, size: int) -> Any:
@@ -45,6 +46,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'nitrix-jax': ('jax', lambda x: erode(x, size=size)),
         'scipy.ndimage.grey_erosion': (
             'scipy', lambda x: spnd.grey_erosion(x, size=size)),
+        'simpleitk.GrayscaleErode': (  # ITK floor (exact match, verified)
+            'simpleitk', lambda x: sitk_grey_morph('erode')(x, size)),
         'cupyx.scipy.ndimage.grey_erosion': (
             'cupy', lambda x: _cupy_erode(x, size)),  # GPU on-target ref
     }

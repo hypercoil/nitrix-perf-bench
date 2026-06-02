@@ -98,6 +98,56 @@ def sitk_histogram_match() -> Callable[[Any, Any], Any]:
     return run
 
 
+# --- morphology / distance floor kernels (ITK = the imaging-standard floor;
+#     each verified to match the case's existing fp64 oracle: erode/dilate
+#     exact, distance rel_to_tol ~3e-8, median interior-exact). Isotropic, so
+#     the ITK (x,y,z) vs numpy (z,y,x) axis flip does not change the result. --
+
+def _box_radius(x: Any, size: int) -> list:
+    '''Per-axis radius for an ``size``-wide box (size = 2r+1).'''
+    return [(size - 1) // 2] * np.asarray(x).ndim
+
+
+def sitk_grey_morph(kind: str) -> Callable[[Any, int], Any]:
+    '''ITK grayscale erosion / dilation with a flat box structuring element
+    (matches ``scipy.ndimage.grey_erosion`` / ``grey_dilation`` exactly).'''
+
+    def run(x: Any, size: int) -> Any:
+        import SimpleITK as sitk
+
+        fn = (sitk.GrayscaleErode if kind == 'erode'
+              else sitk.GrayscaleDilate)
+        out = fn(sitk.GetImageFromArray(np.asarray(x, np.float32)),
+                 _box_radius(x, size), sitk.sitkBox)
+        return sitk.GetArrayFromImage(out).astype(np.float32)
+
+    return run
+
+
+def sitk_median(x: Any, size: int) -> Any:
+    '''ITK median filter (box radius); matches scipy median in the interior
+    (boundary policy differs -- the case has no fp64 oracle, perf only).'''
+    import SimpleITK as sitk
+
+    out = sitk.Median(sitk.GetImageFromArray(np.asarray(x, np.float32)),
+                      _box_radius(x, size))
+    return sitk.GetArrayFromImage(out).astype(np.float32)
+
+
+def sitk_edt(mask: Any) -> Any:
+    '''ITK exact Euclidean distance transform (Danielsson) matching
+    ``scipy.ndimage.distance_transform_edt(mask > 0.5)``: distance from each
+    foreground voxel to the nearest background voxel. Feed the complement so
+    Danielsson's distance-to-nearest-nonzero is the foreground->background EDT,
+    non-squared, with unit spacing.'''
+    import SimpleITK as sitk
+
+    mb = (np.asarray(mask) > 0.5).astype(np.uint8)
+    out = sitk.DanielssonDistanceMap(
+        sitk.GetImageFromArray(1 - mb), True, False, True)
+    return sitk.GetArrayFromImage(out).astype(np.float32)
+
+
 # --- parity criteria (verbatim from nitrix's tests) ------------------------
 
 def bias_parity(a: np.ndarray, g: np.ndarray, mask: np.ndarray

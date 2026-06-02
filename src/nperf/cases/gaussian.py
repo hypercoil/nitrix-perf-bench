@@ -6,6 +6,16 @@ the ``scipy`` provider).  scipy is in the base env, so no refs env is needed.
 The two agree to fp32 round-off, so ``scipy.ndimage.gaussian_filter`` in fp64
 on the same values is the oracle and both baselines pass the gate.  Ratio via
 ``--reference scipy.ndimage.gaussian_filter``.
+
+**No SimpleITK floor here (deliberate).**  Unlike erode/dilate/median/
+distance_transform (where ITK matches the scipy oracle and is added as the
+imaging-standard floor), ITK's Gaussian filters use a *different kernel* from
+scipy's sampled, truncated continuous Gaussian: ``DiscreteGaussian`` is
+Lindeberg's discrete-Gaussian (modified-Bessel) kernel and
+``SmoothingRecursiveGaussian`` is a Deriche IIR approximation -- both diverge
+from the oracle far past tolerance (measured rel_to_tol ~2e3, max ~0.36 at
+sigma=1.5), so neither is a fair fp64-oracle floor.  scipy / cupyx remain the
+references.
 """
 from __future__ import annotations
 
