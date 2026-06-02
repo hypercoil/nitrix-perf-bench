@@ -5,7 +5,7 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 52 (+ 7 host-side constructors, apart)
-- **measured** (≥1 platform): 26 / 52
+- **measured** (≥1 platform): 27 / 52
 - **multiplatform** (CPU + GPU): 26 / 52
 - **with a strong on-target GPU ref**: 23 / 52
 - **lagging on the GPU**: 6
@@ -55,7 +55,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.sparse.mesh_bary_upsample` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_pool_max` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_unpool_max` | unmeasured | none | unmeasured |
-| high | `nitrix.stats.lme.flame_two_level` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.lme.flame_two_level` | cpu_only | none | f32_only |
 | medium | `nitrix.semiring.semiring_ell_edge_aggregate` | multiplatform | none | f32_only |
 | medium | `nitrix.semiring.semiring_matmul` | multiplatform | internal_only | f32_only |
 | medium | `nitrix.stats.lme.reml_fit` | multiplatform | floor_only | f32_only |
