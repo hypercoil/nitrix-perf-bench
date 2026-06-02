@@ -9,13 +9,17 @@ description = "Performance benchmark suite for nitrix (see DESIGN.md)."
 requires-python = ">=3.11"
 # Core deps only.  jax lives in the platform dependency-groups below (the
 # CPU vs CUDA variant is the conflicting axis of the platform matrix, L6).
-# ``scipy`` is a *reference* library (scipy.ndimage / .signal / .sparse): the
-# perf-bench suite may depend on it (DESIGN §0); only *nitrix* may not.  It is
-# platform-agnostic (host CPU, the ``scipy`` provider's numpy framework), so it
-# is a core dep rather than a per-platform group entry.
+# ``scipy`` and ``scikit-learn`` are *reference* libraries (scipy.ndimage /
+# .signal / .sparse; sklearn.metrics.pairwise -- the canonical CPU kernels):
+# the perf-bench suite may depend on them (DESIGN §0); only *nitrix* may not.
+# Both are platform-agnostic (host CPU, the numpy framework of the ``scipy`` /
+# ``sklearn`` providers), so they are core deps rather than per-platform group
+# entries.  sklearn is the recognised kernel reference -- using it as the CPU
+# floor (vs a hand-rolled numpy snippet) keeps the comparison defensible.
 dependencies = [
     "numpy >= 2.0",
     "scipy >= 1.13",
+    "scikit-learn >= 1.4",
 ]
 
 [project.scripts]

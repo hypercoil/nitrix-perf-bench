@@ -67,6 +67,11 @@ PROVIDERS: Dict[str, Provider] = {
         # semantics, no device sync -> the numpy framework + base env.  A
         # distinct id so the baseline's library is attributable.
         Provider('scipy', 'numpy', description='host SciPy (uv)'),
+        # scikit-learn references (sklearn.metrics.pairwise -- the canonical
+        # CPU kernels): same shape as the scipy provider (host, numpy-array
+        # semantics, no device sync -> numpy framework + base env), a distinct
+        # id so the kernel CPU floor is attributable to the standard library.
+        Provider('sklearn', 'numpy', description='host scikit-learn (uv)'),
         # P2 cross-framework refs.  torch's *CPU* wheel is on the PyTorch
         # index and uv-installable, so it is a uv env -- a separate
         # interpreter (built by tools/setup_refs_env.sh; the runner selects

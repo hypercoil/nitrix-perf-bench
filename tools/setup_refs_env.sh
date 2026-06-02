@@ -7,7 +7,10 @@
 # subprocess under *this* interpreter, selected by the runner via
 # `NPERF_PYTHON_TORCH` (cpu) / `NPERF_PYTHON_TORCH_JAX_CUDA12` (gpu).  It is a
 # superset env (torch + torch_geometric for the baselines, jax + nitrix for the
-# shared fp64 oracle / provenance every worker rebuilds).  torch_geometric >=2.3
+# shared fp64 oracle / provenance every worker rebuilds, and the core-dep
+# reference libs scipy + scikit-learn -- every worker imports measure.py, which
+# imports every case module, so their top-level refs must resolve here too).
+# torch_geometric >=2.3
 # message-passes on torch-native scatter_reduce, so it installs pure-Python --
 # no compiled torch-scatter/torch-sparse, no pixi.
 #
@@ -73,7 +76,8 @@ if [ "$VARIANT" = cpu ]; then
   uv pip install --python "$TARGET/bin/python" \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     --index-strategy unsafe-best-match \
-    "$TORCH_SPEC" "$JAX_SPEC" "numpy>=2" torch_geometric -e "$NITRIX_SRC"
+    "$TORCH_SPEC" "$JAX_SPEC" "numpy>=2" "scipy>=1.13" "scikit-learn>=1.4" \
+    torch_geometric -e "$NITRIX_SRC"
   PROBE_PLATFORMS=cpu
 else
   # CUDA: default-PyPI torch is the cuda build; jax[cuda12] brings its own cuda
@@ -82,7 +86,7 @@ else
   echo "torch     : $TORCH_SPEC (cuda)"
   uv pip install --python "$TARGET/bin/python" \
     "jax[cuda12]==${JAX_SPEC#jax==}" "$TORCH_SPEC" "numpy>=2" \
-    torch_geometric -e "$NITRIX_SRC"
+    "scipy>=1.13" "scikit-learn>=1.4" torch_geometric -e "$NITRIX_SRC"
   PROBE_PLATFORMS=cuda
 fi
 

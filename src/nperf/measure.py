@@ -27,7 +27,10 @@ from .cases import (
     erode,
     gaussian,
     hilbert_transform,
+    linear_distance,
+    linear_kernel,
     median_filter,
+    rbf_kernel,
     residualise,
     semiring_matmul,
     spatial_transform,
@@ -102,7 +105,10 @@ CASES: Dict[str, Case] = {
               _validate_case(sympower.CASE),
               _validate_case(analytic_signal.CASE),
               _validate_case(hilbert_transform.CASE),
-              _validate_case(envelope.CASE))
+              _validate_case(envelope.CASE),
+              _validate_case(rbf_kernel.CASE),
+              _validate_case(linear_kernel.CASE),
+              _validate_case(linear_distance.CASE))
 }
 
 
