@@ -4,10 +4,10 @@
 
 ## Coverage (runtime ops)
 
-- **runtime ops catalogued**: 52 (+ 7 host-side constructors, apart)
-- **measured** (≥1 platform): 28 / 52
-- **multiplatform** (CPU + GPU): 27 / 52
-- **with a strong on-target GPU ref**: 24 / 52
+- **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
+- **measured** (≥1 platform): 32 / 122
+- **multiplatform** (CPU + GPU): 31 / 122
+- **with a strong on-target GPU ref**: 25 / 122
 - **lagging on the GPU**: 6
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -30,31 +30,100 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 
 | priority | op | coverage | ref strength | precision |
 |---|---|---|---|---|
+| high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
+| high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
+| high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.cartesian_to_latlong` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.center_of_mass_grid` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.center_of_mass_points` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.compactness_penalty` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.displacement_from_reference_grid` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.displacement_from_reference_points` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.integrate_velocity_field` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.jacobian_det_displacement` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.jacobian_displacement` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.latlong_to_cartesian` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.resample` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_pad_2d` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.sphere_grid_unpad_2d` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.spherical_conv` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.spherical_geodesic_distance` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.coaffiliation` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.degree_vector` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.diffusion_embedding` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.girvan_newman_null` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.laplacian` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.laplacian_eigenmap` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.modularity_matrix` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.relaxed_modularity` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.cosine_kernel` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.fill_diagonal` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.gaussian_kernel` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.mean_euclidean` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.mean_log_euclidean` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.parameterised_norm` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.polynomial_kernel` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.recondition_eigenspaces` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.sigmoid_kernel` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.squareform` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.sym2vec` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.symexp` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.symmap` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.symmetric` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.toeplitz` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.toeplitz_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.vec2sym` | unmeasured | none | unmeasured |
+| high | `nitrix.morphology.close` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_pool_with_indices_nd` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_unpool_nd` | unmeasured | none | unmeasured |
+| high | `nitrix.morphology.open` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_decompose` | unmeasured | none | unmeasured |
+| high | `nitrix.numerics.complex_recompose` | unmeasured | none | unmeasured |
+| high | `nitrix.numerics.demean` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.intensity_normalize` | unmeasured | none | unmeasured |
+| high | `nitrix.numerics.percentile_rescale` | unmeasured | none | unmeasured |
+| high | `nitrix.numerics.psc_normalize` | unmeasured | none | unmeasured |
+| high | `nitrix.numerics.robust_zscore_normalize` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.zscore_normalize` | unmeasured | none | unmeasured |
+| high | `nitrix.semiring.ell_row_softmax` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_conv` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_ell_matmul` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.bandpass` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.bandstop` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.highpass` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.iir_filter` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.linear_interpolate` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.lowpass` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.sample_windows` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.sosfilt` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.sosfiltfilt` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.bilateral_gaussian` | unmeasured | none | unmeasured |
+| high | `nitrix.smoothing.brute_force_knn` | unmeasured | none | unmeasured |
+| high | `nitrix.smoothing.susan_emulator` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.ell_add_self_loops` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.ell_mask` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.ell_pad` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.ell_to_dense` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_bary_upsample` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.mesh_coarsen_meanpool` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_pool_max` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_unpool_max` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.sectioned_semiring_ell_matmul` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.conditionalcorr` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.conditionalcov` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.env_inst` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.instantaneous_frequency` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.instantaneous_phase` | unmeasured | none | unmeasured |
 | high | `nitrix.stats.lme.flame_two_level` | cpu_only | none | f32_only |
+| high | `nitrix.stats.pairedcorr` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.pairedcov` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.product_filter` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.product_filtfilt` | unmeasured | none | unmeasured |
+| medium | `nitrix.bias.histogram_match` | multiplatform | floor_only | f32_only |
+| medium | `nitrix.bias.n4_bias_field_correction` | multiplatform | floor_only | f32_only |
+| medium | `nitrix.linalg.tangent_project_spd` | multiplatform | floor_only | f32_only |
 | medium | `nitrix.semiring.semiring_ell_edge_aggregate` | multiplatform | none | f32_only |
 | medium | `nitrix.semiring.semiring_matmul` | multiplatform | internal_only | f32_only |
 | medium | `nitrix.stats.lme.reml_fit` | multiplatform | floor_only | f32_only |
@@ -70,8 +139,9 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.linalg.residualise` | cupy.linalg.lstsq | 6.81 | ~6.8x faster |
 | `nitrix.linalg.rbf_kernel` | cupy.rbf_kernel | 3.2 | ~3.2x faster |
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
+| `nitrix.stats.partialcorr` | cupy.partialcorr | 2.33 | ~2.3x faster |
 | `nitrix.stats.partialcov` | cupy.partialcov | 2.29 | ~2.3x faster |
-| `nitrix.stats.precision` | cupy.inv_cov | 2.24 | ~2.2x faster |
+| `nitrix.stats.precision` | cupy.inv_cov | 2.23 | ~2.2x faster |
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
 | `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
