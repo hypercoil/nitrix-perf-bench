@@ -78,6 +78,12 @@ PROVIDERS: Dict[str, Provider] = {
         # id so the floor is attributable to the domain-standard tool (the
         # first domain-tool reference; see DOMAIN_TOOL_BASELINES.md).
         Provider('nilearn', 'numpy', description='host nilearn (uv)'),
+        # SimpleITK reference (ITK N4 bias correction + HistogramMatching --
+        # the canonical medical-imaging tools nitrix.bias parity-tests
+        # against): host, numpy framework + base env, distinct id for
+        # attribution.  Lazy-imported in-case (only this provider's worker
+        # needs it).  See DOMAIN_TOOL_BASELINES.md (Tier 1).
+        Provider('simpleitk', 'numpy', description='host SimpleITK (uv)'),
         # statsmodels reference (statsmodels.MixedLM -- the canonical CPU LME
         # tool): host, numpy framework.  requires='cpu' so it runs ONLY on the
         # CPU platform -- it has no GPU path and is *expensive* (per-voxel

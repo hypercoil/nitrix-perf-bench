@@ -26,6 +26,7 @@ dependencies = [
     "statsmodels >= 0.14",
     "nilearn >= 0.10",
     "threadpoolctl >= 3.0",
+    "SimpleITK >= 2.3",
 ]
 
 [project.scripts]
