@@ -31,7 +31,10 @@ from .cases import (
     linear_kernel,
     lomb_scargle_periodogram,
     median_filter,
+    partialcorr,
+    partialcov,
     polynomial_detrend,
+    precision,
     rbf_kernel,
     residualise,
     semiring_matmul,
@@ -114,7 +117,10 @@ CASES: Dict[str, Case] = {
               _validate_case(linear_distance.CASE),
               _validate_case(polynomial_detrend.CASE),
               _validate_case(tsconv.CASE),
-              _validate_case(lomb_scargle_periodogram.CASE))
+              _validate_case(lomb_scargle_periodogram.CASE),
+              _validate_case(precision.CASE),
+              _validate_case(partialcov.CASE),
+              _validate_case(partialcorr.CASE))
 }
 
 
