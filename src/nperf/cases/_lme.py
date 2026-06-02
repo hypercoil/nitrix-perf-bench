@@ -65,6 +65,44 @@ def closed_form_reml(Y: np.ndarray, k: int, n: int) -> np.ndarray:
     return np.stack([grand_mean, sigma_b_sq, sigma_e_sq], axis=-1)
 
 
+def flame_input(
+    n_vox: int, big_n: int, seed: int = 0,
+    sigma_b_sq: float = 1.0, s2: float = 0.3, grand: float = 5.0,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    '''FLAME two-level data: per-voxel, per-subject level-1 effects
+    ``beta_subject (V, N)`` with a **constant known** within-variance ``s2``
+    (so the single-parameter REML has a closed form -- see
+    ``flame_closed_form``), and the shared intercept group design.
+
+    Returns ``(beta_subject (V, N), var_within (V, N), X_group (N, 1))``.'''
+    rng = np.random.default_rng(seed)
+    x_group = np.ones((big_n, 1), np.float32)
+    b = rng.standard_normal((n_vox, big_n)) * np.sqrt(sigma_b_sq)
+    e = rng.standard_normal((n_vox, big_n)) * np.sqrt(s2)
+    beta_subject = (grand + b + e).astype(np.float32)
+    var_within = np.full((n_vox, big_n), s2, np.float32)
+    return beta_subject, var_within, x_group
+
+
+def flame_closed_form(
+    beta_subject: np.ndarray, x_group: np.ndarray, s2: float,
+) -> np.ndarray:
+    '''Closed-form FLAME REML for **constant** within-variance ``s2`` -> ``(V,
+    2)`` fp64 ``[gamma, sigma_b^2]``.
+
+    With ``s_i^2 = s2`` the model covariance is ``(sigma_b^2 + s2) I``, so the
+    REML reduces to GLS == OLS for ``gamma`` and the residual variance for the
+    total: ``sigma_b^2 = max(||resid||^2/(N-p) - s2, 0)`` (exact, no
+    iteration).'''
+    big_n, p = x_group.shape
+    xtx_inv = np.linalg.inv(x_group.T @ x_group)        # (p, p)
+    gamma = beta_subject @ x_group @ xtx_inv.T          # (V, p)
+    resid = beta_subject - gamma @ x_group.T            # (V, N)
+    tau2 = (resid ** 2).sum(1) / (big_n - p)
+    sigma_b_sq = np.maximum(tau2 - s2, 0.0)
+    return np.stack([gamma[:, 0], sigma_b_sq], axis=-1)
+
+
 def statsmodels_reml(Y: Any, X: Any, groups: Any) -> np.ndarray:
     '''Looped ``statsmodels.MixedLM`` REML -> ``(V, 3)``
     ``[beta, sigma_b^2, sigma_e^2]``.  statsmodels imported lazily (only this

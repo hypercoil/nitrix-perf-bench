@@ -25,6 +25,7 @@ from .cases import (
     ell_edge_aggregate,
     envelope,
     erode,
+    flame_two_level,
     gaussian,
     hilbert_transform,
     linear_distance,
@@ -122,7 +123,8 @@ CASES: Dict[str, Case] = {
               _validate_case(precision.CASE),
               _validate_case(partialcov.CASE),
               _validate_case(partialcorr.CASE),
-              _validate_case(reml_fit.CASE))
+              _validate_case(reml_fit.CASE),
+              _validate_case(flame_two_level.CASE))
 }
 
 
