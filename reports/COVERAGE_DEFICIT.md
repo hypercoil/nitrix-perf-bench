@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 52 (+ 7 host-side constructors, apart)
-- **measured** (≥1 platform): 27 / 52
-- **multiplatform** (CPU + GPU): 26 / 52
-- **with a strong on-target GPU ref**: 23 / 52
+- **measured** (≥1 platform): 28 / 52
+- **multiplatform** (CPU + GPU): 27 / 52
+- **with a strong on-target GPU ref**: 24 / 52
 - **lagging on the GPU**: 6
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -50,7 +50,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.semiring.semiring_conv` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_ell_matmul` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.linear_interpolate` | unmeasured | none | unmeasured |
-| high | `nitrix.signal.lomb_scargle_interpolate` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.bilateral_gaussian` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_bary_upsample` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_pool_max` | unmeasured | none | unmeasured |
@@ -77,6 +76,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
 | `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
 | `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
+| `nitrix.signal.lomb_scargle_interpolate` | cupy.joint_glm | 1.1 | ~1.1x faster |
 | `nitrix.stats.hilbert_transform` | cupyx.scipy.signal.hilbert | 1.03 | ~1.0x faster |
 
 ## Caveats
