@@ -30,6 +30,7 @@ from .cases import (
     hilbert_transform,
     linear_distance,
     linear_kernel,
+    lomb_scargle_interpolate,
     lomb_scargle_periodogram,
     median_filter,
     partialcorr,
@@ -124,7 +125,8 @@ CASES: Dict[str, Case] = {
               _validate_case(partialcov.CASE),
               _validate_case(partialcorr.CASE),
               _validate_case(reml_fit.CASE),
-              _validate_case(flame_two_level.CASE))
+              _validate_case(flame_two_level.CASE),
+              _validate_case(lomb_scargle_interpolate.CASE))
 }
 
 
