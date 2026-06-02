@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 52 (+ 7 host-side constructors, apart)
-- **measured** (≥1 platform): 20 / 52
-- **multiplatform** (CPU + GPU): 20 / 52
-- **with a strong on-target GPU ref**: 18 / 52
+- **measured** (≥1 platform): 23 / 52
+- **multiplatform** (CPU + GPU): 23 / 52
+- **with a strong on-target GPU ref**: 21 / 52
 - **lagging on the GPU**: 6
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -51,9 +51,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.semiring.semiring_ell_matmul` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.linear_interpolate` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.lomb_scargle_interpolate` | unmeasured | none | unmeasured |
-| high | `nitrix.signal.lomb_scargle_periodogram` | unmeasured | none | unmeasured |
-| high | `nitrix.signal.polynomial_detrend` | unmeasured | none | unmeasured |
-| high | `nitrix.signal.tsconv` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.bilateral_gaussian` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_bary_upsample` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_pool_max` | unmeasured | none | unmeasured |
@@ -69,12 +66,15 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 
 | op | strong GPU ref | ratio (ref/nitrix) | nitrix |
 |---|---|---:|---|
+| `nitrix.signal.lomb_scargle_periodogram` | cupyx.scipy.signal.lombscargle | 109 | ~108.7x faster |
 | `nitrix.stats.cov` | cupy.cov | 29.1 | ~29.1x faster |
 | `nitrix.stats.corr` | cupy.corrcoef | 27.9 | ~27.9x faster |
+| `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 12.1 | ~12.1x faster |
 | `nitrix.linalg.residualise` | cupy.linalg.lstsq | 6.81 | ~6.8x faster |
 | `nitrix.linalg.rbf_kernel` | cupy.rbf_kernel | 3.2 | ~3.2x faster |
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
+| `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
 | `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
 | `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
 | `nitrix.stats.hilbert_transform` | cupyx.scipy.signal.hilbert | 1.03 | ~1.0x faster |
