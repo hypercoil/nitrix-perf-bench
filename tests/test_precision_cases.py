@@ -14,7 +14,9 @@ from nperf.cases import partialcorr, partialcov, precision
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
 
-_P = {'c': 32, 'obs': 256, 'seed': 0}
+# obs >> c so nilearn's 1/n (MLE) vs nitrix's 1/(n-1) covariance ddof rides
+# under tolerance for precision (the difference is ~ n/(n-1); see _precision).
+_P = {'c': 32, 'obs': 2048, 'seed': 0}
 _CASES = [
     (precision, 'numpy.inv_cov'),
     (partialcov, 'numpy.partialcov'),
@@ -28,8 +30,11 @@ def test_baseline_shape(mod, refname):
     names = set(built.baselines)
     assert {'nitrix-jax', refname} <= names
     assert built.ratio_reference == 'nitrix-jax'
+    # extras are a GPU-only on-target ref (cupy) or a CPU floor (the nilearn
+    # community-standard estimator, added to precision + partialcorr).
     for extra in names - {'nitrix-jax', refname}:
-        assert requires_of(built.baselines[extra][0]) == 'gpu'  # cupy ref
+        prov = built.baselines[extra][0]
+        assert requires_of(prov) == 'gpu' or framework_of(prov) == 'numpy'
 
 
 @pytest.mark.parametrize('mod,refname', _CASES)
@@ -44,6 +49,17 @@ def test_cpu_baselines_match_oracle(mod, refname):
         assert fid['status'] == 'pass', (
             f'{mod.CASE.name}/{name}: rel_to_tol={fid["rel_to_tol"]:.3g}'
         )
+
+
+def test_nilearn_floor_registered():
+    '''precision + partialcorr carry the nilearn community-standard floor
+    (EmpiricalCovariance); partialcov has no nilearn partial-cov kind.'''
+    assert 'nilearn.precision' in set(precision._build(_P).baselines)
+    pc = set(partialcorr._build(_P).baselines)
+    assert 'nilearn.partial_correlation' in pc
+    prov = precision._build(_P).baselines['nilearn.precision'][0]
+    assert framework_of(prov) == 'numpy'
+    assert not any('nilearn' in b for b in partialcov._build(_P).baselines)
 
 
 def test_partialcorr_unit_diagonal():

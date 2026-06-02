@@ -18,7 +18,12 @@ import numpy as np
 from nitrix.stats import partialcorr
 
 from ._base import BuiltPoint, Case, to_cupy
-from ._precision import cupy_inv_family, inv_family, precision_input
+from ._precision import (
+    cupy_inv_family,
+    inv_family,
+    nilearn_conn,
+    precision_input,
+)
 
 _KIND = 'partialcorr'
 
@@ -38,6 +43,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     baselines = {
         'nitrix-jax': ('jax', lambda x: partialcorr(x)),
         'numpy.partialcorr': ('numpy', lambda x: inv_family(x, _KIND, np)),
+        'nilearn.partial_correlation': (  # community-standard floor (exact)
+            'nilearn', nilearn_conn(_KIND)),
         'cupy.partialcorr': ('cupy', cupy_inv_family(_KIND)),  # GPU ref
     }
     return BuiltPoint(

@@ -69,3 +69,33 @@ def cupy_inv_family(kind: str) -> Callable[[Any], Any]:
         return inv_family(x, kind, cp)
 
     return run
+
+
+# nilearn maps only precision + partial correlation (it has no
+# partial-covariance kind). The estimator MUST be EmpiricalCovariance, not the
+# ConnectivityMeasure default Ledoit-Wolf *shrinkage*, to match nitrix's raw
+# inv(cov); and standardize=False (nilearn >=0.13 defaults it True, which
+# z-scores the series and would change the result).
+_NILEARN_KIND = {'precision': 'precision',
+                 'partialcorr': 'partial correlation'}
+
+
+def nilearn_conn(kind: str) -> Callable[[Any], Any]:
+    '''nilearn ``ConnectivityMeasure`` floor -- the community-standard
+    connectome estimator (canonical domain-tool reference). nilearn computes in
+    **float64** and uses the **1/n (MLE)** covariance normalisation vs nitrix's
+    1/(n-1): so ``precision`` differs by ``n/(n-1)`` (negligible at obs >> c --
+    rides under tolerance) while ``partial correlation`` is scale-invariant and
+    matches to round-off. nilearn imported lazily (only the numpy worker).'''
+
+    def run(X: Any) -> Any:
+        from nilearn.connectome import ConnectivityMeasure
+        from sklearn.covariance import EmpiricalCovariance
+
+        cm = ConnectivityMeasure(
+            kind=_NILEARN_KIND[kind], cov_estimator=EmpiricalCovariance(),
+            vectorize=False, standardize=False,
+        )
+        return cm.fit_transform([np.asarray(X).T])[0]
+
+    return run

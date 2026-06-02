@@ -18,7 +18,12 @@ import numpy as np
 from nitrix.stats import precision
 
 from ._base import BuiltPoint, Case, to_cupy
-from ._precision import cupy_inv_family, inv_family, precision_input
+from ._precision import (
+    cupy_inv_family,
+    inv_family,
+    nilearn_conn,
+    precision_input,
+)
 
 _KIND = 'precision'
 
@@ -38,6 +43,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     baselines = {
         'nitrix-jax': ('jax', lambda x: precision(x)),
         'numpy.inv_cov': ('numpy', lambda x: inv_family(x, _KIND, np)),
+        'nilearn.precision': (  # community-standard floor (EmpiricalCov)
+            'nilearn', nilearn_conn(_KIND)),
         'cupy.inv_cov': ('cupy', cupy_inv_family(_KIND)),  # GPU ref
     }
     return BuiltPoint(
