@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 35 / 122
-- **multiplatform** (CPU + GPU): 34 / 122
-- **with a strong on-target GPU ref**: 27 / 122
+- **measured** (≥1 platform): 36 / 122
+- **multiplatform** (CPU + GPU): 35 / 122
+- **with a strong on-target GPU ref**: 28 / 122
 - **lagging on the GPU**: 8
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -45,7 +45,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.geometry.jacobian_det_displacement` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.jacobian_displacement` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.latlong_to_cartesian` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.resample` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_pad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_unpad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spherical_conv` | unmeasured | none | unmeasured |
@@ -137,6 +136,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.corr` | cupy.corrcoef | 27.9 | ~27.9x faster |
 | `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 11.3 | ~11.3x faster |
 | `nitrix.linalg.residualise` | cupy.linalg.lstsq | 7.04 | ~7.0x faster |
+| `nitrix.geometry.resample` | cupyx.scipy.ndimage.map_coordinates | 4.9 | ~4.9x faster |
 | `nitrix.linalg.rbf_kernel` | cupy.rbf_kernel | 3.2 | ~3.2x faster |
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
 | `nitrix.stats.partialcorr` | cupy.partialcorr | 2.33 | ~2.3x faster |

@@ -1,0 +1,52 @@
+# nitrix-perf-bench results
+
+> Generated from L4 result rows (SCHEMA_AND_LIFECYCLE §A); schema_version 1 (frozen). No values are hand-edited.
+
+## Host
+
+- nitrix: 645ce27d898f29997eff5632fb251170ec24d312 | bench: 906b0c0673fdaef75bcf84d403005bc4de5d12ee
+- Linux-6.1.170-213.321.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-06-03T01:59:11.478074+00:00
+
+### Platforms
+
+- **jax-cpu** — cpu (cpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=2
+- **jax-cuda12** — NVIDIA L4 (gpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=2
+
+## Measurements
+
+`steady` = post-warm-up min / median; `compile` = cold first call; `fidelity` = worst error as a multiple of the allowed tolerance vs the fp64 oracle (✓ pass ⟺ ≤ 1×tol / ✗ fail). A `fidelity_failed` row keeps its measurements but its ratio is `refused`. Ratios are **within-platform** (vs that platform's reference baseline).
+
+| case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
+|---|---|---|---|---|---|---|---|---|---|
+| resample | jax-cpu | shape=[128, 128],out=[256, 256] | `ants.resample_image` | ok | 1.35 ms / 1.41 ms | 2.152 s | 802 MB (rss) | ✓ 5.5e-05×tol | 4.39x vs nitrix-jax |
+| resample | jax-cpu | shape=[128, 128],out=[256, 256] | `cupyx.scipy.ndimage.map_coordinates` | skipped | — | — | — | — | — |
+| resample | jax-cpu | shape=[128, 128],out=[256, 256] | `nitrix-jax` | ok | 307.5 µs / 318.0 µs | 165.51 ms | 802 MB (rss) | ✓ 0.25×tol | 1.00x vs nitrix-jax |
+| resample | jax-cpu | shape=[128, 128],out=[256, 256] | `scipy.ndimage.map_coordinates` | ok | 1.71 ms / 1.79 ms | 1.74 ms | 802 MB (rss) | ✓ 5.5e-05×tol | 5.56x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[128, 128],out=[256, 256] | `ants.resample_image` | skipped | — | — | — | — | — |
+| resample | jax-cuda12 | shape=[128, 128],out=[256, 256] | `cupyx.scipy.ndimage.map_coordinates` | ok | 166.6 µs / 181.7 µs | 233.03 ms | 0.07 MB (hbm) | ✓ 0.00071×tol | 1.61x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[128, 128],out=[256, 256] | `nitrix-jax` | ok | 103.2 µs / 109.4 µs | 234.99 ms | 0.85 MB (hbm) | ✓ 0.25×tol | 1.00x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[128, 128],out=[256, 256] | `scipy.ndimage.map_coordinates` | ok | 1.72 ms / 1.75 ms | 1.78 ms | 0.07 MB (hbm) | ✓ 5.5e-05×tol | 16.64x vs nitrix-jax |
+| resample | jax-cpu | shape=[256, 256],out=[512, 512] | `ants.resample_image` | ok | 3.95 ms / 3.99 ms | 1.384 s | 802 MB (rss) | ✓ 5.6e-05×tol | 3.55x vs nitrix-jax |
+| resample | jax-cpu | shape=[256, 256],out=[512, 512] | `cupyx.scipy.ndimage.map_coordinates` | skipped | — | — | — | — | — |
+| resample | jax-cpu | shape=[256, 256],out=[512, 512] | `nitrix-jax` | ok | 1.11 ms / 1.59 ms | 179.86 ms | 802 MB (rss) | ✓ 0.33×tol | 1.00x vs nitrix-jax |
+| resample | jax-cpu | shape=[256, 256],out=[512, 512] | `scipy.ndimage.map_coordinates` | ok | 7.03 ms / 9.41 ms | 9.20 ms | 802 MB (rss) | ✓ 5.6e-05×tol | 6.32x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[256, 256],out=[512, 512] | `ants.resample_image` | skipped | — | — | — | — | — |
+| resample | jax-cuda12 | shape=[256, 256],out=[512, 512] | `cupyx.scipy.ndimage.map_coordinates` | ok | 505.7 µs / 516.6 µs | 160.89 ms | 0.26 MB (hbm) | ✓ 0.00078×tol | 4.90x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[256, 256],out=[512, 512] | `nitrix-jax` | ok | 103.1 µs / 107.3 µs | 278.22 ms | 4.20 MB (hbm) | ✓ 0.33×tol | 1.00x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[256, 256],out=[512, 512] | `scipy.ndimage.map_coordinates` | ok | 6.81 ms / 7.00 ms | 7.23 ms | 0.26 MB (hbm) | ✓ 5.6e-05×tol | 66.03x vs nitrix-jax |
+| resample | jax-cpu | shape=[64, 64, 64],out=[128, 128, 128] | `ants.resample_image` | ok | 32.30 ms / 35.60 ms | 1.515 s | 802 MB (rss) | ✓ 5.6e-05×tol | 0.95x vs nitrix-jax |
+| resample | jax-cpu | shape=[64, 64, 64],out=[128, 128, 128] | `cupyx.scipy.ndimage.map_coordinates` | skipped | — | — | — | — | — |
+| resample | jax-cpu | shape=[64, 64, 64],out=[128, 128, 128] | `nitrix-jax` | ok | 34.07 ms / 35.83 ms | 313.15 ms | 802 MB (rss) | ✓ 0.074×tol | 1.00x vs nitrix-jax |
+| resample | jax-cpu | shape=[64, 64, 64],out=[128, 128, 128] | `scipy.ndimage.map_coordinates` | ok | 91.77 ms / 92.37 ms | 102.36 ms | 802 MB (rss) | ✓ 5.6e-05×tol | 2.69x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[64, 64, 64],out=[128, 128, 128] | `ants.resample_image` | skipped | — | — | — | — | — |
+| resample | jax-cuda12 | shape=[64, 64, 64],out=[128, 128, 128] | `cupyx.scipy.ndimage.map_coordinates` | ok | 6.70 ms / 6.78 ms | 198.07 ms | 1.05 MB (hbm) | ✓ 0.0012×tol | 12.67x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[64, 64, 64],out=[128, 128, 128] | `nitrix-jax` | ok | 528.9 µs / 539.9 µs | 379.09 ms | 76.55 MB (hbm) | ✓ 0.074×tol | 1.00x vs nitrix-jax |
+| resample | jax-cuda12 | shape=[64, 64, 64],out=[128, 128, 128] | `scipy.ndimage.map_coordinates` | ok | 95.21 ms / 95.74 ms | 100.40 ms | 1.05 MB (hbm) | ✓ 5.6e-05×tol | 180.02x vs nitrix-jax |
+
+## Notes
+
+- `steady` is the post-warm-up min / median of the timed loop; `ratio` is on `min` vs the reference baseline, computed and stored in L1 (this renderer does no metric arithmetic).
+- `compile` is the **cold** first-call cost (`jax.clear_caches()` per attempt; persistent cache disabled) — what a user pays once, not a steady-state number.
+- `fidelity` is `rel_to_tol`: the worst error as a multiple of the allowed tolerance vs the fp64 oracle (✓ ⟺ ≤ 1×tol). It is tolerance-relative on purpose — a bare relative error is meaningless for zero-centred outputs (SCHEMA_AND_LIFECYCLE §C).
+- `mem` (peak_hbm / host_rss) is **per-attempt**: each attempt ran in its own process, so the high-water mark *is* this attempt's peak (the P1 subprocess runner; SCHEMA_AND_LIFECYCLE §B).
+

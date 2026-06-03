@@ -3,9 +3,9 @@
   "convention": "gpu_ref_ratio = strong_ref.min / nitrix.min (<1 => nitrix slower on the GPU)",
   "summary": {
     "runtime_ops": 122,
-    "measured": 35,
-    "multiplatform": 34,
-    "with_strong_gpu_ref": 27,
+    "measured": 36,
+    "multiplatform": 35,
+    "with_strong_gpu_ref": 28,
     "lagging_on_gpu": 8,
     "gpu_blocked_upstream": 0,
     "constructors": 15
@@ -308,21 +308,6 @@
     },
     {
       "qualname": "nitrix.geometry.latlong_to_cartesian",
-      "runtime": true,
-      "has_case": false,
-      "coverage": "unmeasured",
-      "ref_strength": "none",
-      "precision": "unmeasured",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": null,
-      "gpu_ref_ratio": null,
-      "nitrix_slower_on_gpu": false,
-      "priority": "high"
-    },
-    {
-      "qualname": "nitrix.geometry.resample",
       "runtime": true,
       "has_case": false,
       "coverage": "unmeasured",
@@ -2914,15 +2899,15 @@
     {
       "qualname": "nitrix.geometry.resample",
       "runtime": true,
-      "has_case": false,
-      "coverage": "unmeasured",
-      "ref_strength": "none",
-      "precision": "unmeasured",
+      "has_case": true,
+      "coverage": "multiplatform",
+      "ref_strength": "strong_ref",
+      "precision": "f32_only",
       "provisional": false,
       "gpu_blocked": false,
       "gpu_block_reason": null,
-      "gpu_ref": null,
-      "gpu_ref_ratio": null,
+      "gpu_ref": "cupyx.scipy.ndimage.map_coordinates",
+      "gpu_ref_ratio": 4.903937621386776,
       "nitrix_slower_on_gpu": false
     },
     {
