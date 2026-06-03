@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 47 / 122
-- **multiplatform** (CPU + GPU): 46 / 122
-- **with a strong on-target GPU ref**: 39 / 122
+- **measured** (≥1 platform): 49 / 122
+- **multiplatform** (CPU + GPU): 48 / 122
+- **with a strong on-target GPU ref**: 41 / 122
 - **lagging on the GPU**: 12
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -53,8 +53,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.geometry.sphere_grid_unpad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spherical_conv` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spherical_geodesic_distance` | unmeasured | none | unmeasured |
-| high | `nitrix.graph.coaffiliation` | unmeasured | none | unmeasured |
-| high | `nitrix.graph.relaxed_modularity` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.fill_diagonal` | unmeasured | none | unmeasured |
@@ -139,6 +137,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
 | `nitrix.linalg.polynomial_kernel` | cupy.polynomial_kernel | 1.72 | ~1.7x faster |
+| `nitrix.graph.relaxed_modularity` | cupy.relaxed_modularity | 1.56 | ~1.6x faster |
 | `nitrix.linalg.sigmoid_kernel` | cupy.sigmoid_kernel | 1.48 | ~1.5x faster |
 | `nitrix.linalg.cosine_kernel` | cupy.cosine_kernel | 1.34 | ~1.3x faster |
 | `nitrix.graph.modularity_matrix` | cupy.modularity_matrix | 1.18 | ~1.2x faster |
@@ -147,6 +146,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
 | `nitrix.signal.lomb_scargle_interpolate` | cupy.joint_glm | 1.1 | ~1.1x faster |
 | `nitrix.stats.hilbert_transform` | cupyx.scipy.signal.hilbert | 1.03 | ~1.0x faster |
+| `nitrix.graph.coaffiliation` | cupy.coaffiliation | 1.02 | ~1.0x faster |
 
 ## Caveats
 
