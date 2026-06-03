@@ -78,6 +78,9 @@ PROVIDERS: Dict[str, Provider] = {
         # id so the floor is attributable to the domain-standard tool (the
         # first domain-tool reference; see DOMAIN_TOOL_BASELINES.md).
         Provider('nilearn', 'numpy', description='host nilearn (uv)'),
+        # networkx reference (the canonical graph library -- modularity matrix
+        # etc.): host, numpy framework + base env, lazy-imported in-case.
+        Provider('networkx', 'numpy', description='host networkx (uv)'),
         # SimpleITK reference (ITK N4 bias correction + HistogramMatching --
         # the canonical medical-imaging tools nitrix.bias parity-tests
         # against): host, numpy framework + base env, distinct id for

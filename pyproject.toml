@@ -27,6 +27,7 @@ dependencies = [
     "nilearn >= 0.10",
     "threadpoolctl >= 3.0",
     "SimpleITK >= 2.3",
+    "networkx >= 3.0",
 ]
 
 [project.scripts]
