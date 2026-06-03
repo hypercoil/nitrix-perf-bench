@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 graph cases (laplacian / modularity_matrix).
+"""Tier-2 graph cases (the adjacency + community family).
 
 CPU build + oracle agreement for the runnable host baselines (jax + the
 recognised graph references: scipy.sparse.csgraph for the Laplacian, networkx
-for the modularity matrix); the cupy GPU ref is skipped here (needs a device +
-the refs env).
+for the modularity matrix + the Newman quality score); the cupy GPU refs are
+skipped here (need a device + the refs env). For ``relaxed_modularity`` the
+networkx baseline is the canonical Newman modularity / 2 -- so this test is
+also the warranted-claim check that nitrix's score (hard one-hot partition,
+``exclude_diag=False``) equals that bridged reference.
 """
 import numpy as np
 
 from nperf.cases import (
+    coaffiliation,
     degree_vector,
     girvan_newman_null,
     laplacian,
     modularity_matrix,
+    relaxed_modularity,
 )
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
@@ -23,6 +28,8 @@ _CASES = [
     (modularity_matrix, 'networkx.modularity_matrix'),
     (degree_vector, 'numpy.degree'),
     (girvan_newman_null, 'numpy.gn_null'),
+    (coaffiliation, 'numpy.coaffiliation'),
+    (relaxed_modularity, 'networkx.modularity'),
 ]
 
 
@@ -57,3 +64,6 @@ def test_op_qualnames():
     assert degree_vector.CASE.op_qualname == 'nitrix.graph.degree_vector'
     assert (girvan_newman_null.CASE.op_qualname
             == 'nitrix.graph.girvan_newman_null')
+    assert coaffiliation.CASE.op_qualname == 'nitrix.graph.coaffiliation'
+    assert (relaxed_modularity.CASE.op_qualname
+            == 'nitrix.graph.relaxed_modularity')
