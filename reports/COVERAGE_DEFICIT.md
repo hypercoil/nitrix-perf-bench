@@ -5,10 +5,10 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 41 / 122
-- **multiplatform** (CPU + GPU): 40 / 122
-- **with a strong on-target GPU ref**: 33 / 122
-- **lagging on the GPU**: 8
+- **measured** (≥1 platform): 43 / 122
+- **multiplatform** (CPU + GPU): 42 / 122
+- **with a strong on-target GPU ref**: 35 / 122
+- **lagging on the GPU**: 9
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
@@ -23,8 +23,9 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | 4 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
 | 5 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
 | 6 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 7 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 8 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 7 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 8 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 9 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -53,9 +54,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.graph.degree_vector` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.diffusion_embedding` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.girvan_newman_null` | unmeasured | none | unmeasured |
-| high | `nitrix.graph.laplacian` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.laplacian_eigenmap` | unmeasured | none | unmeasured |
-| high | `nitrix.graph.modularity_matrix` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.relaxed_modularity` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |
@@ -143,6 +142,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.linalg.polynomial_kernel` | cupy.polynomial_kernel | 1.72 | ~1.7x faster |
 | `nitrix.linalg.sigmoid_kernel` | cupy.sigmoid_kernel | 1.48 | ~1.5x faster |
 | `nitrix.linalg.cosine_kernel` | cupy.cosine_kernel | 1.34 | ~1.3x faster |
+| `nitrix.graph.modularity_matrix` | cupy.modularity_matrix | 1.18 | ~1.2x faster |
 | `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
 | `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
 | `nitrix.signal.lomb_scargle_interpolate` | cupy.joint_glm | 1.1 | ~1.1x faster |
