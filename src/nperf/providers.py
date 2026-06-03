@@ -120,6 +120,18 @@ PROVIDERS: Dict[str, Provider] = {
         Provider('cupy', 'cupy', requires='gpu',
                  description='GPU reference (cupy / cupyx.scipy.ndimage); '
                              'refs-cupy env (NPERF_PYTHON_CUPY)'),
+        # ANTsPy reference (the canonical medical-imaging registration /
+        # resampling tool; ITK-backed).  Its antspyx wheel pins its own
+        # scipy/sklearn, so it lives in an isolated refs env (DESIGN §7) like
+        # torch -- framework 'ants', selected per attempt via
+        # NPERF_PYTHON_ANTS; CPU tool, lazy-imported in-case.
+        # requires='cpu' (like statsmodels): a CPU-only tool whose refs env
+        # ships CPU-only jax, so it can't satisfy the jax-cuda12 platform's
+        # JAX_PLATFORMS=cuda -- it runs on jax-cpu only, and nitrix's GPU-vs-
+        # ANTs comparison is read cross-platform from nitrix's two rows.
+        Provider('ants', 'ants', requires='cpu',
+                 description='ANTsPy ref (resample/transforms); refs-ants env '
+                             '(NPERF_PYTHON_ANTS); CPU-only'),
     )
 }
 

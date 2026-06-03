@@ -58,4 +58,7 @@ SYNC: Dict[str, Callable[[Any], None]] = {
     'numpy': numpy_sync,
     'torch': torch_sync,
     'cupy': cupy_sync,
+    # ANTsPy returns host numpy arrays (its own refs env), so it needs no
+    # device synchronise -- the numpy no-op (DESIGN §7 isolated refs env).
+    'ants': numpy_sync,
 }
