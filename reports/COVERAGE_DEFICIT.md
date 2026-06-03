@@ -5,8 +5,8 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 34 / 122
-- **multiplatform** (CPU + GPU): 33 / 122
+- **measured** (≥1 platform): 35 / 122
+- **multiplatform** (CPU + GPU): 34 / 122
 - **with a strong on-target GPU ref**: 27 / 122
 - **lagging on the GPU**: 8
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
@@ -99,7 +99,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.signal.linear_interpolate` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.lowpass` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.sample_windows` | unmeasured | none | unmeasured |
-| high | `nitrix.smoothing.bilateral_gaussian` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.brute_force_knn` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.susan_emulator` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.ell_add_self_loops` | unmeasured | none | unmeasured |
@@ -126,6 +125,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | medium | `nitrix.linalg.tangent_project_spd` | multiplatform | floor_only | f32_only |
 | medium | `nitrix.semiring.semiring_ell_edge_aggregate` | multiplatform | none | f32_only |
 | medium | `nitrix.semiring.semiring_matmul` | multiplatform | internal_only | f32_only |
+| medium | `nitrix.smoothing.bilateral_gaussian` | multiplatform | floor_only | f32_only |
 | medium | `nitrix.stats.lme.reml_fit` | multiplatform | floor_only | f32_only |
 
 ## Covered with a strong GPU ref — nitrix ahead
