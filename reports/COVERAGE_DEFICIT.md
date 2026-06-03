@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 40 / 122
-- **multiplatform** (CPU + GPU): 39 / 122
-- **with a strong on-target GPU ref**: 32 / 122
+- **measured** (≥1 platform): 41 / 122
+- **multiplatform** (CPU + GPU): 40 / 122
+- **with a strong on-target GPU ref**: 33 / 122
 - **lagging on the GPU**: 8
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -66,7 +66,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.linalg.recondition_eigenspaces` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.squareform` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.sym2vec` | unmeasured | none | unmeasured |
-| high | `nitrix.linalg.symexp` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.symmap` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.symmetric` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.toeplitz` | unmeasured | none | unmeasured |
