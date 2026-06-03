@@ -12,8 +12,8 @@ dominates.
 
 scipy.signal.sosfilt is the CPU floor + fp64 oracle; ``cupyx.scipy.signal.
 sosfilt`` is the on-target GPU reference. Same SOS coefficients feed all four
-(see ``cases/_filters.py``). Ratio vs ``nitrix-jax`` (the default scan backend),
-so the associative row advertises its speedup over the default-API path.
+(see ``cases/_filters.py``). Ratio vs ``nitrix-jax`` (the default scan
+backend), so the associative row advertises its speedup over the default path.
 """
 from __future__ import annotations
 
