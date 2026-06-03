@@ -5,10 +5,10 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 43 / 122
-- **multiplatform** (CPU + GPU): 42 / 122
-- **with a strong on-target GPU ref**: 35 / 122
-- **lagging on the GPU**: 9
+- **measured** (≥1 platform): 44 / 122
+- **multiplatform** (CPU + GPU): 43 / 122
+- **with a strong on-target GPU ref**: 36 / 122
+- **lagging on the GPU**: 10
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
@@ -20,12 +20,13 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | 1 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.00922 | ~108.5x slower |  |
 | 2 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 0.0104 | ~96.5x slower |  |
 | 3 | `nitrix.signal.sosfiltfilt` | cupyx.scipy.signal.sosfiltfilt | 0.0282 | ~35.5x slower |  |
-| 4 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
-| 5 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
-| 6 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 7 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 8 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 9 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 4 | `nitrix.graph.laplacian_eigenmap` | cupyx.sparse.eigsh | 0.0818 | ~12.2x slower |  |
+| 5 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
+| 6 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
+| 7 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
+| 8 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 9 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 10 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -54,7 +55,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.graph.degree_vector` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.diffusion_embedding` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.girvan_newman_null` | unmeasured | none | unmeasured |
-| high | `nitrix.graph.laplacian_eigenmap` | unmeasured | none | unmeasured |
 | high | `nitrix.graph.relaxed_modularity` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |

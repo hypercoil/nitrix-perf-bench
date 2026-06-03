@@ -3,10 +3,10 @@
   "convention": "gpu_ref_ratio = strong_ref.min / nitrix.min (<1 => nitrix slower on the GPU)",
   "summary": {
     "runtime_ops": 122,
-    "measured": 43,
-    "multiplatform": 42,
-    "with_strong_gpu_ref": 35,
-    "lagging_on_gpu": 9,
+    "measured": 44,
+    "multiplatform": 43,
+    "with_strong_gpu_ref": 36,
+    "lagging_on_gpu": 10,
     "gpu_blocked_upstream": 0,
     "constructors": 15
   },
@@ -51,6 +51,20 @@
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.signal.sosfiltfilt",
       "gpu_ref_ratio": 0.028151141358697285,
+      "nitrix_slower_on_gpu": true
+    },
+    {
+      "qualname": "nitrix.graph.laplacian_eigenmap",
+      "runtime": true,
+      "has_case": true,
+      "coverage": "multiplatform",
+      "ref_strength": "strong_ref",
+      "precision": "f32_only",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": "cupyx.sparse.eigsh",
+      "gpu_ref_ratio": 0.08183612312805093,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -442,21 +456,6 @@
     },
     {
       "qualname": "nitrix.graph.girvan_newman_null",
-      "runtime": true,
-      "has_case": false,
-      "coverage": "unmeasured",
-      "ref_strength": "none",
-      "precision": "unmeasured",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": null,
-      "gpu_ref_ratio": null,
-      "nitrix_slower_on_gpu": false,
-      "priority": "high"
-    },
-    {
-      "qualname": "nitrix.graph.laplacian_eigenmap",
       "runtime": true,
       "has_case": false,
       "coverage": "unmeasured",
@@ -1968,16 +1967,16 @@
     {
       "qualname": "nitrix.graph.laplacian_eigenmap",
       "runtime": true,
-      "has_case": false,
-      "coverage": "unmeasured",
-      "ref_strength": "none",
-      "precision": "unmeasured",
+      "has_case": true,
+      "coverage": "multiplatform",
+      "ref_strength": "strong_ref",
+      "precision": "f32_only",
       "provisional": false,
       "gpu_blocked": false,
       "gpu_block_reason": null,
-      "gpu_ref": null,
-      "gpu_ref_ratio": null,
-      "nitrix_slower_on_gpu": false
+      "gpu_ref": "cupyx.sparse.eigsh",
+      "gpu_ref_ratio": 0.08183612312805093,
+      "nitrix_slower_on_gpu": true
     },
     {
       "qualname": "nitrix.morphology.dilate",
