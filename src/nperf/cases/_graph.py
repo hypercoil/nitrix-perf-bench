@@ -53,6 +53,37 @@ def np_modularity(a: Any) -> np.ndarray:
     return a - np.outer(k, k) / (2.0 * m)
 
 
+def np_degree(a: Any) -> np.ndarray:
+    '''Per-node degree (row sum) -- the textbook numpy floor + fp64 oracle.'''
+    return np.asarray(a).sum(-1)
+
+
+def np_gn_null(a: Any) -> np.ndarray:
+    '''Girvan-Newman null ``k kᵀ/2m`` in numpy (floor + fp64 oracle).'''
+    a = np.asarray(a)
+    k = a.sum(-1)
+    m = a.sum() / 2.0
+    return np.outer(k, k) / (2.0 * m)
+
+
+def cupy_degree() -> Callable[[Any], Any]:
+    '''GPU per-node degree (row sum); operates on the cupy array directly.'''
+    return lambda a: a.sum(-1)
+
+
+def cupy_gn_null() -> Callable[[Any], Any]:
+    '''GPU Girvan-Newman null ``k kᵀ / 2m``; cupy lazy.'''
+
+    def run(a: Any) -> Any:
+        import cupy as cp
+
+        k = a.sum(-1)
+        m = a.sum() / 2.0
+        return cp.outer(k, k) / (2.0 * m)
+
+    return run
+
+
 def nx_modularity() -> Callable[[Any], Any]:
     '''``networkx.modularity_matrix`` (weighted) -- the canonical graph-library
     reference; builds the Graph from the array (honest end-to-end cost).

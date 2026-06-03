@@ -8,7 +8,12 @@ the refs env).
 """
 import numpy as np
 
-from nperf.cases import laplacian, modularity_matrix
+from nperf.cases import (
+    degree_vector,
+    girvan_newman_null,
+    laplacian,
+    modularity_matrix,
+)
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
 
@@ -16,6 +21,8 @@ _P = {'n': 48, 'seed': 0}
 _CASES = [
     (laplacian, 'scipy.csgraph.laplacian'),
     (modularity_matrix, 'networkx.modularity_matrix'),
+    (degree_vector, 'numpy.degree'),
+    (girvan_newman_null, 'numpy.gn_null'),
 ]
 
 
@@ -47,3 +54,6 @@ def test_op_qualnames():
     assert laplacian.CASE.op_qualname == 'nitrix.graph.laplacian'
     assert (modularity_matrix.CASE.op_qualname
             == 'nitrix.graph.modularity_matrix')
+    assert degree_vector.CASE.op_qualname == 'nitrix.graph.degree_vector'
+    assert (girvan_newman_null.CASE.op_qualname
+            == 'nitrix.graph.girvan_newman_null')
