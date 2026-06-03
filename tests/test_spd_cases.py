@@ -9,12 +9,13 @@ bug) and is exercised by the runner, not the unit suite.
 import numpy as np
 import pytest
 
-from nperf.cases import symlog, sympower, symsqrt
+from nperf.cases import symexp, symlog, sympower, symsqrt
 from nperf.core.fidelity import compare
 from nperf.providers import requires_of
 
 _CASES = [
     (symlog, {'d': 32, 'seed': 0}, 'scipy.linalg.logm'),
+    (symexp, {'d': 32, 'seed': 0}, 'scipy.linalg.expm'),
     (symsqrt, {'d': 32, 'seed': 0}, 'scipy.linalg.sqrtm'),
     (sympower, {'d': 32, 'power': 0.75, 'seed': 0},
      'scipy.linalg.fractional_matrix_power'),
@@ -50,5 +51,6 @@ def test_cpu_baselines_match_oracle(mod, param, refname):
 
 def test_op_qualnames_match_nitrix():
     assert symlog.CASE.op_qualname == 'nitrix.linalg.symlog'
+    assert symexp.CASE.op_qualname == 'nitrix.linalg.symexp'
     assert symsqrt.CASE.op_qualname == 'nitrix.linalg.symsqrt'
     assert sympower.CASE.op_qualname == 'nitrix.linalg.sympower'

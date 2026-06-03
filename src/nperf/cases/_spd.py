@@ -57,6 +57,8 @@ def cupy_matrix_fn(kind: str, power: float = 1.0) -> Callable[[Any], Any]:
             fw = cp.log(w)
         elif kind == 'sqrt':
             fw = cp.sqrt(w)
+        elif kind == 'exp':
+            fw = cp.exp(w)
         else:
             fw = cp.power(w, power)
         return (v * fw) @ v.T
