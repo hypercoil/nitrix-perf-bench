@@ -5,10 +5,10 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 32 / 122
-- **multiplatform** (CPU + GPU): 31 / 122
-- **with a strong on-target GPU ref**: 25 / 122
-- **lagging on the GPU**: 6
+- **measured** (≥1 platform): 34 / 122
+- **multiplatform** (CPU + GPU): 33 / 122
+- **with a strong on-target GPU ref**: 27 / 122
+- **lagging on the GPU**: 8
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
@@ -18,11 +18,13 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | # | op | strong GPU ref | ratio (ref/nitrix) | nitrix | note |
 |---|---|---|---:|---|---|
 | 1 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.00922 | ~108.5x slower |  |
-| 2 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
-| 3 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
-| 4 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 5 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 6 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 2 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 0.0104 | ~96.5x slower |  |
+| 3 | `nitrix.signal.sosfiltfilt` | cupyx.scipy.signal.sosfiltfilt | 0.0282 | ~35.5x slower |  |
+| 4 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
+| 5 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
+| 6 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
+| 7 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 8 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -97,8 +99,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.signal.linear_interpolate` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.lowpass` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.sample_windows` | unmeasured | none | unmeasured |
-| high | `nitrix.signal.sosfilt` | unmeasured | none | unmeasured |
-| high | `nitrix.signal.sosfiltfilt` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.bilateral_gaussian` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.brute_force_knn` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.susan_emulator` | unmeasured | none | unmeasured |
