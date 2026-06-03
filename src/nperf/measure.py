@@ -43,6 +43,8 @@ from .cases import (
     reml_fit,
     residualise,
     semiring_matmul,
+    sosfilt,
+    sosfiltfilt,
     spatial_transform,
     symlog,
     sympower,
@@ -102,6 +104,8 @@ CASES: Dict[str, Case] = {
     c.name: c
     for c in (_validate_case(throwaway.CASE),
               _validate_case(semiring_matmul.CASE),
+              _validate_case(sosfilt.CASE),
+              _validate_case(sosfiltfilt.CASE),
               _validate_case(ell_edge_aggregate.CASE),
               _validate_case(cov.CASE),
               _validate_case(corr.CASE),
