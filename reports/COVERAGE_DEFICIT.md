@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 58 / 122
-- **multiplatform** (CPU + GPU): 57 / 122
-- **with a strong on-target GPU ref**: 50 / 122
+- **measured** (≥1 platform): 60 / 122
+- **multiplatform** (CPU + GPU): 59 / 122
+- **with a strong on-target GPU ref**: 52 / 122
 - **lagging on the GPU**: 13
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -40,11 +40,9 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.compactness_penalty` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_pad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_unpad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spherical_conv` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.spherical_geodesic_distance` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.fill_diagonal` | unmeasured | none | unmeasured |
@@ -118,10 +116,12 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.cov` | cupy.cov | 29.1 | ~29.1x faster |
 | `nitrix.stats.corr` | cupy.corrcoef | 27.9 | ~27.9x faster |
 | `nitrix.geometry.integrate_velocity_field` | cupy.integrate_velocity_field | 12.8 | ~12.8x faster |
+| `nitrix.geometry.spherical_geodesic_distance` | cupy.spherical_geodesic_distance | 11.4 | ~11.4x faster |
 | `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 11.3 | ~11.3x faster |
 | `nitrix.geometry.jacobian_det_displacement` | cupy.jacobian_det_displacement | 7.07 | ~7.1x faster |
 | `nitrix.geometry.jacobian_displacement` | cupy.jacobian_displacement | 7.05 | ~7.0x faster |
 | `nitrix.linalg.residualise` | cupy.linalg.lstsq | 7.04 | ~7.0x faster |
+| `nitrix.geometry.compactness_penalty` | cupy.compactness_penalty | 5.09 | ~5.1x faster |
 | `nitrix.geometry.resample` | cupyx.scipy.ndimage.map_coordinates | 4.9 | ~4.9x faster |
 | `nitrix.geometry.displacement_from_reference_grid` | cupy.displacement_from_reference_grid | 3.39 | ~3.4x faster |
 | `nitrix.linalg.gaussian_kernel` | cupy.gaussian_kernel | 3.24 | ~3.2x faster |
