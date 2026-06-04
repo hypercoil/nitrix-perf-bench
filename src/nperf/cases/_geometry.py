@@ -62,7 +62,7 @@ def np_com_grid(w: Any) -> np.ndarray:
 
 
 def np_com_points(w: Any, x: Any) -> np.ndarray:
-    '''numpy weighted mean per region ``(W @ X) / W.sum(-1)`` (floor/oracle).'''
+    '''numpy weighted mean per region ``(W @ X)/W.sum(-1)`` (floor/oracle).'''
     w = np.asarray(w)
     x = np.asarray(x)
     return (w @ x) / w.sum(-1, keepdims=True)
@@ -139,5 +139,35 @@ def cupy_displacement_points(
         import cupy as cp
 
         return (w @ x) / w.sum(-1, keepdims=True) - cp.asarray(reference)
+
+    return run
+
+
+# ---- compactness penalty (region dispersion regulariser) -----------------
+
+
+def _compactness(w: Any, x: Any, xp: Any, floor: float = 0.0) -> Any:
+    '''Per-region ``mean_p w·‖cm - x_p‖₂`` (Euclidean, the default ``norm=2``,
+    ``radius=None`` case): how dispersed each region's weight is from its own
+    centre of mass.'''
+    cm = (w @ x) / w.sum(-1, keepdims=True)          # (..., n_regions, ndim)
+    diff = cm[..., :, None, :] - x[..., None, :, :]
+    dist = xp.sqrt((diff ** 2).sum(-1))              # (..., n_regions, n_pts)
+    dist = xp.maximum(dist - floor, 0.0)
+    return (w * dist).mean(-1)
+
+
+def np_compactness(w: Any, x: Any) -> np.ndarray:
+    '''numpy compactness penalty (CPU floor + fp64 oracle).'''
+    return _compactness(np.asarray(w), np.asarray(x), np)
+
+
+def cupy_compactness() -> Callable[[Any, Any], Any]:
+    '''GPU compactness penalty; cupy lazy.'''
+
+    def run(w: Any, x: Any) -> Any:
+        import cupy as cp
+
+        return _compactness(w, x, cp)
 
     return run

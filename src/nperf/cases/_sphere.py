@@ -89,3 +89,49 @@ def cupy_cartesian_to_latlong() -> Callable[[Any], Any]:
         return _c2ll(xyz, cp)
 
     return run
+
+
+# ---- spherical geodesic distance -----------------------------------------
+
+
+def _geodesic(x: Any, xp: Any, r: float = 1.0) -> Any:
+    '''All-pairs great-circle distance within ``x`` (``(n, 3)``) via the
+    robust ``r·atan2(|X×Y|, X·Y)`` formula (nitrix's convention). Returns
+    ``(n, n)``.'''
+    xb = x[..., :, None, :]
+    yb = x[..., None, :, :]
+    cross = xp.cross(xb, yb, axis=-1)
+    num = xp.sqrt((cross ** 2).sum(-1))
+    den = (xb * yb).sum(-1)
+    return r * xp.arctan2(num, den)
+
+
+def np_geodesic(x: Any, r: float = 1.0) -> np.ndarray:
+    '''numpy all-pairs geodesic (fp64 oracle).'''
+    return _geodesic(np.asarray(x), np, r)
+
+
+def sklearn_haversine() -> Callable[[Any], Any]:
+    '''``sklearn.metrics.pairwise.haversine_distances`` on the lat/long of the
+    points -- the canonical domain-tool great-circle distance (for the unit
+    sphere the angular distance equals the geodesic; verified ~2e-15 in fp64).
+    sklearn imported lazily (only the numpy worker).'''
+
+    def run(x: Any) -> Any:
+        from sklearn.metrics.pairwise import haversine_distances
+
+        ll = np_cartesian_to_latlong(x)
+        return haversine_distances(ll, ll)
+
+    return run
+
+
+def cupy_geodesic(r: float = 1.0) -> Callable[[Any], Any]:
+    '''GPU all-pairs geodesic (same atan2 formula); cupy lazy.'''
+
+    def run(x: Any) -> Any:
+        import cupy as cp
+
+        return _geodesic(x, cp, r)
+
+    return run
