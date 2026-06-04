@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 62 / 122
-- **multiplatform** (CPU + GPU): 61 / 122
-- **with a strong on-target GPU ref**: 54 / 122
+- **measured** (≥1 platform): 63 / 122
+- **multiplatform** (CPU + GPU): 62 / 122
+- **with a strong on-target GPU ref**: 55 / 122
 - **lagging on the GPU**: 14
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -41,7 +41,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.spherical_conv` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.fill_diagonal` | unmeasured | none | unmeasured |
@@ -117,6 +116,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.geometry.integrate_velocity_field` | cupy.integrate_velocity_field | 12.8 | ~12.8x faster |
 | `nitrix.geometry.spherical_geodesic_distance` | cupy.spherical_geodesic_distance | 11.4 | ~11.4x faster |
 | `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 11.3 | ~11.3x faster |
+| `nitrix.geometry.spherical_conv` | cupy.spherical_conv | 8.49 | ~8.5x faster |
 | `nitrix.geometry.jacobian_det_displacement` | cupy.jacobian_det_displacement | 7.07 | ~7.1x faster |
 | `nitrix.geometry.jacobian_displacement` | cupy.jacobian_displacement | 7.05 | ~7.0x faster |
 | `nitrix.linalg.residualise` | cupy.linalg.lstsq | 7.04 | ~7.0x faster |

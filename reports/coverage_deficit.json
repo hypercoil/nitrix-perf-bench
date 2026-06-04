@@ -3,9 +3,9 @@
   "convention": "gpu_ref_ratio = strong_ref.min / nitrix.min (<1 => nitrix slower on the GPU)",
   "summary": {
     "runtime_ops": 122,
-    "measured": 62,
-    "multiplatform": 61,
-    "with_strong_gpu_ref": 54,
+    "measured": 63,
+    "multiplatform": 62,
+    "with_strong_gpu_ref": 55,
     "lagging_on_gpu": 14,
     "gpu_blocked_upstream": 0,
     "constructors": 15
@@ -242,21 +242,6 @@
     },
     {
       "qualname": "nitrix.bias.sharpen_histogram",
-      "runtime": true,
-      "has_case": false,
-      "coverage": "unmeasured",
-      "ref_strength": "none",
-      "precision": "unmeasured",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": null,
-      "gpu_ref_ratio": null,
-      "nitrix_slower_on_gpu": false,
-      "priority": "high"
-    },
-    {
-      "qualname": "nitrix.geometry.spherical_conv",
       "runtime": true,
       "has_case": false,
       "coverage": "unmeasured",
@@ -2733,15 +2718,15 @@
     {
       "qualname": "nitrix.geometry.spherical_conv",
       "runtime": true,
-      "has_case": false,
-      "coverage": "unmeasured",
-      "ref_strength": "none",
-      "precision": "unmeasured",
+      "has_case": true,
+      "coverage": "multiplatform",
+      "ref_strength": "strong_ref",
+      "precision": "f32_only",
       "provisional": false,
       "gpu_blocked": false,
       "gpu_block_reason": null,
-      "gpu_ref": null,
-      "gpu_ref_ratio": null,
+      "gpu_ref": "cupy.spherical_conv",
+      "gpu_ref_ratio": 8.491782258344067,
       "nitrix_slower_on_gpu": false
     },
     {
