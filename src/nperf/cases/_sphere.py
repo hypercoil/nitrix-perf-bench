@@ -135,3 +135,48 @@ def cupy_geodesic(r: float = 1.0) -> Callable[[Any], Any]:
         return _geodesic(x, cp, r)
 
     return run
+
+
+# ---- spherical convolution (kNN Gaussian smoothing) ----------------------
+
+
+def conv_data_input(n: int, c: int, seed: int = 0) -> np.ndarray:
+    '''Per-point feature vectors ``(n, c)`` for spherical_conv.'''
+    rng = np.random.default_rng(seed)
+    return rng.standard_normal((n, c)).astype(np.float32)
+
+
+def _spherical_conv(data: Any, coor: Any, sigma: float, k: int,
+                    xp: Any, r: float = 1.0) -> Any:
+    '''kNN Gaussian smoothing on the sphere: per-point geodesic kNN, Gaussian
+    weights over geodesic distance, row-normalise, reduce (nitrix's
+    on-the-fly ``neighbourhood=k`` path).'''
+    d = _geodesic(coor, xp, r)                       # (n, n)
+    idx = xp.argpartition(d, k - 1, axis=1)[:, :k]   # k nearest (unordered)
+    rows = xp.arange(d.shape[0])[:, None]
+    dist = d[rows, idx]                              # (n, k)
+    w = xp.exp(-0.5 * (dist / sigma) ** 2)
+    z = w.sum(-1, keepdims=True)
+    w = w / xp.maximum(z, xp.finfo(w.dtype).tiny)
+    return (w[..., None] * data[idx]).sum(1)         # (n, c)
+
+
+def np_spherical_conv(sigma: float, k: int) -> Callable[[Any, Any], Any]:
+    '''numpy spherical_conv (CPU floor + fp64 oracle).'''
+
+    def run(data: Any, coor: Any) -> Any:
+        return _spherical_conv(np.asarray(data), np.asarray(coor),
+                               sigma, k, np)
+
+    return run
+
+
+def cupy_spherical_conv(sigma: float, k: int) -> Callable[[Any, Any], Any]:
+    '''GPU spherical_conv (same kNN-Gaussian reduction); cupy lazy.'''
+
+    def run(data: Any, coor: Any) -> Any:
+        import cupy as cp
+
+        return _spherical_conv(data, coor, sigma, k, cp)
+
+    return run

@@ -10,7 +10,11 @@ atan2(|X×Y|, X·Y) formula equals the sklearn haversine angular distance.
 """
 import numpy as np
 
-from nperf.cases import compactness_penalty, spherical_geodesic_distance
+from nperf.cases import (
+    compactness_penalty,
+    spherical_conv,
+    spherical_geodesic_distance,
+)
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
 
@@ -18,6 +22,7 @@ from nperf.providers import framework_of, requires_of
 _CASES = [
     (spherical_geodesic_distance, {'n': 64, 'seed': 0}, 'sklearn.haversine'),
     (compactness_penalty, {'p': 256, 'seed': 0}, 'numpy.compactness'),
+    (spherical_conv, {'n': 96, 'seed': 0}, 'numpy.spherical_conv'),
 ]
 
 
@@ -50,3 +55,5 @@ def test_op_qualnames():
             == 'nitrix.geometry.spherical_geodesic_distance')
     assert (compactness_penalty.CASE.op_qualname
             == 'nitrix.geometry.compactness_penalty')
+    assert (spherical_conv.CASE.op_qualname
+            == 'nitrix.geometry.spherical_conv')
