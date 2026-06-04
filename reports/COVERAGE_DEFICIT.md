@@ -5,9 +5,9 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 53 / 122
-- **multiplatform** (CPU + GPU): 52 / 122
-- **with a strong on-target GPU ref**: 45 / 122
+- **measured** (≥1 platform): 55 / 122
+- **multiplatform** (CPU + GPU): 54 / 122
+- **with a strong on-target GPU ref**: 47 / 122
 - **lagging on the GPU**: 13
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -40,12 +40,10 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.cartesian_to_latlong` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.compactness_penalty` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.integrate_velocity_field` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.jacobian_det_displacement` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.jacobian_displacement` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.latlong_to_cartesian` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_pad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sphere_grid_unpad_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spherical_conv` | unmeasured | none | unmeasured |
@@ -135,9 +133,11 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.precision` | cupy.inv_cov | 2.23 | ~2.2x faster |
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
+| `nitrix.geometry.cartesian_to_latlong` | cupy.cartesian_to_latlong | 1.74 | ~1.7x faster |
 | `nitrix.linalg.polynomial_kernel` | cupy.polynomial_kernel | 1.72 | ~1.7x faster |
 | `nitrix.graph.relaxed_modularity` | cupy.relaxed_modularity | 1.56 | ~1.6x faster |
 | `nitrix.linalg.sigmoid_kernel` | cupy.sigmoid_kernel | 1.48 | ~1.5x faster |
+| `nitrix.geometry.latlong_to_cartesian` | cupy.latlong_to_cartesian | 1.46 | ~1.5x faster |
 | `nitrix.linalg.cosine_kernel` | cupy.cosine_kernel | 1.34 | ~1.3x faster |
 | `nitrix.geometry.displacement_from_reference_points` | cupy.displacement_from_reference_points | 1.33 | ~1.3x faster |
 | `nitrix.graph.modularity_matrix` | cupy.modularity_matrix | 1.18 | ~1.2x faster |
