@@ -6,6 +6,8 @@ multi-outcome, multi-platform, with structured results as the source of truth.
 - **Architecture:** [`DESIGN.md`](DESIGN.md)
 - **Row schema + worker lifecycle (implementation contract):**
   [`SCHEMA_AND_LIFECYCLE.md`](SCHEMA_AND_LIFECYCLE.md)
+- **Optimising a nitrix op against the suite (feedback-loop playbook for the
+  nitrix agent):** [`OPTIMIZATION_LOOP.md`](OPTIMIZATION_LOOP.md)
 
 ## Status: P3 done (gate · bundles · HTML site)
 
