@@ -5,10 +5,10 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 63 / 122
-- **multiplatform** (CPU + GPU): 62 / 122
-- **with a strong on-target GPU ref**: 55 / 122
-- **lagging on the GPU**: 14
+- **measured** (≥1 platform): 67 / 122
+- **multiplatform** (CPU + GPU): 66 / 122
+- **with a strong on-target GPU ref**: 59 / 122
+- **lagging on the GPU**: 15
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
@@ -27,10 +27,11 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | 8 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
 | 9 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
 | 10 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 11 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
-| 12 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 13 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 14 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 11 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
+| 12 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
+| 13 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 14 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 15 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -62,11 +63,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.numerics.complex_decompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_recompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.demean` | unmeasured | none | unmeasured |
-| high | `nitrix.numerics.intensity_normalize` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.percentile_rescale` | unmeasured | none | unmeasured |
-| high | `nitrix.numerics.psc_normalize` | unmeasured | none | unmeasured |
-| high | `nitrix.numerics.robust_zscore_normalize` | unmeasured | none | unmeasured |
-| high | `nitrix.numerics.zscore_normalize` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.ell_row_softmax` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_conv` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_ell_matmul` | unmeasured | none | unmeasured |
@@ -113,6 +110,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.signal.lomb_scargle_periodogram` | cupyx.scipy.signal.lombscargle | 109 | ~108.7x faster |
 | `nitrix.stats.cov` | cupy.cov | 29.1 | ~29.1x faster |
 | `nitrix.stats.corr` | cupy.corrcoef | 27.9 | ~27.9x faster |
+| `nitrix.numerics.robust_zscore_normalize` | cupy.robust_zscore_normalize | 12.8 | ~12.8x faster |
 | `nitrix.geometry.integrate_velocity_field` | cupy.integrate_velocity_field | 12.8 | ~12.8x faster |
 | `nitrix.geometry.spherical_geodesic_distance` | cupy.spherical_geodesic_distance | 11.4 | ~11.4x faster |
 | `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 11.3 | ~11.3x faster |
@@ -132,6 +130,8 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.partialcov` | cupy.partialcov | 2.29 | ~2.3x faster |
 | `nitrix.stats.precision` | cupy.inv_cov | 2.23 | ~2.2x faster |
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
+| `nitrix.numerics.zscore_normalize` | cupy.zscore_normalize | 2.05 | ~2.0x faster |
+| `nitrix.numerics.psc_normalize` | cupy.psc_normalize | 1.87 | ~1.9x faster |
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
 | `nitrix.geometry.cartesian_to_latlong` | cupy.cartesian_to_latlong | 1.74 | ~1.7x faster |
 | `nitrix.linalg.polynomial_kernel` | cupy.polynomial_kernel | 1.72 | ~1.7x faster |
