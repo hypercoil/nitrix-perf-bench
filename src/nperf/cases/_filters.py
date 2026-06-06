@@ -40,6 +40,18 @@ def design_sos(order: int = 4, lo: float = 0.04, hi: float = 0.4,
                      fs=fs).astype(np.float32)
 
 
+def sharp_sos(order: int = 8, band=(0.002, 0.004)) -> np.ndarray:
+    '''A near-unstable narrow band-pass (poles hugging the unit circle,
+    |pole| ~ 0.9996) whose impulse response does **not** decay below
+    ``impulse_atol`` within the FFT engine's 2**15-tap cap -- so ``backend=
+    'fft'`` falls back to the recurrence (with a warning).  This is the filter
+    that exposes whether a bench is over-reporting the FFT win on filters where
+    it does not apply (B18 Win 2): the realistic high-Q notch (Q<=200) is
+    handled by the FFT path directly, but this one forces the fallback.'''
+    return ss.butter(order, list(band), btype='bandpass',
+                     output='sos').astype(np.float32)
+
+
 def scipy_sosfilt(sos: np.ndarray, filtfilt: bool = False
                   ) -> Callable[[Any], Any]:
     '''scipy.signal forward (``sosfilt``) or zero-phase (``sosfiltfilt``)

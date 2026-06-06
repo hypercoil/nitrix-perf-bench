@@ -23,8 +23,9 @@ For every registered ``Case`` it records two fingerprints of the nitrix op:
    going exact, a fallback firing) that a loose oracle tolerance would mask.
    The digest is **sign- and order-invariant** per leaf (L1, sum-of-squares,
    Linf, finite-count) so eigenvector sign freedom / eigenvalue-tie reordering
-   do not trip it, and it is rounded to a few significant figures so fp jitter
-   does not either.
+   do not trip it, and the stats are compared with a **relative tolerance**
+   (``_BEHAVIOUR_RTOL``) so cross-process fp reassociation jitter does not
+   either (only a real, gross output change trips it).
 
 This is a **change *detector*** (nitrix vs its own committed past), not a
 correctness verdict: a tripped fingerprint says "an assumption moved -- review
@@ -66,10 +67,17 @@ MANIFEST = (
 )
 REPORT = Path(__file__).resolve().parents[1] / 'reports' / 'OP_DRIFT.md'
 
-# Significant figures the behaviour digest is rounded to.  Coarse enough to
-# absorb fp reassociation jitter across nitrix versions, fine enough that a
-# real algorithm change (a metric going exact, a fallback firing) moves it.
+# Significant figures the stored behaviour digest is rounded to (readability of
+# the manifest only -- the comparison is tolerance-based, see _BEHAVIOUR_RTOL).
 _SIG = 6
+
+# Relative tolerance for the behaviour comparison.  The digest's sum-based
+# stats (l1, l2sq over millions of fp32 elements) are not bit-reproducible
+# *across processes* (XLA reassociates fp reductions per compile), so an
+# exact-equality compare false-alarms at the ~1e-7 level.  Comparing with
+# a relative tolerance well above that jitter but far below any real algorithm
+# change (a metric going exact, a fallback firing -- all >>0.1%) is robust.
+_BEHAVIOUR_RTOL = 1e-3
 
 
 def _sig(x: float, n: int = _SIG) -> Optional[float]:
@@ -170,6 +178,32 @@ def fingerprint(case) -> Dict[str, Any]:
     return fp
 
 
+def _leaf_stat_changed(a: Any, b: Any) -> bool:
+    '''One numeric stat changed beyond ``_BEHAVIOUR_RTOL`` (None-aware).'''
+    if a is None or b is None:
+        return a is not b
+    return abs(a - b) > _BEHAVIOUR_RTOL * max(abs(a), abs(b), 1e-300)
+
+
+def _leaves_changed(old_leaves: Any, new_leaves: Any) -> bool:
+    '''Did the behaviour digest change beyond fp jitter?  Structural keys
+    (shape, dtype, finite counts) must match exactly; the numeric stats (l1,
+    l2sq, linf) are compared with a relative tolerance so cross-process fp
+    reassociation does not false-alarm (see _BEHAVIOUR_RTOL).'''
+    if old_leaves is None or new_leaves is None:
+        return old_leaves is not new_leaves
+    if len(old_leaves) != len(new_leaves):
+        return True
+    for o, n in zip(old_leaves, new_leaves):
+        if any(o.get(k) != n.get(k)
+               for k in ('shape', 'dtype', 'n_finite', 'n_nonfinite')):
+            return True
+        if any(_leaf_stat_changed(o.get(k), n.get(k))
+               for k in ('l1', 'l2sq', 'linf')):
+            return True
+    return False
+
+
 def _classify(old: Optional[Dict], new: Dict) -> Tuple[str, List[str]]:
     '''Compare an op's old vs new fingerprint -> (status, detail lines).'''
     if old is None:
@@ -183,7 +217,7 @@ def _classify(old: Optional[Dict], new: Dict) -> Tuple[str, List[str]]:
         detail.append(f'behaviour: now errors ({nb["error"]})')
     elif 'error' in ob and 'error' not in nb:
         detail.append('behaviour: build/run recovered (was erroring)')
-    elif ob.get('leaves') != nb.get('leaves'):
+    elif _leaves_changed(ob.get('leaves'), nb.get('leaves')):
         detail.append('behaviour: output digest changed '
                       f'(point {nb.get("point")})')
     if not detail:

@@ -6,39 +6,11 @@
     "measured": 67,
     "multiplatform": 66,
     "with_strong_gpu_ref": 59,
-    "lagging_on_gpu": 15,
+    "lagging_on_gpu": 13,
     "gpu_blocked_upstream": 0,
     "constructors": 15
   },
   "lagging": [
-    {
-      "qualname": "nitrix.signal.sosfilt",
-      "runtime": true,
-      "has_case": true,
-      "coverage": "multiplatform",
-      "ref_strength": "strong_ref",
-      "precision": "f32_only",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": "cupyx.scipy.signal.sosfilt",
-      "gpu_ref_ratio": 0.010360413178824524,
-      "nitrix_slower_on_gpu": true
-    },
-    {
-      "qualname": "nitrix.signal.sosfiltfilt",
-      "runtime": true,
-      "has_case": true,
-      "coverage": "multiplatform",
-      "ref_strength": "strong_ref",
-      "precision": "f32_only",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": "cupyx.scipy.signal.sosfiltfilt",
-      "gpu_ref_ratio": 0.028151141358697285,
-      "nitrix_slower_on_gpu": true
-    },
     {
       "qualname": "nitrix.geometry.sphere_grid_unpad_2d",
       "runtime": true,
@@ -2443,8 +2415,8 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.signal.sosfilt",
-      "gpu_ref_ratio": 0.010360413178824524,
-      "nitrix_slower_on_gpu": true
+      "gpu_ref_ratio": 2.1649682256949623,
+      "nitrix_slower_on_gpu": false
     },
     {
       "qualname": "nitrix.signal.sosfiltfilt",
@@ -2457,8 +2429,8 @@
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.signal.sosfiltfilt",
-      "gpu_ref_ratio": 0.028151141358697285,
-      "nitrix_slower_on_gpu": true
+      "gpu_ref_ratio": 7.367978545363845,
+      "nitrix_slower_on_gpu": false
     },
     {
       "qualname": "nitrix.signal.butterworth_sos",

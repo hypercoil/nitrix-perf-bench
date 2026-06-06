@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-06T05:50:09Z",
+    "generated": "2026-06-06T06:44:35Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -2990,21 +2990,22 @@
       "signature": "(X: \"Num[Array, '... obs']\", sos: 'np.ndarray', *, axis: 'int' = -1, backend: '_Backend' = 'auto', impulse_atol: 'float' = 1e-12) -> \"Num[Array, '... obs']\"",
       "behaviour": {
         "point": {
-          "channels": 1024,
-          "obs": 4096
+          "channels": 256,
+          "obs": 8192,
+          "order": 4
         },
         "leaves": [
           {
             "shape": [
-              1024,
-              4096
+              256,
+              8192
             ],
             "dtype": "float64",
-            "n_finite": 4194304,
+            "n_finite": 2097152,
             "n_nonfinite": 0,
-            "l1": 2828920.0,
-            "l2sq": 2999130.0,
-            "linf": 4.40204
+            "l1": 1414780.0,
+            "l2sq": 1500020.0,
+            "linf": 4.21566
           }
         ]
       }
@@ -3015,20 +3016,21 @@
       "signature": "(X: \"Num[Array, '... obs']\", sos: 'np.ndarray', *, axis: 'int' = -1, padtype: 'str' = 'odd', padlen: 'Optional[int]' = None, backend: '_Backend' = 'auto', impulse_atol: 'float' = 1e-12) -> \"Num[Array, '... obs']\"",
       "behaviour": {
         "point": {
-          "channels": 1024,
-          "obs": 4096
+          "channels": 256,
+          "obs": 8192,
+          "order": 4
         },
         "leaves": [
           {
             "shape": [
-              1024,
-              4096
+              256,
+              8192
             ],
             "dtype": "float32",
-            "n_finite": 4194304,
+            "n_finite": 2097152,
             "n_nonfinite": 0,
-            "l1": 2770360.0,
-            "l2sq": 2876530.0,
+            "l1": 1384860.0,
+            "l2sq": 1437450.0,
             "linf": 4.35762
           }
         ]

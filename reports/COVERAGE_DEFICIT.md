@@ -8,7 +8,7 @@
 - **measured** (≥1 platform): 67 / 123
 - **multiplatform** (CPU + GPU): 66 / 123
 - **with a strong on-target GPU ref**: 59 / 123
-- **lagging on the GPU**: 15
+- **lagging on the GPU**: 13
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
@@ -17,21 +17,19 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 
 | # | op | strong GPU ref | ratio (ref/nitrix) | nitrix | note |
 |---|---|---|---:|---|---|
-| 1 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 0.0104 | ~96.5x slower |  |
-| 2 | `nitrix.signal.sosfiltfilt` | cupyx.scipy.signal.sosfiltfilt | 0.0282 | ~35.5x slower |  |
-| 3 | `nitrix.geometry.sphere_grid_unpad_2d` | cupy.sphere_grid_unpad_2d | 0.0379 | ~26.4x slower |  |
-| 4 | `nitrix.graph.laplacian_eigenmap` | cupyx.sparse.eigsh | 0.0818 | ~12.2x slower |  |
-| 5 | `nitrix.graph.diffusion_embedding` | cupyx.sparse.eigsh | 0.0831 | ~12.0x slower |  |
-| 6 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
-| 7 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
-| 8 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
-| 9 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 10 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
-| 11 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
-| 12 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 13 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 14 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
-| 15 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
+| 1 | `nitrix.geometry.sphere_grid_unpad_2d` | cupy.sphere_grid_unpad_2d | 0.0379 | ~26.4x slower |  |
+| 2 | `nitrix.graph.laplacian_eigenmap` | cupyx.sparse.eigsh | 0.0818 | ~12.2x slower |  |
+| 3 | `nitrix.graph.diffusion_embedding` | cupyx.sparse.eigsh | 0.0831 | ~12.0x slower |  |
+| 4 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
+| 5 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
+| 6 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
+| 7 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
+| 8 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
+| 9 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
+| 10 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 11 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 12 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 13 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -116,6 +114,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.geometry.spherical_geodesic_distance` | cupy.spherical_geodesic_distance | 11.4 | ~11.4x faster |
 | `nitrix.signal.polynomial_detrend` | cupy.lstsq_detrend | 11.3 | ~11.3x faster |
 | `nitrix.geometry.spherical_conv` | cupy.spherical_conv | 8.49 | ~8.5x faster |
+| `nitrix.signal.sosfiltfilt` | cupyx.scipy.signal.sosfiltfilt | 7.37 | ~7.4x faster |
 | `nitrix.geometry.jacobian_det_displacement` | cupy.jacobian_det_displacement | 7.07 | ~7.1x faster |
 | `nitrix.geometry.jacobian_displacement` | cupy.jacobian_displacement | 7.05 | ~7.0x faster |
 | `nitrix.linalg.residualise` | cupy.linalg.lstsq | 7.04 | ~7.0x faster |
@@ -131,6 +130,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.partialcov` | cupy.partialcov | 2.29 | ~2.3x faster |
 | `nitrix.stats.precision` | cupy.inv_cov | 2.23 | ~2.2x faster |
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
+| `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 2.16 | ~2.2x faster |
 | `nitrix.numerics.zscore_normalize` | cupy.zscore_normalize | 2.05 | ~2.0x faster |
 | `nitrix.numerics.psc_normalize` | cupy.psc_normalize | 1.87 | ~1.9x faster |
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
