@@ -156,7 +156,11 @@ thresholds; `--gate-out` artifact) and exits nonzero on a regression; `--site
 (`tools/decision_bundle.py`), and the **coverage-&-deficit report**
 (`tools/coverage_report.py` — joins the op catalogue with the store and ranks
 under-covered + on-target-lagging ops for the nitrix agent) are sibling L5
-artifacts over the same rows. Tests:
+artifacts over the same rows. The **drift check** (`tools/drift_check.py`)
+fingerprints each op's signature + canonical-output digest into
+`reports/op_drift_manifest.json` and flags when a nitrix change has silently
+moved a case's assumptions (a change detector, not a correctness gate; the fast
+signature half also runs in the suite). Tests:
 `JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case build,
 worker round-trip, scheduler invariants, multi-platform, registries, store,
 gate, bundle, html).

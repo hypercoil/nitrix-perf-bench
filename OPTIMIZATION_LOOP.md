@@ -168,6 +168,29 @@ JAX_PLATFORMS=cpu $PY -m pytest tests/ -q       # fidelity/oracle tests stay gre
 
 ---
 
+## 5. Did your change move a case's assumptions? (drift check)
+
+A perf win usually changes an op's *signature* (a new default, e.g.
+`backend='scan'` → `'auto'`) or its *output* on the benched input (a metric
+going exact, a fallback firing). When it does, the perf-bench case that
+measured the old behaviour can stay green while quietly measuring the wrong
+branch. The drift gate catches exactly this:
+
+```bash
+JAX_PLATFORMS=cpu $PY tools/drift_check.py        # signature + behaviour vs manifest
+# ... it flags the ops whose signature or output digest moved ...
+JAX_PLATFORMS=cpu $PY tools/drift_check.py --update   # re-bless AFTER the cases are updated
+```
+
+It is a **change detector** (nitrix vs its own committed past), not a
+correctness verdict — a flag means "the case's assumption moved, go re-read the
+case", not "nitrix is wrong". Run it after any op change; if it flags, update
+the affected case (the branch it calls, its accuracy gate) *before* trusting a
+new number, then `--update` to re-bless. The fast signature half also runs in
+`tests/test_op_drift.py` (default suite); the behaviour half is this tool.
+
+---
+
 ## Worked example — the B17 CPU median/percentile cliff
 
 `robust_zscore_normalize` is 8–12× slower than numpy on CPU because
