@@ -33,6 +33,7 @@ from .cases import (
     displacement_from_reference_grid,
     displacement_from_reference_points,
     distance_transform,
+    distance_transform_chamfer,
     ell_edge_aggregate,
     envelope,
     erode,
@@ -149,6 +150,7 @@ CASES: Dict[str, Case] = {
               _validate_case(erode.CASE),
               _validate_case(dilate.CASE),
               _validate_case(distance_transform.CASE),
+              _validate_case(distance_transform_chamfer.CASE),
               _validate_case(spatial_transform.CASE),
               _validate_case(median_filter.CASE),
               _validate_case(histogram_match.CASE),
@@ -343,6 +345,15 @@ def measure_attempt(
         if fid['status'] == 'pass':
             return AttemptRecord(
                 **base, status=Status.OK, metrics=metrics, fidelity=fid,
+            )
+        # Declared-approximate baseline (a fidelity/speed tradeoff, e.g. a 4SED
+        # distance transform or a quantised kernel): report the gap, keep the
+        # row OK and let it earn a ratio -- the approximation magnitude set
+        # against the speed *is* the signal (ApproxBaseline).
+        if baseline_name in {a.baseline for a in case.approximate_baselines}:
+            return AttemptRecord(
+                **base, status=Status.OK, metrics=metrics,
+                fidelity={**fid, 'status': 'approximate'},
             )
         # Refuse the ratio, but keep the absolutes + the failing record.
         return AttemptRecord(

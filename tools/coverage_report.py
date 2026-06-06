@@ -36,11 +36,24 @@ _DEFAULT_OP_MATRIX = str(
 
 def _op_to_case() -> Dict[str, Tuple[str, Dict[str, Any]]]:
     '''op qualname -> (case name, representative point); the single home for
-    the case->op mapping is ``Case.op_qualname`` (shared with the feed).'''
-    return {
-        c.op_qualname: (c.name, c.representative)
-        for c in CASES.values() if c.op_qualname
-    }
+    the case->op mapping is ``Case.op_qualname`` (shared with the feed).
+
+    Several cases can target one op via different branches (e.g.
+    ``distance_transform`` euclidean vs ``distance_transform_chamfer``).  When
+    they do, prefer the **canonical** case -- the one whose name matches the
+    op's leaf (``distance_transform``) -- so the op's coverage (its strong-GPU
+    ref, its representative) reflects the default branch users hit, not a
+    secondary variant.  Deterministic fallback: first by registration order.'''
+    out: Dict[str, Tuple[str, Dict[str, Any]]] = {}
+    for c in CASES.values():
+        if not c.op_qualname:
+            continue
+        leaf = c.op_qualname.rsplit('.', 1)[-1]
+        # take the first case for an op, but let the canonical (leaf-named)
+        # case override a previously-seen variant.
+        if c.op_qualname not in out or c.name == leaf:
+            out[c.op_qualname] = (c.name, c.representative)
+    return out
 
 
 def main() -> None:

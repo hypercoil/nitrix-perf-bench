@@ -4,10 +4,10 @@
 
 ## Coverage (runtime ops)
 
-- **runtime ops catalogued**: 122 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 67 / 122
-- **multiplatform** (CPU + GPU): 66 / 122
-- **with a strong on-target GPU ref**: 59 / 122
+- **runtime ops catalogued**: 123 (+ 15 host-side constructors, apart)
+- **measured** (≥1 platform): 67 / 123
+- **multiplatform** (CPU + GPU): 66 / 123
+- **with a strong on-target GPU ref**: 59 / 123
 - **lagging on the GPU**: 15
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
@@ -17,21 +17,21 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 
 | # | op | strong GPU ref | ratio (ref/nitrix) | nitrix | note |
 |---|---|---|---:|---|---|
-| 1 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.00922 | ~108.5x slower |  |
-| 2 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 0.0104 | ~96.5x slower |  |
-| 3 | `nitrix.signal.sosfiltfilt` | cupyx.scipy.signal.sosfiltfilt | 0.0282 | ~35.5x slower |  |
-| 4 | `nitrix.geometry.sphere_grid_unpad_2d` | cupy.sphere_grid_unpad_2d | 0.0379 | ~26.4x slower |  |
-| 5 | `nitrix.graph.laplacian_eigenmap` | cupyx.sparse.eigsh | 0.0818 | ~12.2x slower |  |
-| 6 | `nitrix.graph.diffusion_embedding` | cupyx.sparse.eigsh | 0.0831 | ~12.0x slower |  |
-| 7 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
-| 8 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
-| 9 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
-| 10 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 11 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
-| 12 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
-| 13 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 14 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 15 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 1 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 0.0104 | ~96.5x slower |  |
+| 2 | `nitrix.signal.sosfiltfilt` | cupyx.scipy.signal.sosfiltfilt | 0.0282 | ~35.5x slower |  |
+| 3 | `nitrix.geometry.sphere_grid_unpad_2d` | cupy.sphere_grid_unpad_2d | 0.0379 | ~26.4x slower |  |
+| 4 | `nitrix.graph.laplacian_eigenmap` | cupyx.sparse.eigsh | 0.0818 | ~12.2x slower |  |
+| 5 | `nitrix.graph.diffusion_embedding` | cupyx.sparse.eigsh | 0.0831 | ~12.0x slower |  |
+| 6 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
+| 7 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
+| 8 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
+| 9 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
+| 10 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
+| 11 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
+| 12 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 13 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
+| 14 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
+| 15 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -57,6 +57,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.linalg.toeplitz_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.vec2sym` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.close` | unmeasured | none | unmeasured |
+| high | `nitrix.morphology.distance_transform_edt` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_pool_with_indices_nd` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_unpool_nd` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.open` | unmeasured | none | unmeasured |

@@ -44,7 +44,9 @@ def _fmt_fidelity(rec: Dict[str, Any]) -> str:
     # No cross-impl oracle: numerical check is N/A (there is no rel_to_tol).
     if status == 'inconclusive':
         return 'n/a (no oracle)'
-    tag = {'pass': '✓', 'fail': '✗'}.get(status, '?')
+    # ≈ = a declared-approximate baseline (fidelity/speed tradeoff): the gap is
+    # reported, not gated (the row keeps its ratio).
+    tag = {'pass': '✓', 'fail': '✗', 'approximate': '≈'}.get(status, '?')
     # Headline = error as a multiple of allowed tolerance (pass <=> <= 1).
     return f"{tag} {fid.get('rel_to_tol', float('nan')):.2g}×tol"
 
@@ -162,9 +164,11 @@ def render_markdown(
         '',
         '`steady` = post-warm-up min / median; `compile` = cold first call; '
         '`fidelity` = worst error as a multiple of the allowed tolerance vs '
-        'the fp64 oracle (✓ pass ⟺ ≤ 1×tol / ✗ fail). A `fidelity_failed` row '
-        'keeps its measurements but its ratio is `refused`. Ratios are '
-        '**within-platform** (vs that platform\'s reference baseline).',
+        'the fp64 oracle (✓ pass ⟺ ≤ 1×tol / ✗ fail / ≈ declared-approximate: '
+        'reported not gated, a fidelity/speed tradeoff that keeps its ratio). '
+        'A `fidelity_failed` row keeps its measurements but its ratio is '
+        '`refused`. Ratios are **within-platform** (vs that platform\'s '
+        'reference baseline).',
         '',
         '| case | platform | param | baseline | status | steady (min/med) | '
         'compile | mem | fidelity | ratio |',

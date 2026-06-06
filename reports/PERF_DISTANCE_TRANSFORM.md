@@ -14,10 +14,18 @@
 
 ## Measurements
 
-`steady` = post-warm-up min / median; `compile` = cold first call; `fidelity` = worst error as a multiple of the allowed tolerance vs the fp64 oracle (✓ pass ⟺ ≤ 1×tol / ✗ fail). A `fidelity_failed` row keeps its measurements but its ratio is `refused`. Ratios are **within-platform** (vs that platform's reference baseline).
+`steady` = post-warm-up min / median; `compile` = cold first call; `fidelity` = worst error as a multiple of the allowed tolerance vs the fp64 oracle (✓ pass ⟺ ≤ 1×tol / ✗ fail / ≈ declared-approximate: reported not gated, a fidelity/speed tradeoff that keeps its ratio). A `fidelity_failed` row keeps its measurements but its ratio is `refused`. Ratios are **within-platform** (vs that platform's reference baseline).
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
+| distance_transform | jax-cpu | shape=[128, 128, 128] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
+| distance_transform | jax-cpu | shape=[128, 128, 128] | `nitrix-jax` | ok | 165.48 ms / 182.50 ms | 412.77 ms | 1681 MB (rss) | ✓ 5.7e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[128, 128, 128] | `scipy.ndimage.distance_transform_edt` | ok | 337.78 ms / 370.94 ms | 350.41 ms | 1681 MB (rss) | ✓ 0×tol | 2.04x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[128, 128, 128] | `simpleitk.DanielssonDistanceMap` | ok | 686.72 ms / 687.82 ms | 756.56 ms | 1681 MB (rss) | ≈ 2.8e+02×tol | 4.15x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[128, 128, 128] | `cupyx.scipy.ndimage.distance_transform_edt` | ok | 534.2 µs / 549.4 µs | 233.93 ms | 8.39 MB (hbm) | ✓ 0×tol | 1.08x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[128, 128, 128] | `nitrix-jax` | ok | 496.2 µs / 506.8 µs | 1.174 s | 58.72 MB (hbm) | ✓ 9.1e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[128, 128, 128] | `scipy.ndimage.distance_transform_edt` | ok | 313.12 ms / 331.97 ms | 335.69 ms | 8.39 MB (hbm) | ✓ 0×tol | 631.03x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[128, 128, 128] | `simpleitk.DanielssonDistanceMap` | ok | 691.20 ms / 716.32 ms | 765.72 ms | 8.39 MB (hbm) | ≈ 2.8e+02×tol | 1392.95x vs nitrix-jax |
 | distance_transform | jax-cpu | shape=[128, 128] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
 | distance_transform | jax-cpu | shape=[128, 128] | `nitrix-jax` | ok | 25.10 ms / 29.01 ms | 228.75 ms | 712 MB (rss) | ✓ 0.41×tol | 1.00x vs nitrix-jax |
 | distance_transform | jax-cpu | shape=[128, 128] | `scipy.ndimage.distance_transform_edt` | ok | 917.6 µs / 979.6 µs | 1.43 ms | 712 MB (rss) | ✓ 0×tol | 0.04x vs nitrix-jax |
@@ -26,6 +34,22 @@
 | distance_transform | jax-cuda12 | shape=[128, 128] | `nitrix-jax` | ok | 4.99 ms / 5.00 ms | 562.98 ms | 68.35 MB (hbm) | ✓ 0.41×tol | 1.00x vs nitrix-jax |
 | distance_transform | jax-cuda12 | shape=[128, 128] | `scipy.ndimage.distance_transform_edt` | ok | 981.7 µs / 1.37 ms | 1.52 ms | 0.07 MB (hbm) | ✓ 0×tol | 0.20x vs nitrix-jax |
 | distance_transform | jax-cuda12 | shape=[128, 128] | `simpleitk.DanielssonDistanceMap` | ok | 1.95 ms / 2.11 ms | 59.24 ms | 0.07 MB (hbm) | ✓ 3.2e-08×tol | 0.39x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[256, 256, 256] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
+| distance_transform | jax-cpu | shape=[256, 256, 256] | `nitrix-jax` | ok | 3.207 s / 3.706 s | 5.433 s | 1681 MB (rss) | ✓ 5.8e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[256, 256, 256] | `scipy.ndimage.distance_transform_edt` | ok | 3.833 s / 4.300 s | 4.214 s | 1723 MB (rss) | ✓ 0×tol | 1.20x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[256, 256, 256] | `simpleitk.DanielssonDistanceMap` | ok | 5.789 s / 5.936 s | 5.727 s | 1681 MB (rss) | ≈ 3.9e+02×tol | 1.81x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256, 256] | `cupyx.scipy.ndimage.distance_transform_edt` | ok | 6.00 ms / 6.09 ms | 320.75 ms | 67.11 MB (hbm) | ✓ 0×tol | 0.82x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256, 256] | `nitrix-jax` | ok | 7.35 ms / 8.02 ms | 1.514 s | 335.54 MB (hbm) | ✓ 9.4e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256, 256] | `scipy.ndimage.distance_transform_edt` | ok | 3.727 s / 4.071 s | 4.986 s | 67.11 MB (hbm) | ✓ 0×tol | 507.36x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256, 256] | `simpleitk.DanielssonDistanceMap` | ok | 5.857 s / 5.928 s | 5.964 s | 67.11 MB (hbm) | ≈ 3.9e+02×tol | 797.29x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[256, 256] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
+| distance_transform | jax-cpu | shape=[256, 256] | `nitrix-jax` | ok | 7.50 ms / 8.33 ms | 162.73 ms | 1681 MB (rss) | ✓ 5.7e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[256, 256] | `scipy.ndimage.distance_transform_edt` | ok | 2.77 ms / 3.07 ms | 2.97 ms | 1681 MB (rss) | ✓ 0×tol | 0.37x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[256, 256] | `simpleitk.DanielssonDistanceMap` | ok | 5.98 ms / 6.01 ms | 71.93 ms | 1681 MB (rss) | ≈ 59×tol | 0.80x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256] | `cupyx.scipy.ndimage.distance_transform_edt` | ok | 246.2 µs / 250.3 µs | 522.20 ms | 0.26 MB (hbm) | ✓ 0×tol | 0.72x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256] | `nitrix-jax` | ok | 343.7 µs / 352.7 µs | 1.166 s | 34.34 MB (hbm) | ✓ 9.4e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256] | `scipy.ndimage.distance_transform_edt` | ok | 2.59 ms / 3.01 ms | 4.80 ms | 0.26 MB (hbm) | ✓ 0×tol | 7.53x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[256, 256] | `simpleitk.DanielssonDistanceMap` | ok | 6.03 ms / 6.11 ms | 64.27 ms | 0.26 MB (hbm) | ≈ 59×tol | 17.55x vs nitrix-jax |
 | distance_transform | jax-cpu | shape=[32, 32, 32] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
 | distance_transform | jax-cpu | shape=[32, 32, 32] | `nitrix-jax` | ok | 85.78 ms / 87.54 ms | 314.87 ms | 712 MB (rss) | ✓ 0.41×tol | 1.00x vs nitrix-jax |
 | distance_transform | jax-cpu | shape=[32, 32, 32] | `scipy.ndimage.distance_transform_edt` | ok | 3.51 ms / 4.41 ms | 4.91 ms | 712 MB (rss) | ✓ 0×tol | 0.04x vs nitrix-jax |
@@ -42,14 +66,22 @@
 | distance_transform | jax-cuda12 | shape=[32, 32] | `nitrix-jax` | ok | 1.62 ms / 1.66 ms | 547.11 ms | 33.63 MB (hbm) | ✓ 0.41×tol | 1.00x vs nitrix-jax |
 | distance_transform | jax-cuda12 | shape=[32, 32] | `scipy.ndimage.distance_transform_edt` | ok | 81.0 µs / 90.7 µs | 129.5 µs | 0.00 MB (hbm) | ✓ 0×tol | 0.05x vs nitrix-jax |
 | distance_transform | jax-cuda12 | shape=[32, 32] | `simpleitk.DanielssonDistanceMap` | ok | 553.3 µs / 566.8 µs | 57.50 ms | 0.00 MB (hbm) | ✓ 2.4e-08×tol | 0.34x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[512, 512] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
+| distance_transform | jax-cpu | shape=[512, 512] | `nitrix-jax` | ok | 62.76 ms / 67.47 ms | 228.44 ms | 1681 MB (rss) | ✓ 5.7e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[512, 512] | `scipy.ndimage.distance_transform_edt` | ok | 11.29 ms / 16.06 ms | 13.33 ms | 1681 MB (rss) | ✓ 0×tol | 0.18x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[512, 512] | `simpleitk.DanielssonDistanceMap` | ok | 22.52 ms / 22.69 ms | 78.95 ms | 1681 MB (rss) | ≈ 59×tol | 0.36x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[512, 512] | `cupyx.scipy.ndimage.distance_transform_edt` | ok | 330.9 µs / 334.9 µs | 182.62 ms | 1.05 MB (hbm) | ✓ 0×tol | 0.57x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[512, 512] | `nitrix-jax` | ok | 575.5 µs / 581.9 µs | 824.56 ms | 36.70 MB (hbm) | ✓ 9.4e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[512, 512] | `scipy.ndimage.distance_transform_edt` | ok | 11.75 ms / 17.96 ms | 13.47 ms | 1.05 MB (hbm) | ✓ 0×tol | 20.42x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[512, 512] | `simpleitk.DanielssonDistanceMap` | ok | 22.53 ms / 22.65 ms | 79.26 ms | 1.05 MB (hbm) | ≈ 59×tol | 39.15x vs nitrix-jax |
 | distance_transform | jax-cpu | shape=[64, 64, 64] | `cupyx.scipy.ndimage.distance_transform_edt` | skipped | — | — | — | — | — |
-| distance_transform | jax-cpu | shape=[64, 64, 64] | `nitrix-jax` | ok | 1.182 s / 1.530 s | 1.743 s | 712 MB (rss) | ✓ 0.72×tol | 1.00x vs nitrix-jax |
-| distance_transform | jax-cpu | shape=[64, 64, 64] | `scipy.ndimage.distance_transform_edt` | ok | 31.01 ms / 33.50 ms | 42.59 ms | 712 MB (rss) | ✓ 0×tol | 0.03x vs nitrix-jax |
-| distance_transform | jax-cpu | shape=[64, 64, 64] | `simpleitk.DanielssonDistanceMap` | ok | 80.66 ms / 81.50 ms | 140.27 ms | 712 MB (rss) | ✓ 3.1e-08×tol | 0.07x vs nitrix-jax |
-| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `cupyx.scipy.ndimage.distance_transform_edt` | ok | 215.6 µs / 223.1 µs | 153.59 ms | 1.05 MB (hbm) | ✓ 0×tol | 0.01x vs nitrix-jax |
-| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `nitrix-jax` | ok | 23.39 ms / 23.48 ms | 738.78 ms | 135.27 MB (hbm) | ✓ 0.72×tol | 1.00x vs nitrix-jax |
-| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `scipy.ndimage.distance_transform_edt` | ok | 29.95 ms / 30.89 ms | 36.92 ms | 1.05 MB (hbm) | ✓ 0×tol | 1.28x vs nitrix-jax |
-| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `simpleitk.DanielssonDistanceMap` | ok | 80.94 ms / 81.78 ms | 141.19 ms | 1.05 MB (hbm) | ✓ 3.1e-08×tol | 3.46x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[64, 64, 64] | `nitrix-jax` | ok | 16.13 ms / 17.24 ms | 244.23 ms | 1681 MB (rss) | ✓ 5.4e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[64, 64, 64] | `scipy.ndimage.distance_transform_edt` | ok | 28.98 ms / 33.24 ms | 39.37 ms | 1681 MB (rss) | ✓ 0×tol | 1.80x vs nitrix-jax |
+| distance_transform | jax-cpu | shape=[64, 64, 64] | `simpleitk.DanielssonDistanceMap` | ok | 81.26 ms / 82.10 ms | 138.94 ms | 1681 MB (rss) | ≈ 3.9e+02×tol | 5.04x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `cupyx.scipy.ndimage.distance_transform_edt` | ok | 232.8 µs / 235.5 µs | 194.24 ms | 1.05 MB (hbm) | ✓ 0×tol | 0.97x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `nitrix-jax` | ok | 239.5 µs / 247.4 µs | 907.33 ms | 36.70 MB (hbm) | ✓ 9.1e-05×tol | 1.00x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `scipy.ndimage.distance_transform_edt` | ok | 29.95 ms / 40.52 ms | 34.60 ms | 1.05 MB (hbm) | ✓ 0×tol | 125.06x vs nitrix-jax |
+| distance_transform | jax-cuda12 | shape=[64, 64, 64] | `simpleitk.DanielssonDistanceMap` | ok | 81.28 ms / 81.97 ms | 143.72 ms | 1.05 MB (hbm) | ≈ 3.9e+02×tol | 339.37x vs nitrix-jax |
 
 ## Notes
 

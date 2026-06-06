@@ -160,7 +160,7 @@ def _behaviour(case) -> Dict[str, Any]:
 
 
 def fingerprint(case) -> Dict[str, Any]:
-    fp: Dict[str, Any] = {'case': case.name}
+    fp: Dict[str, Any] = {'case': case.name, 'qualname': case.op_qualname}
     if case.op_qualname:
         fp['signature'] = _signature(case.op_qualname)
     try:
@@ -205,12 +205,15 @@ def main() -> None:
     args = ap.parse_args()
 
     names = args.case or sorted(CASES)
+    # Keyed by CASE name, not op qualname: several cases can target one op via
+    # different branches (distance_transform euclidean vs chamfer), each with
+    # its own behaviour fingerprint; the qualname is recorded as a field.
     current: Dict[str, Dict[str, Any]] = {}
     for name in names:
         case = CASES[name]
         if case.op_qualname is None:
             continue  # throwaway smoke case has no public op
-        current[case.op_qualname] = fingerprint(case)
+        current[case.name] = fingerprint(case)
 
     manifest = (json.loads(MANIFEST.read_text())
                 if MANIFEST.exists() else {'ops': {}})
@@ -218,13 +221,13 @@ def main() -> None:
 
     rows: List[Tuple[str, str, str, List[str]]] = []
     drifted = 0
-    for qual, fp in sorted(current.items()):
-        status, detail = _classify(old_ops.get(qual), fp)
-        rows.append((qual, fp['case'], status, detail))
+    for key, fp in sorted(current.items()):
+        status, detail = _classify(old_ops.get(key), fp)
+        rows.append((key, fp['case'], status, detail))
         if status not in ('unchanged', 'new'):
             drifted += 1
 
-    for qual, case_name, status, detail in rows:
+    for key, case_name, status, detail in rows:
         mark = {'unchanged': 'ok ', 'new': 'NEW'}.get(status, 'DRIFT')
         print(f'[{mark:5s}] {case_name:32s} {status}')
         for d in detail:
@@ -240,9 +243,11 @@ def main() -> None:
                                            time.gmtime()),
                 'jax_version': jax.__version__,
                 'sig_figs': _SIG,
-                'note': 'signature + sign/order-invariant behaviour digest; '
-                        'a change detector (nitrix vs its committed past), '
-                        'not a correctness verdict. tools/drift_check.py',
+                'note': 'keyed by case name (qualname is a field; >1 case may '
+                        'target one op). signature + sign/order-invariant '
+                        'behaviour digest; a change detector (nitrix vs its '
+                        'committed past), not a correctness verdict. '
+                        'tools/drift_check.py',
             }, 'ops': merged}, indent=2) + '\n')
         print(f'\nmanifest updated ({len(current)} op(s) refreshed) -> '
               f'{MANIFEST.relative_to(MANIFEST.parents[1])}')

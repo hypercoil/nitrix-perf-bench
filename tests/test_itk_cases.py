@@ -90,13 +90,15 @@ def test_itk_floor_baselines_registered():
 
 
 def test_itk_floors_match_oracle():
-    '''The right-target check: each ITK floor matches the case's fp64 oracle
-    (erode/dilate/distance) -- so adding it is a fair comparison, not an
-    apples-to-oranges row.'''
+    '''The right-target check: each *exact* ITK floor matches the case's fp64
+    oracle (erode/dilate) -- so adding it is a fair comparison, not an
+    apples-to-oranges row.  (distance_transform's Danielsson is NOT here: the
+    tight EDT gate revealed it is 4SED-approximate, so it is a declared
+    ApproxBaseline -- reported not gated -- see test_distance_transform.)
+    '''
     pytest.importorskip('SimpleITK')
     cases = [(erode, 'simpleitk.GrayscaleErode'),
-             (dilate, 'simpleitk.GrayscaleDilate'),
-             (distance_transform, 'simpleitk.DanielssonDistanceMap')]
+             (dilate, 'simpleitk.GrayscaleDilate')]
     for case, key in cases:
         built = case._build(case.CASE.representative)
         out = built.baselines[key][1](*built.inputs_for('numpy'))

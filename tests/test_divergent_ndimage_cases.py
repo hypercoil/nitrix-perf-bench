@@ -1,25 +1,24 @@
 # -*- coding: utf-8 -*-
 """PERF_AUDIT divergent scipy.ndimage ports (B11 slice 3).
 
-Two resolve to clean oracles -- distance_transform (exact EDT with a 1-voxel
-tolerance, since nitrix is a quasi-Euclidean approximation) and
-spatial_transform (in-bounds deformation, so boundary handling can't diverge).
-median_filter has no shared oracle (boundary policies differ by design) and
-exercises the no-cross-impl-oracle path: OK status, inconclusive fidelity, but
-a perf ratio is still produced.
+``spatial_transform`` resolves to a clean oracle (in-bounds deformation, so
+boundary handling can't diverge).  ``median_filter`` has no shared oracle
+(boundary policies differ by design) and exercises the no-cross-impl-oracle
+path: OK status, inconclusive fidelity, but a perf ratio is still produced.
+(``distance_transform`` -- now an *exact* EDT with a tight gate, plus its
+chamfer branch + structural checks -- lives in ``test_distance_transform.py``.)
 """
 import numpy as np
 import pytest
 
 from nperf import measure
-from nperf.cases import distance_transform, median_filter, spatial_transform
+from nperf.cases import median_filter, spatial_transform
 from nperf.core import Status
 from nperf.core.fidelity import compare
 from nperf.providers import requires_of
 
 
 @pytest.mark.parametrize('mod,param', [
-    (distance_transform, {'shape': [24, 24], 'seed': 0}),
     (spatial_transform, {'shape': [24, 24], 'seed': 0}),
 ])
 def test_clean_ops_match_oracle(mod, param):
@@ -71,8 +70,6 @@ def test_no_oracle_path_is_ok_inconclusive_with_ratio():
 
 
 def test_op_qualnames_match_nitrix():
-    assert (distance_transform.CASE.op_qualname
-            == 'nitrix.morphology.distance_transform')
     assert (spatial_transform.CASE.op_qualname
             == 'nitrix.geometry.spatial_transform')
     assert (median_filter.CASE.op_qualname

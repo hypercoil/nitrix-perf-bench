@@ -37,28 +37,29 @@ _REFACTOR_EXEMPT = {
     'nitrix.graph.diffusion_embedding',
 }
 
+# manifest 'ops' is keyed by case name (qualname is a field).
 _MANIFEST_OPS = json.loads(MANIFEST.read_text()).get('ops', {})
 
 
-def _checked_qualnames():
+def _checked_cases():
     return sorted(
-        c.op_qualname for c in CASES.values()
+        c.name for c in CASES.values()
         if c.op_qualname and c.op_qualname not in _REFACTOR_EXEMPT
     )
 
 
-@pytest.mark.parametrize('qualname', _checked_qualnames())
-def test_signature_matches_manifest(qualname):
-    assert qualname in _MANIFEST_OPS, (
-        f'{qualname} has no manifest entry -- seed it with '
+@pytest.mark.parametrize('case_name', _checked_cases())
+def test_signature_matches_manifest(case_name):
+    assert case_name in _MANIFEST_OPS, (
+        f'{case_name} has no manifest entry -- seed it with '
         f'`python tools/drift_check.py --update`'
     )
-    stored = _MANIFEST_OPS[qualname].get('signature')
+    stored = _MANIFEST_OPS[case_name].get('signature')
     if stored is None:
-        pytest.skip(f'{qualname}: no signature recorded')
-    current = drift_check._signature(qualname)
+        pytest.skip(f'{case_name}: no signature recorded')
+    current = drift_check._signature(CASES[case_name].op_qualname)
     assert current == stored, (
-        f'{qualname} signature drifted (nitrix changed under the case):\n'
+        f'{case_name} signature drifted (nitrix changed under the case):\n'
         f'  manifest: {stored}\n  current : {current}\n'
         f'Review the case, then re-bless with '
         f'`python tools/drift_check.py --update`.'

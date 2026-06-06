@@ -57,6 +57,25 @@ class SlowBaseline:
     reason: str
 
 
+@dataclass(frozen=True)
+class ApproxBaseline:
+    '''A baseline that computes the case's task only **approximately** -- a
+    fidelity/speed tradeoff, not a bug.  Its fidelity is *reported, not gated*:
+    the row stays ``OK`` and still earns a ratio, but its fidelity block is
+    marked ``'approximate'`` carrying the measured ``rel_to_tol`` -- the
+    approximation magnitude *is* the signal, read against the speed (the
+    quantised-inference case: practitioners knowingly trade accuracy for
+    throughput).  This is distinct from a true reference, which must pass the
+    case's tight gate, and from a fidelity *failure*, which refuses the ratio.
+
+    ``reason`` is the audit trail -- what the approximation is, its measured
+    magnitude, and the device it was seen on -- like ``SlowBaseline``:
+    evidence-based, re-checked on re-bench rather than treated as eternal.
+    '''
+    baseline: str
+    reason: str
+
+
 @dataclass
 class BuiltPoint:
     # case-local baseline name -> (provider_id, run_fn(*args) -> output);
@@ -94,6 +113,13 @@ class Case:
     # feed / gate refuse to treat it as authoritative -- run a full sweep at
     # sprint end).
     slow_baselines: Tuple[SlowBaseline, ...] = field(default_factory=tuple)
+    # baselines that compute the task only *approximately* (a fidelity/speed
+    # tradeoff, e.g. a 4SED distance transform or a quantised kernel): their
+    # fidelity is reported, not gated -- the row stays OK with an
+    # ``'approximate'`` fidelity block and still earns a ratio, so the
+    # accuracy-vs-speed tradeoff is visible, not dropped (ApproxBaseline).
+    approximate_baselines: Tuple[ApproxBaseline, ...] = field(
+        default_factory=tuple)
     # the public nitrix op this case measures (its op_matrix qualname); the
     # single home for the case -> op mapping the op_matrix feed and the
     # decision-input bundle both read.  None for the throwaway smoke case.
