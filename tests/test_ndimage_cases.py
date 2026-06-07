@@ -18,9 +18,9 @@ from nperf.providers import framework_of, requires_of
 _CASES = [
     (gaussian, {'shape': [32, 32], 'sigma': 1.5, 'seed': 0},
      'scipy.ndimage.gaussian_filter'),
-    (erode, {'shape': [32, 32], 'size': 3, 'seed': 0},
+    (erode, {'shape': [32, 32], 'se': 'box', 'size': 3, 'seed': 0},
      'scipy.ndimage.grey_erosion'),
-    (dilate, {'shape': [32, 32], 'size': 3, 'seed': 0},
+    (dilate, {'shape': [32, 32], 'se': 'box', 'size': 3, 'seed': 0},
      'scipy.ndimage.grey_dilation'),
 ]
 

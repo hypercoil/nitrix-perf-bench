@@ -5,10 +5,10 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 123 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 67 / 123
+- **measured** (≥1 platform): 69 / 123
 - **multiplatform** (CPU + GPU): 66 / 123
-- **with a strong on-target GPU ref**: 59 / 123
-- **lagging on the GPU**: 13
+- **with a strong on-target GPU ref**: 61 / 123
+- **lagging on the GPU**: 11
 - **GPU blocked upstream** (jaxlib cuSOLVER): 0
 
 ## Lagging on the deployment target (GPU) — ranked
@@ -27,9 +27,7 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | 8 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
 | 9 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
 | 10 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 11 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 0.765 | ~1.3x slower |  |
-| 12 | `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 0.796 | ~1.3x slower |  |
-| 13 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
+| 11 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
 
 ## Under-covered — ranked by priority
 
@@ -54,11 +52,11 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.linalg.toeplitz` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.toeplitz_2d` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.vec2sym` | unmeasured | none | unmeasured |
-| high | `nitrix.morphology.close` | unmeasured | none | unmeasured |
+| high | `nitrix.morphology.close` | gpu_only | strong_ref | f32_only |
 | high | `nitrix.morphology.distance_transform_edt` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_pool_with_indices_nd` | unmeasured | none | unmeasured |
 | high | `nitrix.morphology.max_unpool_nd` | unmeasured | none | unmeasured |
-| high | `nitrix.morphology.open` | unmeasured | none | unmeasured |
+| high | `nitrix.morphology.open` | gpu_only | strong_ref | f32_only |
 | high | `nitrix.numerics.complex_decompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_recompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.demean` | unmeasured | none | unmeasured |
@@ -125,7 +123,9 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.linalg.rbf_kernel` | cupy.rbf_kernel | 3.2 | ~3.2x faster |
 | `nitrix.geometry.center_of_mass_grid` | cupy.center_of_mass_grid | 2.63 | ~2.6x faster |
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
+| `nitrix.morphology.close` | cupyx.scipy.ndimage.grey_closing | 2.42 | ~2.4x faster |
 | `nitrix.geometry.sphere_grid_pad_2d` | cupy.sphere_grid_pad_2d | 2.4 | ~2.4x faster |
+| `nitrix.morphology.open` | cupyx.scipy.ndimage.grey_opening | 2.38 | ~2.4x faster |
 | `nitrix.stats.partialcorr` | cupy.partialcorr | 2.33 | ~2.3x faster |
 | `nitrix.stats.partialcov` | cupy.partialcov | 2.29 | ~2.3x faster |
 | `nitrix.stats.precision` | cupy.inv_cov | 2.23 | ~2.2x faster |
@@ -141,7 +141,9 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.geometry.latlong_to_cartesian` | cupy.latlong_to_cartesian | 1.46 | ~1.5x faster |
 | `nitrix.linalg.cosine_kernel` | cupy.cosine_kernel | 1.34 | ~1.3x faster |
 | `nitrix.geometry.displacement_from_reference_points` | cupy.displacement_from_reference_points | 1.33 | ~1.3x faster |
+| `nitrix.morphology.dilate` | cupyx.scipy.ndimage.grey_dilation | 1.31 | ~1.3x faster |
 | `nitrix.graph.modularity_matrix` | cupy.modularity_matrix | 1.18 | ~1.2x faster |
+| `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 1.16 | ~1.2x faster |
 | `nitrix.graph.girvan_newman_null` | cupy.gn_null | 1.16 | ~1.2x faster |
 | `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
 | `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
