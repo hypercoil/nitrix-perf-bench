@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-07T20:32:56Z",
+    "generated": "2026-06-07T22:38:49Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -1897,7 +1897,9 @@
       "signature": "(A: '_GraphInput', *, n_components: 'int', alpha: 'float' = 0.5, t: 'float' = 0.0, solver: '_Solver' = 'auto', preconditioner: '_Preconditioner' = 'none', skip_trivial: 'bool' = True, eps: 'float' = 1e-12, lobpcg_iters: 'int' = 200, lobpcg_tol: 'Optional[float]' = 1e-07, seed: 'int' = 0) -> \"Tuple[Float[Array, 'n n_components'], Float[Array, 'n_components']]\"",
       "behaviour": {
         "point": {
-          "n": 1024
+          "n": 1024,
+          "k": 8,
+          "fmt": "dense"
         },
         "leaves": [
           {
@@ -1907,9 +1909,9 @@
             "dtype": "float32",
             "n_finite": 8,
             "n_nonfinite": 0,
-            "l1": 1.87391,
-            "l2sq": 0.43902,
-            "linf": 0.238561
+            "l1": 3.54222,
+            "l2sq": 2.51091,
+            "linf": 0.887645
           }
         ]
       }
@@ -2414,7 +2416,9 @@
       "signature": "(A: '_GraphInput', *, n_components: 'int', solver: '_Solver' = 'auto', preconditioner: '_Preconditioner' = 'none', skip_trivial: 'bool' = True, eps: 'float' = 1e-12, lobpcg_iters: 'int' = 200, lobpcg_tol: 'Optional[float]' = 1e-07, seed: 'int' = 0) -> \"Tuple[Float[Array, 'n n_components'], Float[Array, 'n_components']]\"",
       "behaviour": {
         "point": {
-          "n": 1024
+          "n": 1024,
+          "k": 8,
+          "fmt": "dense"
         },
         "leaves": [
           {
@@ -2424,9 +2428,9 @@
             "dtype": "float32",
             "n_finite": 8,
             "n_nonfinite": 0,
-            "l1": 6.13944,
-            "l2sq": 4.71167,
-            "linf": 0.772821
+            "l1": 4.4652,
+            "l2sq": 3.43688,
+            "linf": 0.826766
           }
         ]
       }

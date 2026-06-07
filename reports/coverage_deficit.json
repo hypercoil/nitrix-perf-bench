@@ -2,12 +2,12 @@
   "source": "nitrix-perf-bench coverage-&-deficit report",
   "convention": "gpu_ref_ratio = strong_ref.min / nitrix.min (<1 => nitrix slower on the GPU)",
   "summary": {
-    "runtime_ops": 123,
+    "runtime_ops": 127,
     "measured": 69,
     "multiplatform": 66,
     "with_strong_gpu_ref": 61,
-    "lagging_on_gpu": 11,
-    "gpu_blocked_upstream": 0,
+    "lagging_on_gpu": 9,
+    "gpu_blocked_upstream": 2,
     "constructors": 15
   },
   "lagging": [
@@ -23,34 +23,6 @@
       "gpu_block_reason": null,
       "gpu_ref": "cupy.sphere_grid_unpad_2d",
       "gpu_ref_ratio": 0.037948280965522864,
-      "nitrix_slower_on_gpu": true
-    },
-    {
-      "qualname": "nitrix.graph.laplacian_eigenmap",
-      "runtime": true,
-      "has_case": true,
-      "coverage": "multiplatform",
-      "ref_strength": "strong_ref",
-      "precision": "f32_only",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": "cupyx.sparse.eigsh",
-      "gpu_ref_ratio": 0.08183612312805093,
-      "nitrix_slower_on_gpu": true
-    },
-    {
-      "qualname": "nitrix.graph.diffusion_embedding",
-      "runtime": true,
-      "has_case": true,
-      "coverage": "multiplatform",
-      "ref_strength": "strong_ref",
-      "precision": "f32_only",
-      "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": "cupyx.sparse.eigsh",
-      "gpu_ref_ratio": 0.08306848769683417,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -166,7 +138,36 @@
       "nitrix_slower_on_gpu": true
     }
   ],
-  "gpu_blocked": [],
+  "gpu_blocked": [
+    {
+      "qualname": "nitrix.graph.laplacian_eigenmap",
+      "runtime": true,
+      "has_case": true,
+      "coverage": "multiplatform",
+      "ref_strength": "strong_ref",
+      "precision": "f32_only",
+      "provisional": false,
+      "gpu_blocked": true,
+      "gpu_block_reason": "gpu_solver_unavailable",
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    },
+    {
+      "qualname": "nitrix.graph.diffusion_embedding",
+      "runtime": true,
+      "has_case": true,
+      "coverage": "multiplatform",
+      "ref_strength": "strong_ref",
+      "precision": "f32_only",
+      "provisional": false,
+      "gpu_blocked": true,
+      "gpu_block_reason": "gpu_solver_unavailable",
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    }
+  ],
   "under_covered": [
     {
       "qualname": "nitrix.bias.bias_field_correction",
@@ -200,6 +201,66 @@
     },
     {
       "qualname": "nitrix.bias.sharpen_histogram",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false,
+      "priority": "high"
+    },
+    {
+      "qualname": "nitrix.geometry.resample[lanczos]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false,
+      "priority": "high"
+    },
+    {
+      "qualname": "nitrix.geometry.resample[multilabel]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false,
+      "priority": "high"
+    },
+    {
+      "qualname": "nitrix.geometry.resample[nearest]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false,
+      "priority": "high"
+    },
+    {
+      "qualname": "nitrix.geometry.spatial_transform[lanczos]",
       "runtime": true,
       "has_case": false,
       "coverage": "unmeasured",
@@ -1579,6 +1640,20 @@
       "nitrix_slower_on_gpu": true
     },
     {
+      "qualname": "nitrix.geometry.spatial_transform[lanczos]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    },
+    {
       "qualname": "nitrix.geometry.integrate_velocity_field",
       "runtime": true,
       "has_case": true,
@@ -1656,11 +1731,11 @@
       "ref_strength": "strong_ref",
       "precision": "f32_only",
       "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": "cupyx.sparse.eigsh",
-      "gpu_ref_ratio": 0.08183612312805093,
-      "nitrix_slower_on_gpu": true
+      "gpu_blocked": true,
+      "gpu_block_reason": "gpu_solver_unavailable",
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
     },
     {
       "qualname": "nitrix.morphology.dilate",
@@ -2517,6 +2592,48 @@
       "nitrix_slower_on_gpu": false
     },
     {
+      "qualname": "nitrix.geometry.resample[nearest]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    },
+    {
+      "qualname": "nitrix.geometry.resample[lanczos]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    },
+    {
+      "qualname": "nitrix.geometry.resample[multilabel]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    },
+    {
       "qualname": "nitrix.geometry.spherical_geodesic_distance",
       "runtime": true,
       "has_case": true,
@@ -2734,11 +2851,11 @@
       "ref_strength": "strong_ref",
       "precision": "f32_only",
       "provisional": false,
-      "gpu_blocked": false,
-      "gpu_block_reason": null,
-      "gpu_ref": "cupyx.sparse.eigsh",
-      "gpu_ref_ratio": 0.08306848769683417,
-      "nitrix_slower_on_gpu": true
+      "gpu_blocked": true,
+      "gpu_block_reason": "gpu_solver_unavailable",
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
     },
     {
       "qualname": "nitrix.morphology.open",

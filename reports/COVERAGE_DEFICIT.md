@@ -4,12 +4,12 @@
 
 ## Coverage (runtime ops)
 
-- **runtime ops catalogued**: 123 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 69 / 123
-- **multiplatform** (CPU + GPU): 66 / 123
-- **with a strong on-target GPU ref**: 61 / 123
-- **lagging on the GPU**: 11
-- **GPU blocked upstream** (jaxlib cuSOLVER): 0
+- **runtime ops catalogued**: 127 (+ 15 host-side constructors, apart)
+- **measured** (≥1 platform): 69 / 127
+- **multiplatform** (CPU + GPU): 66 / 127
+- **with a strong on-target GPU ref**: 61 / 127
+- **lagging on the GPU**: 9
+- **GPU blocked upstream** (jaxlib cuSOLVER): 2
 
 ## Lagging on the deployment target (GPU) — ranked
 
@@ -18,16 +18,23 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | # | op | strong GPU ref | ratio (ref/nitrix) | nitrix | note |
 |---|---|---|---:|---|---|
 | 1 | `nitrix.geometry.sphere_grid_unpad_2d` | cupy.sphere_grid_unpad_2d | 0.0379 | ~26.4x slower |  |
-| 2 | `nitrix.graph.laplacian_eigenmap` | cupyx.sparse.eigsh | 0.0818 | ~12.2x slower |  |
-| 3 | `nitrix.graph.diffusion_embedding` | cupyx.sparse.eigsh | 0.0831 | ~12.0x slower |  |
-| 4 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
-| 5 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
-| 6 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
-| 7 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 8 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
-| 9 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
-| 10 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 11 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
+| 2 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
+| 3 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
+| 4 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
+| 5 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
+| 6 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
+| 7 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
+| 8 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 9 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
+
+## GPU blocked — nitrix path skipped, a GPU ref works
+
+nitrix's GPU attempt was skipped for the recorded reason below, while a strong external GPU ref **did** run ok on the GPU -- so the GPU is capable of the op but nitrix's path is not using it. For the eigh family the cause is the jaxlib cuSOLVER bug (jax-ml/jax #29042; CuPy works on identical wheels); these are benchmarked on CPU and the fix is upstream.
+
+| op | nitrix on GPU (skipped) |
+|---|---|
+| `nitrix.graph.laplacian_eigenmap` | gpu_solver_unavailable |
+| `nitrix.graph.diffusion_embedding` | gpu_solver_unavailable |
 
 ## Under-covered — ranked by priority
 
@@ -38,6 +45,10 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.resample[lanczos]` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.resample[multilabel]` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.resample[nearest]` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.spatial_transform[lanczos]` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.delete_diagonal` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.fill_diagonal` | unmeasured | none | unmeasured |

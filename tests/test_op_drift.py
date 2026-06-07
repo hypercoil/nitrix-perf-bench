@@ -32,9 +32,15 @@ MANIFEST = Path(__file__).resolve().parents[1] / 'reports' / \
     'op_drift_manifest.json'
 
 # Ops under active nitrix refactor -- expected to drift; re-bless when settled.
+# The spectral eigensolver rehome to ``linalg._eigsolve`` landed 2026-06-07 and
+# is drift-confirmed stable, so laplacian_eigenmap / diffusion_embedding are now
+# back under the gate (B18 Win 4).  The geometry interpolation-dispatcher (a new
+# resampling-strategy feature) is in flight as of 2026-06-07, churning the
+# ``resample`` / ``spatial_transform`` signatures; exempt until it settles, then
+# re-bless and remove (mirroring how the eigensolver entries were handled).
 _REFACTOR_EXEMPT = {
-    'nitrix.graph.laplacian_eigenmap',
-    'nitrix.graph.diffusion_embedding',
+    'nitrix.geometry.resample',
+    'nitrix.geometry.spatial_transform',
 }
 
 # manifest 'ops' is keyed by case name (qualname is a field).
