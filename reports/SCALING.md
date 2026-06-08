@@ -21,6 +21,23 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 - **Projected OOM (≈24GB):** nitrix ~23.7 Melem vs best baseline ~6000 Melem (~253x more headroom).
 - **OOM-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_closing ran (26.81ms).
 
+## diffusion_embedding  (nitrix.graph.diffusion_embedding)  [jax-cuda12]
+
+**Cost law.** dense O(n^3) eigh / O(n^2) operator -> infeasible at n~100k (~40 GB dense diffusion operator); sparse lobpcg O(iters*nnz) fwd + O(nnz*k) differentiable backward -> scales (fsaverage6/7), and is the only differentiable option (scipy/cupy eigsh have no gradient).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| n=1024 dense | — | 30.44ms (eigsh) | skipped | — | 4.2MB | — |
+| n=2048 dense | — | 44.67ms (eigsh) | skipped | — | 16.8MB | — |
+| n=2048 ell | 97.00ms | 44.71ms (eigsh) | 2.17x | 121.0MB | 20.2MB | 6x |
+| n=10242 ell | 42.00ms | 129.82ms (eigsh) | 0.32x | 143.3MB | 8.4MB | 17x |
+| n=40962 ell | 22.73ms | 202.86ms (eigsh) | 0.11x | 153.9MB | 33.6MB | 5x |
+| n=120000 ell | 46.31ms | 374.97ms (eigsh) | 0.12x | 204.5MB | 67.1MB | 3x |
+
+- **Speed:** nitrix wins 3/4 sizes; baseline ahead at `n=2048 ell` 2.17x; at the largest `n=120000 ell`, nitrix 8.10x ahead.
+- **Projected OOM (≈24GB):** nitrix ~225.4 Melem vs best baseline ~687 Melem (~3x more headroom).
+- **Dispatch note (not a scale risk):** nitrix `skipped` at `n=1024 dense`, `n=2048 dense` (the default path is unavailable on this platform -- e.g. the cuSolver eigh block -- while the reference ran).
+
 ## dilate  (nitrix.morphology.dilate)  [jax-cuda12]
 
 **Cost law.** time: flat box O(N) (fused reduce_window) vs explicit SE O(N*k^d) (im2col); HBM: box O(N), explicit-SE im2col O(N*k^d) -> 256^3 ball OOMs (~49 GB) while cupy/scipy (O(N*k), in-place) hold. The flat box scales; the disk/ball footprint does not.

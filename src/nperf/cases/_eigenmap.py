@@ -156,8 +156,11 @@ def spectral_baselines(
     dense, ``auto != lobpcg`` so a distinct ``lobpcg`` row is added; on ELL
     ``auto`` *is* lobpcg, so no separate row.  ``shift_invert`` / ``poly`` are
     the preconditioned (~1e-3) approximate paths; ``-vjp`` times the implicit-
-    VJP backward (the differentiability cost -- the reason lobpcg is the
-    default; scipy/cupy ``eigsh`` have no gradient, so there is no twin).
+    VJP backward.  That adjoint is the implicit function theorem on the
+    eigenpair (it needs only the converged pairs + the matvec), so it is
+    *algorithm-independent* -- it would wrap an implicitly-restarted Lanczos as
+    readily as lobpcg; scipy/cupy ``eigsh`` ship no adjoint at all, so there is
+    no twin for it.
     '''
     import jax
     import jax.numpy as jnp
@@ -274,6 +277,18 @@ def _lsym_from_csr(A: Any, xp: Any, slinalg: Any) -> Any:
     return slinalg.eye(n) - dm @ A @ dm
 
 
+def _csr_from_ell(val: Any, idx: Any, n: int, xp: Any, sp: Any) -> Any:
+    '''Rebuild a CSR adjacency from the ELL arrays the bench passes
+    (``(values, indices)``); padded slots are self-index / value-0 and sum to a
+    harmless diagonal zero.  ``xp`` / ``sp`` are the array + sparse modules
+    (numpy + scipy.sparse, or cupy + cupyx.scipy.sparse), so the one builder
+    serves both the CPU and GPU sparse references (Laplacian + diffusion).'''
+    rows = xp.repeat(xp.arange(n), idx.shape[1])
+    return sp.csr_matrix(
+        (xp.asarray(val).ravel(), (rows, xp.asarray(idx).ravel())),
+        shape=(n, n))
+
+
 def scipy_sparse_eigsh(k: int = _K) -> Callable[..., Any]:
     '''Smallest-k nontrivial L_sym eigenvalues via scipy **sparse** eigsh on
     the sparse adjacency (the CPU floor that actually scales to n~100k -- a
@@ -283,10 +298,7 @@ def scipy_sparse_eigsh(k: int = _K) -> Callable[..., Any]:
         import scipy.sparse as sp
         import scipy.sparse.linalg as spla
 
-        rows = np.repeat(np.arange(n), idx.shape[1])
-        A = sp.csr_matrix(
-            (np.asarray(val).ravel(), (rows, np.asarray(idx).ravel())),
-            shape=(n, n))
+        A = _csr_from_ell(val, idx, n, np, sp)
         lsym = _lsym_from_csr(A, np, sp).tocsc()
         ev = spla.eigsh(lsym, k=k + 1, which='SA', return_eigenvectors=False)
         return np.sort(ev)[1:k + 1]
@@ -305,9 +317,7 @@ def cupy_sparse_eigsh(k: int = _K) -> Callable[..., Any]:
         import cupyx.scipy.sparse as csp
         import cupyx.scipy.sparse.linalg as csla
 
-        rows = cp.repeat(cp.arange(n), idx.shape[1])
-        A = csp.csr_matrix(
-            (val.ravel(), (rows, idx.ravel())), shape=(n, n))
+        A = _csr_from_ell(val, idx, n, cp, csp)
         lsym = _lsym_from_csr(A, cp, csp)
         ev = csla.eigsh(lsym, k=k + 1, which='SA', return_eigenvectors=False)
         return cp.sort(ev)[1:k + 1]
@@ -315,22 +325,35 @@ def cupy_sparse_eigsh(k: int = _K) -> Callable[..., Any]:
     return run
 
 
-def build_spectral_large(op_evals: Callable[..., Any], k: int,
-                         param: dict) -> Any:
+def build_spectral_large(op_evals: Callable[..., Any], k: int, param: dict,
+                         *, scipy_ref: Callable[..., Any] = None,
+                         cupy_ref: Callable[..., Any] = None) -> Any:
     '''A ``BuiltPoint`` for a brain-graph-scale **sparse** point.  Baselines:
-    nitrix ``auto`` (= lobpcg on sparse), ``-vjp`` (the differentiable backward
-    -- the capability that distinguishes nitrix; scipy/cupy eigsh have none),
-    and the sparse scipy (CPU) / cupy (GPU) ``eigsh`` refs.  No fp64 oracle
+    nitrix ``auto`` (= lobpcg on sparse), ``-vjp`` (the implicit-adjoint
+    backward -- algorithm-independent, so it differentiates any forward solver;
+    scipy/cupy eigsh ship none), and the sparse scipy (CPU) / cupy (GPU)
+    ``eigsh`` refs.  No fp64 oracle
     (``None`` -> inconclusive): this tier measures *scale* -- whether the
     sparse path runs at fsaverage6/7 sizes where a dense operator OOMs;
     lobpcg's iterative accuracy is characterised at the dev tier.  ELL is
     passed as ``(values, indices)`` and rebuilt inside the jitted baseline
-    (not a registered pytree, B22).'''
+    (not a registered pytree, B22).
+
+    ``scipy_ref`` / ``cupy_ref`` are the operator's sparse eigsh references --
+    they take ``(values, indices, n)`` and rebuild the sparse operator on that
+    adjacency.  They default to the Laplacian (``L_sym``, smallest-k) refs;
+    diffusion_embedding passes the diffusion-operator (``P_sym``, largest-k)
+    refs so each case scores the *same* operator nitrix computes.'''
     import jax
     import jax.numpy as jnp
     from nitrix.sparse import ELL
 
     from ._base import BuiltPoint, to_cupy
+
+    if scipy_ref is None:
+        scipy_ref = scipy_sparse_eigsh(k)
+    if cupy_ref is None:
+        cupy_ref = cupy_sparse_eigsh(k)
 
     n = int(param['n'])
     val, idx, _ = sparse_graph_ell(n, int(param.get('degree', 16)),
@@ -362,8 +385,8 @@ def build_spectral_large(op_evals: Callable[..., Any], k: int,
     baselines = {
         'nitrix-jax': ('jax', nx()),                       # auto -> lobpcg
         'nitrix-jax-lobpcg-vjp': ('jax', nx_vjp()),       # +backward (no twin)
-        'scipy.sparse.eigsh': ('scipy', scipy_sparse_eigsh(k)),  # CPU floor
-        'cupyx.sparse.eigsh': ('cupy', cupy_sparse_eigsh(k)),    # GPU ref
+        'scipy.sparse.eigsh': ('scipy', scipy_ref),        # CPU floor
+        'cupyx.sparse.eigsh': ('cupy', cupy_ref),          # GPU ref
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,

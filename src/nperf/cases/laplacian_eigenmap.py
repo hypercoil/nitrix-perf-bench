@@ -29,8 +29,10 @@ Hardened for B18 Win 4 (post the eigensolver rehome to ``linalg._eigsolve``):
   rebuilt inside the jitted baseline -- it is not a registered pytree (nitrix
   B22).
 - **The differentiability cost.**  ``nitrix-jax-lobpcg-vjp`` times the
-  implicit-VJP backward -- the reason lobpcg is the default; scipy / cupy
-  ``eigsh`` provide *no gradient*, so there is no baseline twin for it.
+  implicit-VJP backward.  That adjoint is the implicit function theorem on the
+  eigenpair, so it is *algorithm-independent* (it would wrap an implicitly-
+  restarted Lanczos as readily as lobpcg); scipy / cupy ``eigsh`` ship *no
+  adjoint at all*, so there is no baseline twin for it.
 
 References: ``scipy.sparse.linalg.eigsh`` (CPU floor) + CuPy ``eigsh`` (GPU
 ref), both on the same dense ``L_sym`` (so they score the same eigenvalues for

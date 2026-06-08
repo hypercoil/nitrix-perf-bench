@@ -394,7 +394,28 @@ only catches a loss. Sharpened `scaling_report.py`: graph-op sizing/labelling by
 `n` (not `shape`), OOM projection from the largest-*size* point (regime-
 consistent when an op's refs change kind across the curve), and an `oom` *scale
 risk* kept distinct from a *dispatch* skip (the cuSolver block is a platform
-note, not a scale risk). *Next:* `diffusion_embedding` mirrors it; the three
+note, not a scale risk).
+
+**Shipped (2026-06-08) — the diffusion mirror.** `diffusion_embedding` gains
+the same sparse brain-graph tier via `build_spectral_large`, now parameterised
+by the operator's own sparse `eigsh` refs (diffusion `P_sym`, *largest*-k — not
+the Laplacian `L_sym`, *smallest*-k — so the tier scores the same operator
+nitrix computes; a unit test pins the sparse ref to the dense oracle <1e-6).
+Same scale-win shape: nitrix sparse lobpcg trails at the small ELL point
+(`n`=2048, cupy 0.46×) then wins at scale — **3.1× → 8.9× → 8.1×** vs the best
+sparse `eigsh` at `n`=10k→41k→120k, near-flat HBM (143→204 MB), `-vjp` ≈ forward
+cost, scipy CPU times out at 120k. The cupy margin plateaus at ~8× (vs
+laplacian's 69×) because the diffusion *largest*-eigenvalue `eigsh` converges
+better than the Laplacian *smallest* case. **Caveat (a real apples-to-apples
+trap).** nitrix's absolute wall-clock is *higher* at the small dev ELL points
+(`n`=2048/4096) than at the large ones — but the dev ELL is an `ell_from_dense`
+SBM (170–340 nnz/row, clustered spectrum / tiny gap, the deliberate hard-
+convergence case) while the large ELL is a degree-16 expander (~34 nnz/row, good
+gap). lobpcg cost ≈ iterations × matvec; per-matvec FLOPs are *comparable*
+across the boundary (the large points do more), so the ~10× wall-clock inversion
+is **iteration count driven by conditioning, not size**. So the dev→large
+absolute column is *not* a scaling curve (it crosses a graph-family boundary);
+the honest read is *within* the large tier (all expanders). *Net:* the three
 exemplars (EDT HBM-hog, morphology OOM, eigensolver scale-win) now span the
 range of scale outcomes.
 

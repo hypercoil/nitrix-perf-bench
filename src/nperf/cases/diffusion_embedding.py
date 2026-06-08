@@ -15,8 +15,10 @@ of the anisotropic diffusion operator (alpha=0.5).  The sibling of
 - Input is a planted-partition (SBM) graph (clustered spectrum); an ELL row
   exercises the matrix-free sparse path (ELL passed as ``(values, indices)``
   and rebuilt inside the jitted baseline -- not a registered pytree, B22).
-- ``nitrix-jax-lobpcg-vjp`` times the implicit-VJP backward (the
-  differentiability cost; scipy / cupy ``eigsh`` have no gradient).
+- ``nitrix-jax-lobpcg-vjp`` times the implicit-VJP backward -- an implicit-
+  function-theorem adjoint, *algorithm-independent* (it would wrap an
+  implicitly-restarted Lanczos as readily as lobpcg); scipy / cupy ``eigsh``
+  ship no adjoint, so there is no twin.
 
 Eigenvectors carry a sign/subspace ambiguity, so the case scores the
 **eigenvalues**.  No standard diffusion-map library exists, so the reference is
@@ -36,22 +38,31 @@ from ._base import ApproxBaseline, BuiltPoint, Case, to_cupy
 from ._diffusion import (
     _ALPHA,
     cupy_eigsh_diffusion,
+    cupy_sparse_eigsh_diffusion,
     diffusion_eigenvalues,
     scipy_eigsh_diffusion,
+    scipy_sparse_eigsh_diffusion,
 )
-from ._eigenmap import sbm_input, spectral_baselines
+from ._eigenmap import build_spectral_large, sbm_input, spectral_baselines
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     n, k = param['n'], param['k']
     fmt = param.get('fmt', 'dense')
-    W = sbm_input(n, seed=param.get('seed', 0))
-    jx = jax.block_until_ready(jnp.asarray(W))
-    ref = diffusion_eigenvalues(W, k, _ALPHA)  # fp64 oracle (eigenvalues)
 
     def op_evals(operand: Any, **kw: Any) -> Any:
         return diffusion_embedding(
             operand, n_components=k, alpha=_ALPHA, t=0.0, **kw)[1]
+
+    if param.get('tier') == 'large':  # brain-graph-scale sparse (no dense)
+        return build_spectral_large(
+            op_evals, k, param,
+            scipy_ref=scipy_sparse_eigsh_diffusion(k),
+            cupy_ref=cupy_sparse_eigsh_diffusion(k))
+
+    W = sbm_input(n, seed=param.get('seed', 0))
+    jx = jax.block_until_ready(jnp.asarray(W))
+    ref = diffusion_eigenvalues(W, k, _ALPHA)  # fp64 oracle (eigenvalues)
 
     ell_aux: Any = None
     if fmt == 'ell':
@@ -91,6 +102,19 @@ _POINTS = [
     {'n': 2048, 'k': 8, 'fmt': 'ell'},      # sparse matrix-free path
 ]
 
+# Brain-graph-scale size tier (scale-gaming defence, COVERAGE_MANDATE §2.6):
+# the diffusion sibling of laplacian_eigenmap's sparse tier.  **Sparse** graphs
+# at fsaverage5->7 vertex counts, built directly as ELL (no dense n x n -- a
+# 100k dense diffusion operator is ~40 GB, unconstructable).  P_sym stays
+# sparse under the density rescales, so at these n only the matrix-free path
+# exists, and nitrix's is uniquely differentiable.  build_spectral_large with
+# the diffusion-operator sparse eigsh refs (largest-k), no oracle (scale).
+_LARGE = [
+    {'n': 10242, 'degree': 16},    # fsaverage5
+    {'n': 40962, 'degree': 16},    # fsaverage6
+    {'n': 120000, 'degree': 16},   # toward fsaverage7 (~163k)
+]
+
 CASE = Case(
     name='diffusion_embedding',
     op_qualname='nitrix.graph.diffusion_embedding',
@@ -98,7 +122,22 @@ CASE = Case(
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
     param_points=[{**p, 'seed': 0} for p in _POINTS],
+    large_param_points=tuple(
+        {**p, 'k': 8, 'fmt': 'ell', 'tier': 'large', 'seed': 0}
+        for p in _LARGE),
     representative={'n': 1024, 'k': 8, 'fmt': 'dense', 'seed': 0},
+    # Same scaling law as laplacian_eigenmap: the dense path is O(n^3) eigh /
+    # O(n^2) operator -> infeasible at n~100k (~40 GB dense diffusion
+    # operator); the sparse lobpcg path is O(iters*nnz) forward + an O(nnz*k)
+    # implicit-VJP backward -> scales to fsaverage6/7, and unlike scipy/cupy
+    # eigsh it is *differentiable*.  At scale the only question is
+    # sparse-vs-sparse + the gradient, not dense-vs-sparse.
+    complexity=(
+        'dense O(n^3) eigh / O(n^2) operator -> infeasible at n~100k '
+        '(~40 GB dense diffusion operator); sparse lobpcg O(iters*nnz) fwd + '
+        'O(nnz*k) differentiable backward -> scales (fsaverage6/7), and is '
+        'the only differentiable option (scipy/cupy eigsh have no gradient).'
+    ),
     build=_build,
     rtol=1e-4,
     atol=1e-4,

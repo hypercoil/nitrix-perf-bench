@@ -21,7 +21,11 @@ from typing import Any, Callable
 
 import numpy as np
 
-from ._eigenmap import _K, eigenmap_input  # noqa: F401  (re-export the input)
+from ._eigenmap import (  # noqa: F401  (re-export the input)
+    _K,
+    _csr_from_ell,
+    eigenmap_input,
+)
 
 _ALPHA = 0.5  # Coifman-Lafon density normalisation (Fokker-Planck)
 
@@ -63,6 +67,63 @@ def cupy_eigsh_diffusion(k: int = _K,
         import cupyx.scipy.sparse.linalg as csla
 
         psym = _psym(W, alpha, xp=cp)
+        ev = csla.eigsh(psym, k=k + 1, which='LA', return_eigenvectors=False)
+        return cp.sort(ev)[::-1][1:k + 1]
+
+    return run
+
+
+# --- brain-graph-scale sparse refs (scale tier; see _eigenmap) -------------
+# The diffusion operator is built from a sparse CSR via diagonal density
+# rescales (``D^-alpha A D^-alpha`` then a symmetric Markov renormalise), which
+# preserve the sparsity pattern -- so ``P_sym`` stays sparse and the operator
+# is constructable at fsaverage6/7 sizes where a dense n x n is ~40 GB.
+
+
+def _psym_from_csr(A: Any, xp: Any, slinalg: Any,
+                   alpha: float = _ALPHA) -> Any:
+    '''Symmetric conjugate of the anisotropic diffusion operator of a sparse
+    CSR adjacency, in the given array module (scipy or cupyx) -- the sparse
+    analogue of ``_psym``.  Diagonal rescales keep the sparsity pattern.'''
+    d = xp.asarray(A.sum(1)).ravel()
+    dma = slinalg.diags(d ** -alpha)
+    aa = dma @ A @ dma
+    da = xp.asarray(aa.sum(1)).ravel()
+    dd = slinalg.diags(da ** -0.5)
+    return dd @ aa @ dd
+
+
+def scipy_sparse_eigsh_diffusion(k: int = _K,
+                                 alpha: float = _ALPHA) -> Callable[..., Any]:
+    '''Largest-k nontrivial diffusion eigenvalues via scipy **sparse** eigsh on
+    the sparse diffusion operator (the CPU floor that scales to n~100k -- a
+    dense eigsh would OOM on the operator).'''
+
+    def run(val: Any, idx: Any, n: int) -> Any:
+        import scipy.sparse as sp
+        import scipy.sparse.linalg as spla
+
+        A = _csr_from_ell(val, idx, n, np, sp)
+        psym = _psym_from_csr(A, np, sp, alpha).tocsc()
+        ev = spla.eigsh(psym, k=k + 1, which='LA', return_eigenvectors=False)
+        return np.sort(ev)[::-1][1:k + 1]
+
+    return run
+
+
+def cupy_sparse_eigsh_diffusion(k: int = _K,
+                                alpha: float = _ALPHA) -> Callable[..., Any]:
+    '''GPU twin via cupyx sparse eigsh (largest); cupy lazy.  Some CuPy builds
+    lack a sparse ``eigsh`` -- then this raises and the row records the gap
+    (GPU-ref-less, like the Laplacian tier), nitrix is still measured.'''
+
+    def run(val: Any, idx: Any, n: int) -> Any:
+        import cupy as cp
+        import cupyx.scipy.sparse as csp
+        import cupyx.scipy.sparse.linalg as csla
+
+        A = _csr_from_ell(val, idx, n, cp, csp)
+        psym = _psym_from_csr(A, cp, csp, alpha)
         ev = csla.eigsh(psym, k=k + 1, which='LA', return_eigenvectors=False)
         return cp.sort(ev)[::-1][1:k + 1]
 

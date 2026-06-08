@@ -161,8 +161,10 @@ def test_morph_batched_is_per_image_no_leak():
 
 # --- eigensolver replication (the sparse scale *win*) ----------------------
 
-def test_eigensolver_declares_sparse_size_tier():
-    case = measure.CASES['laplacian_eigenmap']
+@pytest.mark.parametrize('cname', ['laplacian_eigenmap',
+                                   'diffusion_embedding'])
+def test_eigensolver_declares_sparse_size_tier(cname):
+    case = measure.CASES[cname]
     lp = case.large_param_points
     assert lp and all(p.get('tier') == 'large' and p.get('fmt') == 'ell'
                       for p in lp)
@@ -181,10 +183,12 @@ def test_sparse_graph_ell_is_symmetric_and_padded():
     assert abs(diff).sum() == 0.0  # symmetric
 
 
-def test_eigensolver_large_tier_is_nitrix_plus_refs_no_oracle():
+@pytest.mark.parametrize('cname', ['laplacian_eigenmap',
+                                   'diffusion_embedding'])
+def test_eigensolver_large_tier_is_nitrix_plus_refs_no_oracle(cname):
     # scale tier: nitrix auto(=lobpcg) + the differentiable vjp + sparse
     # scipy/cupy eigsh refs, and NO fp64 oracle (scale, not fidelity).
-    case = measure.CASES['laplacian_eigenmap']
+    case = measure.CASES[cname]
     p = {'n': 1500, 'degree': 16, 'k': 8, 'fmt': 'ell', 'tier': 'large',
          'seed': 0}
     built = case.build(p)
@@ -198,3 +202,17 @@ def test_eigensolver_large_tier_is_nitrix_plus_refs_no_oracle():
         pid, fn = built.baselines[name]
         out = np.asarray(fn(*built.inputs_for('jax')))
         assert out.shape == (8,) and np.isfinite(out).all()
+
+
+def test_diffusion_sparse_ref_matches_dense_diffusion_operator():
+    # The diffusion large tier must score the *diffusion* operator (P_sym,
+    # largest-k), not the Laplacian -- the sparse scipy ref on the ELL graph
+    # must agree with the dense diffusion oracle on the same adjacency.
+    from nperf.cases._diffusion import (
+        diffusion_eigenvalues,
+        scipy_sparse_eigsh_diffusion,
+    )
+    val, idx, A = sparse_graph_ell(400, degree=12, seed=1)
+    dense = diffusion_eigenvalues(A.toarray(), k=6)
+    sparse = scipy_sparse_eigsh_diffusion(k=6)(val, idx, 400)
+    assert np.abs(np.asarray(sparse) - dense).max() < 1e-6
