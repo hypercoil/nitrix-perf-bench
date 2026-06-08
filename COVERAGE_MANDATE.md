@@ -178,11 +178,15 @@ a subject-cohort batch; surface / graph sparse `n`~40k–160k (fsaverage6/7), de
 `n`~400–1000 (parcellated); timeseries (10⁵ vertices × 10³ T).
 
 *Status (2026-06-08): established on the `distance_transform` template (the size
-tier, `complexity`, and `scaling_report.py`). **This clause is deliberately
-living** — it will be revised as the tier is replicated to morphology (the OOM
-exemplar) and the eigensolver (sparse `n`~100k); expect the brain-scale targets
-and the report's headline metrics to sharpen with each, and amend here rather
-than fork a parallel doctrine.*
+tier, `complexity`, and `scaling_report.py`), then replicated to the morphology
+family (2026-06-08), which **sharpened it**: an op can carry *both* a scaling
+and a non-scaling path (the flat-box `reduce_window` scales — 256³ dilate wins
+cupy 3.6× — while the explicit-SE im2col OOMs at 256³), so the tier must measure
+*each dispatch path* and `scaling_report.py` keys rows by the SE (not just
+shape) and projects OOM from the heaviest measured allocation. **This clause
+stays living** — next is the eigensolver (sparse `n`~100k); expect the
+brain-scale targets and headline metrics to keep sharpening, and amend here
+rather than fork a parallel doctrine.*
 
 ## 3. Coverage taxonomy
 
@@ -351,6 +355,23 @@ wall-clock is depth-bound at small scale and loses once flop/HBM-bound; the
 semiring substrate is differentiable, but that is a *bonus*, not why it was
 chosen. *Next:* replicate the tier to morphology (the OOM exemplar) and the
 eigensolver (sparse `n`~100k), refining §2.6 as the learnings land.
+
+**Shipped (2026-06-08) — scale tier replicated to morphology (the OOM
+exemplar).** `erode` / `dilate` / `open` / `close` gain the brain-scale tier
+(256³ box / ball + a 4×128³ cohort) via the shared `build_morph_large` (nitrix +
+the cupy GPU ref only, no fp64 oracle — correctness is pinned at the dev tier;
+this tier measures *scale*). The headline (L4): the **flat box scales** — 256³
+`dilate` wins cupy **3.6×** at 3× HBM — while the **explicit-SE (disk/ball)
+im2col does not**: 256³ ball r2 is **~300× slower + ~17 GB HBM**, and ball r4
+256³ **OOMs (~49 GB)** while cupy runs (~12 ms) — the genuine OOM EDT lacked.
+~253× less projected OOM headroom; OOM-as-signal fires for all four ops. So an
+op can carry *both* a scaling and a non-scaling dispatch path (the §2.6
+refinement). This expansion also **sharpened `scaling_report.py`**: rows are
+keyed by the SE (not just shape — several SEs share a grid size, and collapsing
+them hid the fast box behind the slow ball), and the projected OOM is taken from
+the *heaviest measured allocation*'s per-element rate (a small point's rate is
+inflated by fixed allocator overhead). *Next:* the eigensolver (sparse
+`n`~100k, the O(n²) dense backward).
 
 ## 8. Cross-references
 
