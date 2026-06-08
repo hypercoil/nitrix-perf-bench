@@ -69,7 +69,7 @@ op_matrix.py::render_json` already emits none. So the durable feedback channel
 remains a transitional, reviewed-copy convenience (DESIGN §4); the **coverage-&-
 deficit report (§2.2)** is the channel that outlives the migration.
 
-## 2. The mandate — five organising principles
+## 2. The mandate — six organising principles
 
 ### 2.1 Platform parity is the default, not a luxury
 Every case is authored and run **multi-platform** (`--platforms
@@ -140,6 +140,49 @@ oracle already supplies truth and the gate already reads the fidelity
 structure, so this exposes the perf↔fidelity tradeoff (e.g. the silent TF32
 downgrade SCHEMA §C warns about) that f32-only coverage hides. Gated to ops
 where reduced precision is realistic — not a blanket axis.
+
+### 2.6 Scale is an axis: measure the curve, state the law *(provisional — evolving as the harder tier expands)*
+A win at a small benched size says nothing at brain scale when the *asymptotics*
+differ: a nitrix op can take a constant-factor GPU win on an algorithm with
+worse FLOP or memory growth — more work, or more HBM, hidden at small `n` by GPU
+parallelism — and lose, or **OOM**, before the size practitioners actually run.
+This is **scale-gaming**: the size-axis analogue of the B18 dispatch-branch /
+accuracy gaming, and the defence is symmetric.
+
+- **Measure the curve, not a point.** A scalability-sensitive `Case` carries a
+  brain-scale **size tier** (`large_param_points`: realistic single *and batched
+  cohort* sizes), kept distinct from the small dev `param_points` so the
+  `representative` (drift / dev anchor) stays fast. `--skip-large` drops the tier
+  for dev cycles and stamps `coverage_mode=fast` (non-authoritative, exactly like
+  `--skip-slow`); the authoritative sweep runs it. A single big "headline" size
+  is **rejected** — it only relocates the gaming target; the curve + the
+  crossover is the integrity surface.
+- **State the cost law.** `Case.complexity` records the derived time + HBM
+  asymptotic (nitrix vs the reference), so a crossover is *predictable from the
+  algorithm*, not just observed at whichever sizes we happened to pick. (The EDT
+  template's law also captures *why* the small-scale win exists — a low-depth,
+  high-FLOP brute force beating a deeper low-FLOP scan while GPU wall-clock is
+  depth-bound — so the crossover to flop/HBM-bound at scale is expected, not a
+  surprise.)
+- **Surface crossover, HBM growth, OOM-as-signal.** `tools/scaling_report.py`
+  reads the store and reports, per op: the speed wins/losses across the sweep
+  (the ratio is shape-dependent, *not* one crossover point — listed honestly,
+  not forced into a false window), the HBM multiplier vs the baseline, a
+  **projected-OOM headroom** from the per-element memory rate, and any point
+  where nitrix OOMed while a baseline ran. An OOM / crossover before brain scale
+  is a *reported outcome*, not a hidden row — the direct analogue of
+  `ApproxBaseline` (accuracy-as-signal).
+
+Brain-scale targets (per family, refined as the tier expands): volumetric 256³ +
+a subject-cohort batch; surface / graph sparse `n`~40k–160k (fsaverage6/7), dense
+`n`~400–1000 (parcellated); timeseries (10⁵ vertices × 10³ T).
+
+*Status (2026-06-08): established on the `distance_transform` template (the size
+tier, `complexity`, and `scaling_report.py`). **This clause is deliberately
+living** — it will be revised as the tier is replicated to morphology (the OOM
+exemplar) and the eigensolver (sparse `n`~100k); expect the brain-scale targets
+and the report's headline metrics to sharpen with each, and amend here rather
+than fork a parallel doctrine.*
 
 ## 3. Coverage taxonomy
 
@@ -220,7 +263,11 @@ port to ~15 lines and consistent.
   targets; promote the B10 / distance / edge-aggregate watches.
 - **D — process.** Coverage CI gate (a migrated op must have a case; a case must
   not silently lose a platform); regression cadence; a *ships-with-a-case* SLA
-  so coverage tracks the catalogue as `nitrix` grows (SPEC v0.3 §12).
+  so coverage tracks the catalogue as `nitrix` grows (SPEC v0.3 §12) — and, for
+  a **scalability-sensitive op**, *ships-with-a-scalability-case*: a perf win on
+  such an op lands with its size tier (`large_param_points`) + cost law
+  (`Case.complexity`), so the win is certified at brain scale, not just at a
+  small benched size (§2.6).
 
 **Shipped (2026-05-29) — the slow-baseline dev-cycle guard.** Sprints run a
 fast inner loop / comprehensive outer loop: skip known-slow benchmarks during
@@ -282,6 +329,28 @@ materialisation note). Added **complex-aware fidelity** (compare via
 `|out − ref|`) for `analytic_signal`'s complex output — also unblocks
 `complex_decompose`. Coverage: **17/52 runtime ops multiplatform, 15 with a
 strong GPU ref**.
+
+**Shipped (2026-06-08) — the scale tier (the scale-gaming guard, §2.6).** After
+B18's four case-hardening wins closed the dispatch-branch + accuracy axes, the
+**size axis** opened the same hole: several wins (EDT, morphology disk/ball,
+the dense eigensolver backward) are constant-factor GPU wins on a worse
+asymptotic / memory growth that loses — or OOMs — before brain scale. The
+substrate: `Case.large_param_points` (a brain-scale + *batched cohort* size
+tier, run by default; `--skip-large` drops it + stamps `coverage_mode=fast`,
+verified), `Case.complexity` (the derived cost law), and
+`tools/scaling_report.py` → `reports/SCALING.md` (per-op curve: speed
+wins/losses, HBM multiplier, projected-OOM headroom, OOM-as-signal).
+**Template = `distance_transform`** (L4): speed is *competitive* (nitrix wins
+5/10 sizes; CuPy 1.1–1.7× ahead at several, nitrix ahead at the largest batched)
+but the real scale risk is **HBM — nitrix is a 5–2051× memory multiplier**
+(33.6 MB @64² vs CuPy ~0; 671 MB @16×128³ vs 134 MB) → **~5× less OOM headroom**
+(~1200 vs ~6000 Melem projected), and the batched-cohort regime is where it
+bites. The min-plus matmul does *more FLOPs but in one shallow pass* vs F-H's
+deeper sequential scan — the working hypothesis for why it wins while GPU
+wall-clock is depth-bound at small scale and loses once flop/HBM-bound; the
+semiring substrate is differentiable, but that is a *bonus*, not why it was
+chosen. *Next:* replicate the tier to morphology (the OOM exemplar) and the
+eigensolver (sparse `n`~100k), refining §2.6 as the learnings land.
 
 ## 8. Cross-references
 

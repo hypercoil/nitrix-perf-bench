@@ -113,9 +113,51 @@ win. Every row also reports two guardrails; watch them on the same table:
 
 Rule of thumb for accepting a change: **fidelity `✓`, steady ratio improved,
 and neither `compile` nor `mem` materially regressed** (or the regression is a
-deliberate, documented trade). When in doubt, report all four
-(fidelity / steady / compile / mem) for before *and* after rather than just the
-speedup — the tradeoff is the decision, not the headline number alone.
+deliberate, documented trade) — **and the win holds across the size ladder
+(§2b)**. When in doubt, report all four (fidelity / steady / compile / mem) for
+before *and* after rather than just the speedup — the tradeoff is the decision,
+not the headline number alone.
+
+## 2b. Scale — the win must hold at brain scale, not just the rep point *(evolving)*
+
+The inner loop runs the **representative** point (small, fast). A win there is
+necessary but **not sufficient**: a constant-factor GPU win on an algorithm with
+worse FLOP or memory growth inverts — or **OOMs** — before the sizes
+practitioners run (a 256³ MRI volume, a subject cohort). This is *scale-gaming*,
+the size-axis sibling of measuring the wrong dispatch branch; the bench guards it
+with a **size tier** + a scaling report (COVERAGE_MANDATE §2.6). Use them before
+claiming a win:
+
+```bash
+# the full sweep INCLUDES the brain-scale tier (large_param_points); the
+# authoritative run omits --skip-large.  Then read the curve:
+uv run nperf --case <op> --platforms jax-cuda12 --store
+JAX_PLATFORMS=cpu python tools/scaling_report.py    # -> reports/SCALING.md
+```
+
+`reports/SCALING.md` gives, per op: the speed wins/losses across the sweep (the
+ratio is **shape-dependent** — read the row list, not one number), the **HBM
+multiplier** vs the baseline, and a **projected-OOM headroom** (how much less
+cohort / grid you can fit than the reference). The rules:
+
+- **Ships-with-a-scalability-case.** If the op is scale-sensitive, the change
+  lands with its size tier (`large_param_points`, including a *batched cohort*)
+  and a one-line cost law (`Case.complexity`: the time + HBM asymptotic, nitrix
+  vs the reference). If a small-scale win will not generalise, *say why* — e.g.
+  "low-depth, high-FLOP brute force: wins while GPU wall-clock is depth-bound at
+  small `n`, loses once flop/HBM-bound at scale."
+- **A crossover / OOM before brain scale is a documented limitation, not a win.**
+  Report the crossover size and the HBM slope. "Wins at the rep point" while
+  "OOMs the cohort" is the honest finding — surface it (it is the size-axis
+  analogue of an `ApproxBaseline`: the tradeoff *is* the signal), don't bury it.
+- **Memory is often the binding constraint, not speed.** On the EDT template
+  speed was competitive at every size, but nitrix was a 5–2051× HBM multiplier
+  (~5× less OOM headroom) — the scale risk lived entirely in memory. Read the
+  HBM column across the ladder, not just `steady_time`.
+
+*This section is new and will sharpen as the size tier is replicated beyond
+`distance_transform`; treat the specifics (per-family targets, headline metrics)
+as evolving, the principle — certify the win at scale, state the law — as fixed.*
 
 ---
 
@@ -237,4 +279,3 @@ at least one GPU reference (cupy) to earn a *strong-GPU-ref* classification. See
 [`DESIGN.md`](DESIGN.md) §L2 and any existing case (e.g. `cases/corr.py`) as a
 template; verify the reference computes the **same** operation in fp64 before
 wiring it (match-the-right-target).
-```
