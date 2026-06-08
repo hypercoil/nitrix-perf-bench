@@ -55,6 +55,7 @@ from .cases import (
     linear_kernel,
     lomb_scargle_interpolate,
     lomb_scargle_periodogram,
+    matrix_exp,
     median_filter,
     modularity_matrix,
     n4_bias_field_correction,
@@ -208,6 +209,7 @@ CASES: Dict[str, Case] = {
               _validate_case(partialcorr.CASE),
               _validate_case(reml_fit.CASE),
               _validate_case(flame_two_level.CASE),
+              _validate_case(matrix_exp.CASE),
               _validate_case(lomb_scargle_interpolate.CASE))
 }
 

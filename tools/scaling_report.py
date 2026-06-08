@@ -153,7 +153,11 @@ def _analyse(case, pts: Dict[str, Dict]) -> Dict[str, Any]:
             'base_name': base['baseline'].split('.')[-1] if base else None,
             'ratio': (nt / bt) if (nt and bt) else None,
             'nitrix_hbm': nh, 'base_hbm': bh,
-            'hbm_mult': (nh / bh) if (nh and bh) else None,
+            # HBM multiplier is meaningful only vs a baseline that actually
+            # allocated device memory; a CPU/host best-baseline reports ~0 MB
+            # (no device alloc), and nitrix/~0 explodes into a nonsense ratio
+            # (e.g. a CPU expm floor at small n) -- suppress it (peak_hbm is MB).
+            'hbm_mult': (nh / bh) if (nh and bh and bh >= 1.0) else None,
             'nitrix_status': p['nitrix_status'],
         })
 

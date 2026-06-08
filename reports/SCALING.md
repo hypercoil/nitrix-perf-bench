@@ -8,8 +8,8 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 256x256 box3 | 0.09ms | 0.24ms (grey_closing) | 0.40x | 1.0MB | 0.3MB | 4x |
-| 256x256 disk3 | 0.64ms | 0.53ms (grey_closing) | 1.21x | 93.1MB | 0.3MB | 355x |
+| 256x256 box3 | 0.09ms | 0.24ms (grey_closing) | 0.40x | 1.0MB | 0.3MB | — |
+| 256x256 disk3 | 0.64ms | 0.53ms (grey_closing) | 1.21x | 93.1MB | 0.3MB | — |
 | 64x64x64 box3 | 0.13ms | 0.32ms (grey_closing) | 0.39x | 4.2MB | 1.0MB | 4x |
 | 64x64x64 ball2 | 6.03ms | 0.71ms (grey_closing) | 8.54x | 336.6MB | 1.0MB | 321x |
 | 4*128x128x128 ball2 | 702.73ms | 3.29ms (grey_closing) | 213.44x | 8724.2MB | 33.6MB | 260x |
@@ -44,10 +44,10 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 256x256 box3 | 0.09ms | 0.13ms (grey_dilation) | 0.72x | 0.8MB | 0.3MB | 3x |
-| 256x256 box15 | 0.15ms | 0.14ms (grey_dilation) | 1.06x | 0.8MB | 0.3MB | 3x |
-| 256x256 disk3 | 0.38ms | 0.29ms (grey_dilation) | 1.28x | 93.1MB | 0.3MB | 355x |
-| 256x256 disk7 | 1.58ms | 0.31ms (grey_dilation) | 5.13x | 193.5MB | 0.3MB | 735x |
+| 256x256 box3 | 0.09ms | 0.13ms (grey_dilation) | 0.72x | 0.8MB | 0.3MB | — |
+| 256x256 box15 | 0.15ms | 0.14ms (grey_dilation) | 1.06x | 0.8MB | 0.3MB | — |
+| 256x256 disk3 | 0.38ms | 0.29ms (grey_dilation) | 1.28x | 93.1MB | 0.3MB | — |
+| 256x256 disk7 | 1.58ms | 0.31ms (grey_dilation) | 5.13x | 193.5MB | 0.3MB | — |
 | 256x256 box3,float16 | 0.09ms | — | ok | 0.4MB | — | — |
 | 64x64x64 box3 | 0.11ms | 0.18ms (grey_dilation) | 0.60x | 3.1MB | 1.0MB | 3x |
 | 64x64x64 ball2 | 3.09ms | 0.34ms (grey_dilation) | 8.97x | 336.6MB | 1.0MB | 321x |
@@ -66,9 +66,9 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 64x64 | 0.15ms | 0.20ms (distance_transform_edt) | 0.75x | 33.6MB | 0.0MB | 2051x |
-| 128x128 | 0.22ms | 0.20ms (distance_transform_edt) | 1.09x | 33.8MB | 0.1MB | 515x |
-| 256x256 | 0.34ms | 0.24ms (distance_transform_edt) | 1.40x | 34.3MB | 0.3MB | 131x |
+| 64x64 | 0.15ms | 0.20ms (distance_transform_edt) | 0.75x | 33.6MB | 0.0MB | — |
+| 128x128 | 0.22ms | 0.20ms (distance_transform_edt) | 1.09x | 33.8MB | 0.1MB | — |
+| 256x256 | 0.34ms | 0.24ms (distance_transform_edt) | 1.40x | 34.3MB | 0.3MB | — |
 | 64x64x64 | 0.25ms | 0.24ms (distance_transform_edt) | 1.04x | 36.7MB | 1.0MB | 35x |
 | 512x512 | 0.56ms | 0.33ms (distance_transform_edt) | 1.70x | 36.7MB | 1.0MB | 35x |
 | 128x128x128 | 0.47ms | 0.54ms (distance_transform_edt) | 0.87x | 58.7MB | 8.4MB | 7x |
@@ -86,10 +86,10 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 256x256 box3 | 0.10ms | 0.12ms (grey_erosion) | 0.83x | 0.8MB | 0.3MB | 3x |
-| 256x256 box15 | 0.10ms | 0.13ms (grey_erosion) | 0.73x | 0.8MB | 0.3MB | 3x |
-| 256x256 disk3 | 0.38ms | 0.26ms (grey_erosion) | 1.49x | 93.1MB | 0.3MB | 355x |
-| 256x256 disk7 | 1.58ms | 0.28ms (grey_erosion) | 5.74x | 193.5MB | 0.3MB | 735x |
+| 256x256 box3 | 0.10ms | 0.12ms (grey_erosion) | 0.83x | 0.8MB | 0.3MB | — |
+| 256x256 box15 | 0.10ms | 0.13ms (grey_erosion) | 0.73x | 0.8MB | 0.3MB | — |
+| 256x256 disk3 | 0.38ms | 0.26ms (grey_erosion) | 1.49x | 93.1MB | 0.3MB | — |
+| 256x256 disk7 | 1.58ms | 0.28ms (grey_erosion) | 5.74x | 193.5MB | 0.3MB | — |
 | 256x256 box3,float16 | 0.10ms | — | ok | 0.4MB | — | — |
 | 64x64x64 box3 | 0.10ms | 0.17ms (grey_erosion) | 0.57x | 3.1MB | 1.0MB | 3x |
 | 64x64x64 ball2 | 3.09ms | 0.29ms (grey_erosion) | 10.68x | 336.6MB | 1.0MB | 321x |
@@ -121,14 +121,29 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 - **Projected OOM (≈24GB):** nitrix ~225.4 Melem vs best baseline ~687 Melem (~3x more headroom).
 - **Dispatch note (not a scale risk):** nitrix `skipped` at `n=1024 dense`, `n=1024 dense k32`, `n=2048 dense` (the default path is unavailable on this platform -- e.g. the cuSolver eigh block -- while the reference ran).
 
+## matrix_exp  (nitrix.linalg.matrix_exp)  [jax-cuda12]
+
+**Cost law.** both O(n^3): nitrix is a ~(taylor_order + n_squarings) ~= 20 matmul stack (no factorisation); scipy/jax expm is Padé + a dense LU solve. Measured (this L4): nitrix 1.4-3.4x faster than jax expm on GPU (the saved solve; margin narrows as the shared O(n^3) matmul dominates at n=1024), 21-73x vs scipy CPU at n>=256 but slower at n=16 (launch overhead). HBM O(n^2) (a few n x n temporaries), flat ~90-105 MB.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| n=16 | 0.16ms | 0.03ms (expm) | 6.31x | 88.1MB | 0.0MB | — |
+| n=64 | 0.19ms | 0.17ms (expm) | 1.11x | 88.1MB | 0.0MB | — |
+| n=256 | 0.27ms | 0.93ms (expm) | 0.29x | 89.1MB | 72.1MB | 1x |
+| n=512 | 0.67ms | 1.91ms (expm) | 0.35x | 92.3MB | 74.4MB | 1x |
+| n=1024 | 3.42ms | 4.76ms (expm) | 0.72x | 104.9MB | 83.9MB | 1x |
+
+- **Speed:** nitrix wins 3/5 sizes; baseline ahead at `n=16` 6.31x, `n=64` 1.11x; at the largest `n=1024`, nitrix 1.39x ahead.
+- **Projected OOM (≈24GB):** nitrix ~0.2 Melem vs best baseline ~0 Melem (~1x more headroom).
+
 ## open  (nitrix.morphology.open)  [jax-cuda12]
 
 **Cost law.** time: flat box O(N) (two fused reduce_windows) vs explicit SE O(N*k^d) (two im2col passes); HBM: box O(N), explicit-SE O(N*k^d) -> 256^3 ball OOMs (~49 GB) while cupy (O(N*k), in-place) holds. The flat box scales; the disk/ball footprint does not.
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 256x256 box3 | 0.10ms | 0.22ms (grey_opening) | 0.45x | 1.0MB | 0.3MB | 4x |
-| 256x256 disk3 | 0.64ms | 0.52ms (grey_opening) | 1.22x | 93.1MB | 0.3MB | 355x |
+| 256x256 box3 | 0.10ms | 0.22ms (grey_opening) | 0.45x | 1.0MB | 0.3MB | — |
+| 256x256 disk3 | 0.64ms | 0.52ms (grey_opening) | 1.22x | 93.1MB | 0.3MB | — |
 | 64x64x64 box3 | 0.12ms | 0.33ms (grey_opening) | 0.36x | 4.2MB | 1.0MB | 4x |
 | 64x64x64 ball2 | 6.00ms | 0.56ms (grey_opening) | 10.65x | 336.6MB | 1.0MB | 321x |
 | 4*128x128x128 ball2 | 702.79ms | 3.29ms (grey_opening) | 213.82x | 8724.2MB | 33.6MB | 260x |

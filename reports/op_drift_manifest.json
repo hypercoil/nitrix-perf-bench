@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-07T22:38:49Z",
+    "generated": "2026-06-08T21:57:38Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3392,6 +3392,30 @@
             "l1": 60380.4,
             "l2sq": 70685.2,
             "linf": 4.73196
+          }
+        ]
+      }
+    },
+    "matrix_exp": {
+      "case": "matrix_exp",
+      "qualname": "nitrix.linalg.matrix_exp",
+      "signature": "(a: \"Float[Array, '... n n']\", *, n_squarings: 'int' = 8, taylor_order: 'int' = 12) -> \"Float[Array, '... n n']\"",
+      "behaviour": {
+        "point": {
+          "n": 64
+        },
+        "leaves": [
+          {
+            "shape": [
+              64,
+              64
+            ],
+            "dtype": "float32",
+            "n_finite": 4096,
+            "n_nonfinite": 0,
+            "l1": 1288.5,
+            "l2sq": 665.539,
+            "linf": 1.88713
           }
         ]
       }
