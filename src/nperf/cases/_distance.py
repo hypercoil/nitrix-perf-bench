@@ -48,10 +48,28 @@ def blob_mask(shape, seed: int = 0, frac: float = 0.5) -> np.ndarray:
     return (field > thr).astype(np.float32)
 
 
+def blob_stack(batch: int, shape, seed: int = 0,
+               frac: float = 0.5) -> np.ndarray:
+    '''A stack of ``batch`` independent blob masks, ``(batch, *spatial)`` --
+    the batched brain-data regime (a cohort of subjects / volumes).  Batching
+    is the axis where nitrix's per-volume HBM cost compounds into an OOM the
+    single-volume sweep never reaches.'''
+    return np.stack([blob_mask(shape, seed * 1000 + i, frac)
+                     for i in range(batch)])
+
+
 def scipy_edt(m: Any) -> np.ndarray:
     '''Exact Euclidean DT -- the fp64 oracle + CPU floor (distance from each
     foreground voxel to the nearest background voxel).'''
     return spnd.distance_transform_edt(np.asarray(m) > 0.5)
+
+
+def scipy_edt_batched(m: Any) -> np.ndarray:
+    '''Per-image exact EDT over a leading batch axis.  EDT treats every axis as
+    spatial, so a stack must be looped (the references) / ``vmap``-ed (nitrix),
+    not passed whole -- the batch contract.'''
+    a = np.asarray(m)
+    return np.stack([scipy_edt(a[i]) for i in range(a.shape[0])])
 
 
 def cupy_edt() -> Callable[[Any], Any]:
@@ -61,6 +79,20 @@ def cupy_edt() -> Callable[[Any], Any]:
         from cupyx.scipy import ndimage as cnd
 
         return cnd.distance_transform_edt(m > 0.5)
+
+    return run
+
+
+def cupy_edt_batched() -> Callable[[Any], Any]:
+    '''GPU per-image exact EDT over a leading batch axis (the on-target batched
+    reference); cupy lazy.'''
+
+    def run(m: Any) -> Any:
+        import cupy as cp
+        from cupyx.scipy import ndimage as cnd
+
+        return cp.stack([cnd.distance_transform_edt(m[i] > 0.5)
+                         for i in range(m.shape[0])])
 
     return run
 

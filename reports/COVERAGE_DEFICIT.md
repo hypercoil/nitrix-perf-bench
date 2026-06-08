@@ -4,10 +4,10 @@
 
 ## Coverage (runtime ops)
 
-- **runtime ops catalogued**: 127 (+ 15 host-side constructors, apart)
-- **measured** (≥1 platform): 69 / 127
-- **multiplatform** (CPU + GPU): 66 / 127
-- **with a strong on-target GPU ref**: 61 / 127
+- **runtime ops catalogued**: 128 (+ 15 host-side constructors, apart)
+- **measured** (≥1 platform): 69 / 128
+- **multiplatform** (CPU + GPU): 66 / 128
+- **with a strong on-target GPU ref**: 61 / 128
 - **lagging on the GPU**: 9
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
 
@@ -25,7 +25,7 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | 6 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
 | 7 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
 | 8 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 9 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.972 | ~1.0x slower |  |
+| 9 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.963 | ~1.0x slower | provisional (fast run) |
 
 ## GPU blocked — nitrix path skipped, a GPU ref works
 
@@ -45,6 +45,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.resample[cubic]` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.resample[lanczos]` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.resample[multilabel]` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.resample[nearest]` | unmeasured | none | unmeasured |

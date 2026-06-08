@@ -124,3 +124,21 @@ class Case:
     # single home for the case -> op mapping the op_matrix feed and the
     # decision-input bundle both read.  None for the throwaway smoke case.
     op_qualname: Optional[str] = None
+    # **brain-scale** param points (the size tier): the realistic large /
+    # batched sizes a perf win must still hold at -- the defence against
+    # *scale-gaming* (notching a win at a small benched size while a worse
+    # asymptotic / memory growth loses, or OOMs, before the scale
+    # practitioners run; cf. ApproxBaseline for accuracy-gaming).  Run by
+    # default *in addition to* ``param_points``; ``--skip-large`` drops them
+    # for fast dev cycles and stamps the run ``coverage_mode = fast``
+    # (non-authoritative, like ``--skip-slow``).  Kept distinct from
+    # ``param_points`` so the ``representative`` (drift / dev anchor) stays
+    # small while the scaling curve + crossover are measured here (read by
+    # ``tools/scaling_report.py``).
+    large_param_points: Tuple[Dict[str, Any], ...] = field(
+        default_factory=tuple)
+    # the op's asymptotic cost *law* (a derived, warranted statement -- time
+    # and HBM, nitrix vs the reference), so a crossover is *predictable* from
+    # the algorithm, not just observed at whichever sizes we happened to pick.
+    # Surfaced by ``tools/scaling_report.py`` beside the measured curve.
+    complexity: Optional[str] = None

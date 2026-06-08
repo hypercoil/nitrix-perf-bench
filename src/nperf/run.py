@@ -466,6 +466,13 @@ def main() -> None:
                          'coverage_mode=fast so the op_matrix feed + gate '
                          "refuse to bless it (omit the flag for the full, "
                          'authoritative sweep at sprint end)')
+    ap.add_argument('--skip-large', action='store_true',
+                    help="skip the case's brain-scale size tier "
+                         '(large_param_points) for fast dev cycles; like '
+                         '--skip-slow it stamps coverage_mode=fast so the run '
+                         'is non-authoritative (omit it for the full sweep '
+                         'measuring the scaling curve / crossover at sprint '
+                         'end)')
     ap.add_argument('--in-process', action='store_true',
                     help='P0 in-process driver (no spawn; memory = proc HWM)')
     ap.add_argument('--cpu-slots', type=int, default=1,
@@ -585,10 +592,24 @@ def main() -> None:
     case = CASES[args.case]
     out_path_arg = args.out or f'results/{case.name}.jsonl'
     report_path_arg = args.report or f'results/{case.name}.md'
+    # Size tier: the brain-scale ``large_param_points`` run *in addition to*
+    # the dev ``param_points`` for the full sweep; ``--skip-large`` drops them
+    # (and stamps coverage_mode=fast below).  ``--point`` / ``--quick`` are
+    # explicit single-point runs, so the large tier never applies there.
+    had_large = bool(case.large_param_points)
     if args.point is not None:
-        case = replace(case, param_points=[json.loads(args.point)])
+        case = replace(case, param_points=[json.loads(args.point)],
+                       large_param_points=())
     elif args.quick:
-        case = replace(case, param_points=[case.representative])
+        case = replace(case, param_points=[case.representative],
+                       large_param_points=())
+    else:
+        large = () if args.skip_large else case.large_param_points
+        case = replace(
+            case,
+            param_points=list(case.param_points) + list(large),
+            large_param_points=(),
+        )
 
     # Baseline selection (skip pathological cold compiles on demand): allowlist
     # then denylist; unselected baselines become recorded ``skipped`` rows.
@@ -607,8 +628,14 @@ def main() -> None:
         frozenset(s.baseline for s in case.slow_baselines)
         if args.skip_slow else frozenset()
     )
+    # A run that drops *any* tier (slow baselines or the large size tier) is
+    # NOT authoritative coverage -> stamp fast so the op_matrix feed + gate
+    # refuse to bless it (COVERAGE_MANDATE §7).
     coverage_mode = (
-        'fast' if (args.skip_slow and case.slow_baselines) else 'full'
+        'fast'
+        if ((args.skip_slow and case.slow_baselines)
+            or (args.skip_large and had_large))
+        else 'full'
     )
 
     if args.in_process:

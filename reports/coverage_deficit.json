@@ -2,7 +2,7 @@
   "source": "nitrix-perf-bench coverage-&-deficit report",
   "convention": "gpu_ref_ratio = strong_ref.min / nitrix.min (<1 => nitrix slower on the GPU)",
   "summary": {
-    "runtime_ops": 127,
+    "runtime_ops": 128,
     "measured": 69,
     "multiplatform": 66,
     "with_strong_gpu_ref": 61,
@@ -130,11 +130,11 @@
       "coverage": "multiplatform",
       "ref_strength": "strong_ref",
       "precision": "f32_only",
-      "provisional": false,
+      "provisional": true,
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.distance_transform_edt",
-      "gpu_ref_ratio": 0.9721075173584444,
+      "gpu_ref_ratio": 0.9625445714292584,
       "nitrix_slower_on_gpu": true
     }
   ],
@@ -201,6 +201,21 @@
     },
     {
       "qualname": "nitrix.bias.sharpen_histogram",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false,
+      "priority": "high"
+    },
+    {
+      "qualname": "nitrix.geometry.resample[cubic]",
       "runtime": true,
       "has_case": false,
       "coverage": "unmeasured",
@@ -1772,11 +1787,11 @@
       "coverage": "multiplatform",
       "ref_strength": "strong_ref",
       "precision": "f32_only",
-      "provisional": false,
+      "provisional": true,
       "gpu_blocked": false,
       "gpu_block_reason": null,
       "gpu_ref": "cupyx.scipy.ndimage.distance_transform_edt",
-      "gpu_ref_ratio": 0.9721075173584444,
+      "gpu_ref_ratio": 0.9625445714292584,
       "nitrix_slower_on_gpu": true
     },
     {
@@ -2607,6 +2622,20 @@
     },
     {
       "qualname": "nitrix.geometry.resample[lanczos]",
+      "runtime": true,
+      "has_case": false,
+      "coverage": "unmeasured",
+      "ref_strength": "none",
+      "precision": "unmeasured",
+      "provisional": false,
+      "gpu_blocked": false,
+      "gpu_block_reason": null,
+      "gpu_ref": null,
+      "gpu_ref_ratio": null,
+      "nitrix_slower_on_gpu": false
+    },
+    {
+      "qualname": "nitrix.geometry.resample[cubic]",
       "runtime": true,
       "has_case": false,
       "coverage": "unmeasured",
