@@ -47,6 +47,7 @@ from nitrix.sparse import ell_from_dense
 
 from ._base import ApproxBaseline, BuiltPoint, Case, to_cupy
 from ._eigenmap import (
+    build_spectral_large,
     cupy_eigsh,
     laplacian_eigenvalues_oracle,
     sbm_input,
@@ -58,12 +59,16 @@ from ._eigenmap import (
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     n, k = param['n'], param['k']
     fmt = param.get('fmt', 'dense')
-    W = sbm_input(n, seed=param.get('seed', 0))
-    jx = jax.block_until_ready(jnp.asarray(W))
-    ref = laplacian_eigenvalues_oracle(W, k)  # fp64 oracle (eigenvalues)
 
     def op_evals(operand: Any, **kw: Any) -> Any:
         return laplacian_eigenmap(operand, n_components=k, **kw)[1]
+
+    if param.get('tier') == 'large':  # brain-graph-scale sparse (no dense)
+        return build_spectral_large(op_evals, k, param)
+
+    W = sbm_input(n, seed=param.get('seed', 0))
+    jx = jax.block_until_ready(jnp.asarray(W))
+    ref = laplacian_eigenvalues_oracle(W, k)  # fp64 oracle (eigenvalues)
 
     ell_aux: Any = None
     if fmt == 'ell':
@@ -107,6 +112,18 @@ _POINTS = [
     {'n': 4096, 'k': 8, 'fmt': 'ell'},      # large-n sparse (sparse oracle)
 ]
 
+# Brain-graph-scale size tier (scale-gaming defence, COVERAGE_MANDATE §2.6):
+# **sparse** graphs at fsaverage5->7 vertex counts, built directly as ELL (no
+# dense n x n -- a 100k dense operator is ~40 GB, unconstructable).  At these n
+# only the matrix-free sparse path exists, and nitrix's is uniquely
+# differentiable.  build_spectral_large: nitrix lobpcg + the differentiable
+# backward + sparse scipy/cupy eigsh refs, no oracle (scale, not fidelity).
+_LARGE = [
+    {'n': 10242, 'degree': 16},    # fsaverage5
+    {'n': 40962, 'degree': 16},    # fsaverage6
+    {'n': 120000, 'degree': 16},   # toward fsaverage7 (~163k)
+]
+
 CASE = Case(
     name='laplacian_eigenmap',
     op_qualname='nitrix.graph.laplacian_eigenmap',
@@ -114,7 +131,22 @@ CASE = Case(
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
     param_points=[{**p, 'seed': 0} for p in _POINTS],
+    large_param_points=tuple(
+        {**p, 'k': 8, 'fmt': 'ell', 'tier': 'large', 'seed': 0}
+        for p in _LARGE),
     representative={'n': 1024, 'k': 8, 'fmt': 'dense', 'seed': 0},
+    # The dense path is O(n^3) (eigh) / O(n^2) (dense lobpcg backward + the n^2
+    # operator) -> infeasible at brain-graph scale (a 100k dense operator is
+    # ~40 GB).  The sparse lobpcg path is O(iters * nnz) forward + an
+    # O(nnz * k) implicit-VJP backward -> scales to fsaverage6/7, and unlike
+    # scipy/cupy eigsh it is *differentiable*.  At scale the only question is
+    # sparse-vs-sparse + the gradient, not dense-vs-sparse.
+    complexity=(
+        'dense O(n^3) eigh / O(n^2) backend+operator -> infeasible at '
+        'n~100k (~40 GB dense); sparse lobpcg O(iters*nnz) fwd + O(nnz*k) '
+        'differentiable backward -> scales (fsaverage6/7), and is the only '
+        'differentiable option (scipy/cupy eigsh have no gradient).'
+    ),
     build=_build,
     # Tight gate (Win 4: pin accuracy).  eigh / lobpcg / scipy / cupy pass;
     # shift_invert / poly fail it -> declared approximate (signal not failure).

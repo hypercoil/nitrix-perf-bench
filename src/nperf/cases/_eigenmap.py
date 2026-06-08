@@ -219,3 +219,155 @@ def spectral_baselines(
         # dense auto -> eigh, so lobpcg is a distinct GPU-iterative variant.
         baselines['nitrix-jax-lobpcg'] = ('jax', runner({'solver': 'lobpcg'}))
     return baselines
+
+
+# ---------------------------------------------------------------------------
+# Scale tier (B23 / scale-gaming): brain-graph-scale **sparse** points.  At
+# fsaverage6 (~40k) / fsaverage7 (~160k) a dense n x n operator is
+# unconstructable (40 GB+), so only the matrix-free sparse (ELL) path exists --
+# and nitrix's is uniquely *differentiable* (the implicit VJP).  The graph is a
+# random symmetric expander built directly as ELL (no dense): it has a spectral
+# gap, so lobpcg converges and the tier isolates *scaling* (the dev-tier SBM
+# covers the clustered-spectrum convergence stress).
+# ---------------------------------------------------------------------------
+
+
+def sparse_graph_ell(n: int, degree: int = 16, seed: int = 0):
+    '''A large random symmetric sparse graph as ELL arrays
+    ``(values, indices, csr)`` -- built via scipy.sparse, never a dense n x n.
+    Each node draws ``degree`` random targets; symmetrised + a ring for
+    connectivity; padded to a fixed ELL width (absent slots -> self-index,
+    value 0).  ``csr`` is returned for the sparse references.'''
+    import scipy.sparse as sp
+
+    rng = np.random.default_rng(seed)
+    rows = np.repeat(np.arange(n), degree)
+    cols = rng.integers(0, n, size=n * degree)
+    A = sp.csr_matrix(
+        (np.ones(n * degree, np.float32), (rows, cols)), shape=(n, n))
+    A = A.maximum(A.T)  # symmetric
+    i = np.arange(n)
+    ring = sp.csr_matrix(
+        (np.ones(n, np.float32), (i, (i + 1) % n)), shape=(n, n))
+    A = A.maximum(ring.maximum(ring.T))
+    A.setdiag(0)
+    A.eliminate_zeros()
+    A = A.tocsr()
+    counts = np.diff(A.indptr)
+    k_max = int(counts.max())
+    idx = np.tile(i[:, None], (1, k_max)).astype(np.int32)
+    val = np.zeros((n, k_max), np.float32)
+    col_in_row = (np.arange(A.indices.size)
+                  - np.repeat(A.indptr[:-1], counts))
+    rr = np.repeat(np.arange(n), counts)
+    idx[rr, col_in_row] = A.indices
+    val[rr, col_in_row] = A.data
+    return val, idx, A
+
+
+def _lsym_from_csr(A: Any, xp: Any, slinalg: Any) -> Any:
+    '''Symmetric normalised Laplacian ``I - D^-1/2 A D^-1/2`` of a sparse CSR,
+    in the given array module (scipy or cupyx).'''
+    n = A.shape[0]
+    d = xp.asarray(A.sum(1)).ravel()
+    dm = slinalg.diags(1.0 / xp.sqrt(d))
+    return slinalg.eye(n) - dm @ A @ dm
+
+
+def scipy_sparse_eigsh(k: int = _K) -> Callable[..., Any]:
+    '''Smallest-k nontrivial L_sym eigenvalues via scipy **sparse** eigsh on
+    the sparse adjacency (the CPU floor that actually scales to n~100k -- a
+    dense eigsh would OOM on the operator).'''
+
+    def run(val: Any, idx: Any, n: int) -> Any:
+        import scipy.sparse as sp
+        import scipy.sparse.linalg as spla
+
+        rows = np.repeat(np.arange(n), idx.shape[1])
+        A = sp.csr_matrix(
+            (np.asarray(val).ravel(), (rows, np.asarray(idx).ravel())),
+            shape=(n, n))
+        lsym = _lsym_from_csr(A, np, sp).tocsc()
+        ev = spla.eigsh(lsym, k=k + 1, which='SA', return_eigenvectors=False)
+        return np.sort(ev)[1:k + 1]
+
+    return run
+
+
+def cupy_sparse_eigsh(k: int = _K) -> Callable[..., Any]:
+    '''GPU twin via cupyx sparse eigsh; cupy lazy.  Some CuPy builds lack a
+    sparse ``eigsh`` -- then this raises and the row records the gap (the
+    eigensolver scale tier is honestly GPU-ref-less there, like the chamfer
+    case), nitrix is still measured.'''
+
+    def run(val: Any, idx: Any, n: int) -> Any:
+        import cupy as cp
+        import cupyx.scipy.sparse as csp
+        import cupyx.scipy.sparse.linalg as csla
+
+        rows = cp.repeat(cp.arange(n), idx.shape[1])
+        A = csp.csr_matrix(
+            (val.ravel(), (rows, idx.ravel())), shape=(n, n))
+        lsym = _lsym_from_csr(A, cp, csp)
+        ev = csla.eigsh(lsym, k=k + 1, which='SA', return_eigenvectors=False)
+        return cp.sort(ev)[1:k + 1]
+
+    return run
+
+
+def build_spectral_large(op_evals: Callable[..., Any], k: int,
+                         param: dict) -> Any:
+    '''A ``BuiltPoint`` for a brain-graph-scale **sparse** point.  Baselines:
+    nitrix ``auto`` (= lobpcg on sparse), ``-vjp`` (the differentiable backward
+    -- the capability that distinguishes nitrix; scipy/cupy eigsh have none),
+    and the sparse scipy (CPU) / cupy (GPU) ``eigsh`` refs.  No fp64 oracle
+    (``None`` -> inconclusive): this tier measures *scale* -- whether the
+    sparse path runs at fsaverage6/7 sizes where a dense operator OOMs;
+    lobpcg's iterative accuracy is characterised at the dev tier.  ELL is
+    passed as ``(values, indices)`` and rebuilt inside the jitted baseline
+    (not a registered pytree, B22).'''
+    import jax
+    import jax.numpy as jnp
+    from nitrix.sparse import ELL
+
+    from ._base import BuiltPoint, to_cupy
+
+    n = int(param['n'])
+    val, idx, _ = sparse_graph_ell(n, int(param.get('degree', 16)),
+                                   param.get('seed', 0))
+    jv = jax.block_until_ready(jnp.asarray(val))
+    ji = jax.block_until_ready(jnp.asarray(idx))
+
+    def nx(**kw: Any) -> Callable[..., Any]:
+        def run(v: Any, i: Any) -> Any:
+            return op_evals(ELL(v, i, n, 0.0), **kw)
+        return run
+
+    def nx_vjp() -> Callable[..., Any]:
+        def run(v: Any, i: Any) -> Any:
+            def f(vv: Any) -> Any:
+                return op_evals(ELL(vv, i, n, 0.0), solver='lobpcg')
+            ev, vjp = jax.vjp(f, v)
+            (g,) = vjp(jnp.ones_like(ev))
+            return ev + (0.0 * jnp.sum(g)).astype(ev.dtype)
+        return run
+
+    def inputs_for(framework: str):
+        if framework == 'cupy':
+            return to_cupy(val, idx) + (n,)
+        if framework == 'numpy':
+            return (val, idx, n)
+        return (jv, ji)
+
+    baselines = {
+        'nitrix-jax': ('jax', nx()),                       # auto -> lobpcg
+        'nitrix-jax-lobpcg-vjp': ('jax', nx_vjp()),       # +backward (no twin)
+        'scipy.sparse.eigsh': ('scipy', scipy_sparse_eigsh(k)),  # CPU floor
+        'cupyx.sparse.eigsh': ('cupy', cupy_sparse_eigsh(k)),    # GPU ref
+    }
+    return BuiltPoint(
+        baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
+        fidelity_note=('scale tier: sparse-path scaling at brain-graph sizes; '
+                       'lobpcg accuracy characterised at the dev tier'),
+        ratio_reference='nitrix-jax',
+    )

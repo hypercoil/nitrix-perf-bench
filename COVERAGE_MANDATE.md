@@ -179,14 +179,19 @@ a subject-cohort batch; surface / graph sparse `n`~40k–160k (fsaverage6/7), de
 
 *Status (2026-06-08): established on the `distance_transform` template (the size
 tier, `complexity`, and `scaling_report.py`), then replicated to the morphology
-family (2026-06-08), which **sharpened it**: an op can carry *both* a scaling
-and a non-scaling path (the flat-box `reduce_window` scales — 256³ dilate wins
-cupy 3.6× — while the explicit-SE im2col OOMs at 256³), so the tier must measure
-*each dispatch path* and `scaling_report.py` keys rows by the SE (not just
-shape) and projects OOM from the heaviest measured allocation. **This clause
-stays living** — next is the eigensolver (sparse `n`~100k); expect the
-brain-scale targets and headline metrics to keep sharpening, and amend here
-rather than fork a parallel doctrine.*
+family and the sparse eigensolver (2026-06-08), each of which **sharpened it**:
+(a) an op can carry *both* a scaling and a non-scaling path (the flat-box
+`reduce_window` scales — 256³ dilate wins cupy 3.6× — while the explicit-SE
+im2col OOMs at 256³), so the tier measures *each dispatch path* and
+`scaling_report.py` keys rows by the SE (not just shape); (b) the size axis is
+op-shaped — image ops scale by grid×batch, **graph ops by node count `n`** —
+so the report sizes/labels by either; (c) the tier **certifies wins, not only
+catches losses**: nitrix's sparse lobpcg *beats* cupy `eigsh` 69× at
+`n`=120k *and* is the only differentiable option, where the dense path is
+brain-scale-infeasible — so a measured *scale risk* is an OOM or a
+loss-at-largest, kept distinct from a *dispatch* skip (the cuSolver eigh block).
+**This clause stays living** — amend here as the tier expands, rather than fork
+a parallel doctrine.*
 
 ## 3. Coverage taxonomy
 
@@ -372,6 +377,26 @@ them hid the fast box behind the slow ball), and the projected OOM is taken from
 the *heaviest measured allocation*'s per-element rate (a small point's rate is
 inflated by fixed allocator overhead). *Next:* the eigensolver (sparse
 `n`~100k, the O(n²) dense backward).
+
+**Shipped (2026-06-08) — scale tier on the sparse eigensolver (a *win* at
+scale).** `laplacian_eigenmap` gains a brain-graph-scale tier: random symmetric
+**sparse** graphs built directly as ELL (no dense `n×n`) at fsaverage5→7 node
+counts (`n` = 10k / 41k / 120k), via `build_spectral_large` (nitrix `auto`=
+lobpcg + the differentiable `-vjp` backward + sparse scipy/cupy `eigsh`, no
+oracle — scale, not fidelity). The result *inverts* the EDT/morphology pattern:
+the dense path is brain-scale-**infeasible** (a 100k dense operator is ~40 GB)
+and skips on GPU (cuSolver), but nitrix's matrix-free sparse lobpcg **scales and
+wins** — at small `n` it trails `eigsh` ~3× (iterative overhead), but at
+`n`=10k→120k it is **14×→43×→69× faster** with near-flat HBM (~150–200 MB), and
+unlike `eigsh` it is **differentiable** (the implicit-VJP backward stays sparse,
+O(nnz·k), confirmed finite to 120k). So the scale tier **certifies a win**, not
+only catches a loss. Sharpened `scaling_report.py`: graph-op sizing/labelling by
+`n` (not `shape`), OOM projection from the largest-*size* point (regime-
+consistent when an op's refs change kind across the curve), and an `oom` *scale
+risk* kept distinct from a *dispatch* skip (the cuSolver block is a platform
+note, not a scale risk). *Next:* `diffusion_embedding` mirrors it; the three
+exemplars (EDT HBM-hog, morphology OOM, eigensolver scale-win) now span the
+range of scale outcomes.
 
 ## 8. Cross-references
 

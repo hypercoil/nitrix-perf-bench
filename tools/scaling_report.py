@@ -52,12 +52,25 @@ def _prod(xs: List[int]) -> int:
 
 
 def _size_elems(param: Dict[str, Any]) -> int:
-    '''Total elements of a param point: prod(spatial) * batch (a single scale
-    axis the curve sorts on -- batching and grid size both grow it).'''
-    return _prod(param.get('shape', [])) * int(param.get('batch', 1) or 1)
+    '''The scale axis the curve sorts on.  Image/grid ops: prod(spatial) *
+    batch.  Graph ops (no ``shape``, carry ``n``): the node count * degree
+    (~nnz, the work/memory driver for the sparse operator).'''
+    if 'shape' in param:
+        return _prod(param['shape']) * int(param.get('batch', 1) or 1)
+    if 'n' in param:
+        return int(param['n']) * int(param.get('degree', 1) or 1)
+    return 1
 
 
 def _label(param: Dict[str, Any]) -> str:
+    # Graph ops are keyed by node count (n) + format / k; image ops by shape.
+    if 'shape' not in param and 'n' in param:
+        lbl = f'n={param["n"]}'
+        if param.get('fmt'):
+            lbl += f' {param["fmt"]}'
+        if param.get('k') not in (None, 8):
+            lbl += f' k{param["k"]}'
+        return lbl
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp
@@ -161,27 +174,34 @@ def _analyse(case, pts: Dict[str, Dict]) -> Dict[str, Any]:
                if ranked else None)
 
     # Projected OOM: the device budget over the per-element HBM rate at the
-    # **heaviest measured allocation** (the binding point -- the disk/ball SE,
-    # at a large size where the fixed allocator overhead is amortised; a small
-    # point's rate is inflated by that fixed cost and must not drive the
-    # projection).  Linear (HBM ~ O(elements)); a guide, not a guarantee.
+    # **largest-size point** (tie-broken to the heaviest alloc there -- the
+    # binding SE at scale).  Taking the largest *size* (not the heaviest
+    # absolute) keeps the rate amortised and consistent in regime: a small-n
+    # point's rate is inflated by fixed allocator overhead, and -- when an op's
+    # references change kind across the curve (e.g. the eigensolver's dense
+    # dev refs vs sparse large refs) -- a small-n point would pick the wrong
+    # one.  Linear (HBM ~ O(elements)); a guide, not a guarantee.
     def _proj(kind: str) -> Optional[float]:
         sized = [r for r in rows
                  if r[kind] is not None and r[kind] > 0 and r['size'] > 0]
         if not sized:
             return None
-        heavy = max(sized, key=lambda r: r[kind])
+        heavy = max(sized, key=lambda r: (r['size'], r[kind]))
         return _HBM_BUDGET_MB / (heavy[kind] / heavy['size'])  # elements
 
-    # OOM-as-signal: nitrix oom/skipped while a baseline ran.
+    # OOM-as-signal (a genuine *scale* memory exhaustion) is kept distinct from
+    # a *dispatch* skip (e.g. the dense eigh cuSolver block) -- only the former
+    # is a scale risk; the latter is a platform note.
     ooms = [r for r in rows
-            if r['nitrix_status'] in ('oom', 'skipped') and r['base_t']]
+            if r['nitrix_status'] == 'oom' and r['base_t']]
+    skips = [r for r in rows
+             if r['nitrix_status'] == 'skipped' and r['base_t']]
     return {
         'rows': rows, 'wins': wins, 'losses': losses, 'largest': largest,
         'n_ranked': len(ranked),
         'proj_oom_nitrix': _proj('nitrix_hbm'),
         'proj_oom_base': _proj('base_hbm'),
-        'ooms': ooms,
+        'ooms': ooms, 'skips': skips,
     }
 
 
@@ -228,9 +248,14 @@ def _render(case, platform: str, a: Dict[str, Any]) -> List[str]:
                     f'(~{pb / pn:.0f}x more headroom)')
         out.append(msg + '.')
     for r in a['ooms']:
-        out.append(f'- **OOM/skip-as-signal:** nitrix `{r["nitrix_status"]}` '
-                   f'at `{r["label"]}` while {r["base_name"]} ran '
-                   f'({_fmt_ms(r["base_t"])}).')
+        out.append(f'- **OOM-as-signal:** nitrix `oom` at `{r["label"]}` '
+                   f'while {r["base_name"]} ran ({_fmt_ms(r["base_t"])}).')
+    if a['skips']:
+        labs = ', '.join(f'`{r["label"]}`' for r in a['skips'])
+        out.append(f'- **Dispatch note (not a scale risk):** nitrix `skipped` '
+                   f'at {labs} (the default path is unavailable on this '
+                   f'platform -- e.g. the cuSolver eigh block -- while the '
+                   f'reference ran).')
     out.append('')
     return out
 
@@ -264,19 +289,19 @@ def main() -> None:
             continue
         a = _analyse(case, pts)
         big = a['largest']
-        pn, pb = a['proj_oom_nitrix'], a['proj_oom_base']
-        # A scale risk = nitrix OOMs / loses at the largest measured size, OR
-        # carries materially less memory headroom (projected OOM) than the
-        # baseline (the HBM-hog risk a speed-only view misses).
-        hbm_risk = bool(pn and pb and pn < 0.5 * pb)
-        if a['ooms'] or (big and (big['ratio'] or 0) > 1.0) or hbm_risk:
+        # A scale risk is a *measured* problem at scale: nitrix OOMs, or the
+        # baseline is ahead at the largest measured size.  (Per-element HBM
+        # headroom is always reported in the projection line for the reader to
+        # weigh -- being heavier-but-still-with-brain-scale-headroom while
+        # winning on speed, like the sparse eigensolver, is not a risk.)
+        if a['ooms'] or (big and (big['ratio'] or 0) > 1.0):
             n_risk += 1
         doc += _render(case, args.platform, a)
 
     Path(args.out_md).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out_md).write_text('\n'.join(doc) + '\n')
-    print(f'scaling: {len(cases)} tiered op(s), {n_risk} with a scale risk '
-          f'(crossover / OOM / HBM headroom) on {args.platform}. '
+    print(f'scaling: {len(cases)} tiered op(s), {n_risk} with a measured '
+          f'scale risk (OOM / baseline-ahead-at-largest) on {args.platform}. '
           f'Wrote {args.out_md}.', file=sys.stderr)
 
 

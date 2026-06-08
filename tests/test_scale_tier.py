@@ -23,6 +23,7 @@ from nitrix.morphology import distance_transform
 from nperf import measure
 from nperf.cases import distance_transform as dt
 from nperf.cases._distance import blob_stack, scipy_edt_batched
+from nperf.cases._eigenmap import sparse_graph_ell
 from nperf.cases._morphology import _GREY, disk_footprint, morph_stack
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
@@ -156,3 +157,44 @@ def test_morph_batched_is_per_image_no_leak():
         np.asarray(nx_dilate(jnp.asarray(stack[i]), structuring_element=se))
         for i in range(3)])
     assert np.abs(batched - per).max() < 1e-4
+
+
+# --- eigensolver replication (the sparse scale *win*) ----------------------
+
+def test_eigensolver_declares_sparse_size_tier():
+    case = measure.CASES['laplacian_eigenmap']
+    lp = case.large_param_points
+    assert lp and all(p.get('tier') == 'large' and p.get('fmt') == 'ell'
+                      for p in lp)
+    # sized by node count n (graph op), reaching fsaverage-scale (n >= ~40k).
+    assert all('n' in p and 'shape' not in p for p in lp)
+    assert max(p['n'] for p in lp) >= 40000
+    assert case.complexity and 'differentiable' in case.complexity
+
+
+def test_sparse_graph_ell_is_symmetric_and_padded():
+    # built directly as ELL (no dense n x n); the underlying adjacency must be
+    # symmetric (the Laplacian assumes it) and the ELL width fixed.
+    val, idx, A = sparse_graph_ell(500, degree=16, seed=0)
+    assert val.shape == idx.shape and val.shape[0] == 500
+    diff = (A - A.T)
+    assert abs(diff).sum() == 0.0  # symmetric
+
+
+def test_eigensolver_large_tier_is_nitrix_plus_refs_no_oracle():
+    # scale tier: nitrix auto(=lobpcg) + the differentiable vjp + sparse
+    # scipy/cupy eigsh refs, and NO fp64 oracle (scale, not fidelity).
+    case = measure.CASES['laplacian_eigenmap']
+    p = {'n': 1500, 'degree': 16, 'k': 8, 'fmt': 'ell', 'tier': 'large',
+         'seed': 0}
+    built = case.build(p)
+    assert set(built.baselines) == {
+        'nitrix-jax', 'nitrix-jax-lobpcg-vjp',
+        'scipy.sparse.eigsh', 'cupyx.sparse.eigsh'}
+    assert built.fp64_reference is None and built.fidelity_note
+    # nitrix sparse lobpcg runs + the vjp row is finite (the differentiable
+    # backward that distinguishes it from eigsh).
+    for name in ('nitrix-jax', 'nitrix-jax-lobpcg-vjp'):
+        pid, fn = built.baselines[name]
+        out = np.asarray(fn(*built.inputs_for('jax')))
+        assert out.shape == (8,) and np.isfinite(out).all()

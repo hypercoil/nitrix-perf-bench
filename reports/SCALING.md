@@ -19,7 +19,7 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 - **Speed:** nitrix wins 3/7 sizes; baseline ahead at `256x256x256 ball2` 303.67x, `4*128x128x128 ball2` 213.44x, `64x64x64 ball2` 8.54x, `256x256 disk3` 1.21x; at the largest `256x256x256 ball2`, baseline 303.67x ahead.
 - **Projected OOM (≈24GB):** nitrix ~23.7 Melem vs best baseline ~6000 Melem (~253x more headroom).
-- **OOM/skip-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_closing ran (26.81ms).
+- **OOM-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_closing ran (26.81ms).
 
 ## dilate  (nitrix.morphology.dilate)  [jax-cuda12]
 
@@ -41,7 +41,7 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 - **Speed:** nitrix wins 3/9 sizes; baseline ahead at `256x256x256 ball2` 297.33x, `4*128x128x128 ball2` 187.80x, `64x64x64 ball2` 8.97x, `256x256 disk7` 5.13x (+2 more); at the largest `256x256x256 ball2`, baseline 297.33x ahead.
 - **Projected OOM (≈24GB):** nitrix ~23.7 Melem vs best baseline ~6000 Melem (~253x more headroom).
-- **OOM/skip-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_dilation ran (12.02ms).
+- **OOM-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_dilation ran (12.02ms).
 
 ## distance_transform  (nitrix.morphology.distance_transform)  [jax-cuda12]
 
@@ -83,7 +83,26 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 - **Speed:** nitrix wins 4/9 sizes; baseline ahead at `256x256x256 ball2` 302.77x, `4*128x128x128 ball2` 189.23x, `64x64x64 ball2` 10.68x, `256x256 disk7` 5.74x (+1 more); at the largest `256x256x256 ball2`, baseline 302.77x ahead.
 - **Projected OOM (≈24GB):** nitrix ~23.7 Melem vs best baseline ~6000 Melem (~253x more headroom).
-- **OOM/skip-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_erosion ran (11.81ms).
+- **OOM-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_erosion ran (11.81ms).
+
+## laplacian_eigenmap  (nitrix.graph.laplacian_eigenmap)  [jax-cuda12]
+
+**Cost law.** dense O(n^3) eigh / O(n^2) backend+operator -> infeasible at n~100k (~40 GB dense); sparse lobpcg O(iters*nnz) fwd + O(nnz*k) differentiable backward -> scales (fsaverage6/7), and is the only differentiable option (scipy/cupy eigsh have no gradient).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| n=1024 dense | — | 31.32ms (eigsh) | skipped | — | 4.2MB | — |
+| n=1024 dense k32 | — | 86.25ms (eigsh) | skipped | — | 4.2MB | — |
+| n=2048 dense | — | 69.52ms (eigsh) | skipped | — | 16.8MB | — |
+| n=2048 ell | 179.47ms | 50.75ms (eigsh) | 3.54x | 121.0MB | 20.2MB | 6x |
+| n=4096 ell | 225.66ms | 83.16ms (eigsh) | 2.71x | 101.0MB | 80.3MB | 1x |
+| n=10242 ell | 42.59ms | 609.07ms (eigsh) | 0.07x | 143.3MB | 8.4MB | 17x |
+| n=40962 ell | 23.55ms | 1002.00ms (eigsh) | 0.02x | 153.9MB | 33.6MB | 5x |
+| n=120000 ell | 47.35ms | 3273.97ms (eigsh) | 0.01x | 204.5MB | 67.1MB | 3x |
+
+- **Speed:** nitrix wins 3/5 sizes; baseline ahead at `n=2048 ell` 3.54x, `n=4096 ell` 2.71x; at the largest `n=120000 ell`, nitrix 69.15x ahead.
+- **Projected OOM (≈24GB):** nitrix ~225.4 Melem vs best baseline ~687 Melem (~3x more headroom).
+- **Dispatch note (not a scale risk):** nitrix `skipped` at `n=1024 dense`, `n=1024 dense k32`, `n=2048 dense` (the default path is unavailable on this platform -- e.g. the cuSolver eigh block -- while the reference ran).
 
 ## open  (nitrix.morphology.open)  [jax-cuda12]
 
@@ -102,5 +121,5 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 - **Speed:** nitrix wins 3/7 sizes; baseline ahead at `256x256x256 ball2` 310.74x, `4*128x128x128 ball2` 213.82x, `64x64x64 ball2` 10.65x, `256x256 disk3` 1.22x; at the largest `256x256x256 ball2`, baseline 310.74x ahead.
 - **Projected OOM (≈24GB):** nitrix ~23.7 Melem vs best baseline ~6000 Melem (~253x more headroom).
-- **OOM/skip-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_opening ran (27.08ms).
+- **OOM-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_opening ran (27.08ms).
 
