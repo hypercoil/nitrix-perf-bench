@@ -144,3 +144,96 @@ def cupy_morph(kind: str, se_spec: Dict[str, Any]) -> Callable[[Any], Any]:
         return _morph(kind, x, se_spec, cnd)
 
     return run
+
+
+# ---------------------------------------------------------------------------
+# Scale tier (B23 / scale-gaming): brain-scale single-volume + batched-cohort
+# points.  The explicit-SE path's im2col cost compounds with grid size and
+# batch toward an OOM the dev tier never reaches; the batched refs loop because
+# scipy / cupy morphology require ``footprint.ndim == input.ndim`` (and the
+# explicit-SE op is per-image: a rank-d SE on a rank-(d+1) stack windows ``1``
+# on the leading batch axis, so nitrix consumes the stack directly).
+# ---------------------------------------------------------------------------
+
+_GREY = {'dilate': 'grey_dilation', 'erode': 'grey_erosion',
+         'open': 'grey_opening', 'close': 'grey_closing'}
+
+
+def morph_stack(batch: int, shape, seed: int = 0,
+                dtype: str = 'float32') -> np.ndarray:
+    '''A cohort stack ``(batch, *spatial)`` -- the batched brain-data regime
+    where the per-volume im2col cost compounds toward OOM.'''
+    rng = np.random.default_rng(seed)
+    return rng.standard_normal((batch,) + tuple(shape)).astype(_DTYPE[dtype])
+
+
+def scipy_morph_batched(kind: str,
+                        se_spec: Dict[str, Any]) -> Callable[[Any], Any]:
+    '''Per-image scipy morphology over a leading batch axis (the references
+    must loop -- scipy/cupy need ``footprint.ndim == input.ndim`` and the op is
+    per-image).'''
+    one = scipy_morph(kind, se_spec)
+
+    def run(x: Any) -> Any:
+        a = np.asarray(x)
+        return np.stack([one(a[i]) for i in range(a.shape[0])])
+
+    return run
+
+
+def cupy_morph_batched(kind: str,
+                       se_spec: Dict[str, Any]) -> Callable[[Any], Any]:
+    '''Per-image CuPy morphology over a leading batch axis; cupy lazy.'''
+
+    def run(x: Any) -> Any:
+        import cupy as cp
+
+        one = cupy_morph(kind, se_spec)
+        return cp.stack([one(x[i]) for i in range(x.shape[0])])
+
+    return run
+
+
+def build_morph_large(kind: str, nitrix_op: Callable[..., Any],
+                      param: Dict[str, Any]) -> Any:
+    '''A ``BuiltPoint`` for a brain-scale **size-tier** point (shared by all
+    four morphology cases).  Baselines are **nitrix + the cupy GPU ref only**,
+    and there is **no fp64 oracle** (``fp64_reference=None`` -> fidelity
+    inconclusive): correctness is pinned tight at the dev tier (the op is exact
+    and the code path is identical), so this tier measures *scale* -- speed,
+    HBM, and OOM -- where an O(N*k) CPU oracle / floor at 256^3 would be both
+    slow and beside the point.  Single large volumes and batched cohorts.'''
+    import jax
+    import jax.numpy as jnp
+
+    from ._base import BuiltPoint, to_cupy
+
+    dtype = param.get('dtype', 'float32')
+    batch = param.get('batch')
+    se_spec, se = resolve_se(param, dtype)
+    se_jax = None if se is None else jnp.asarray(se)
+    kw = nitrix_kwargs(se_spec, se_jax)
+
+    if batch:
+        X = morph_stack(batch, param['shape'], param.get('seed', 0), dtype)
+        cupy_fn = cupy_morph_batched(kind, se_spec)
+    else:
+        X = morph_input(param['shape'], param.get('seed', 0), dtype)
+        cupy_fn = cupy_morph(kind, se_spec)
+    jx = jax.block_until_ready(jnp.asarray(X))
+
+    def inputs_for(framework: str):
+        if framework == 'cupy':
+            return to_cupy(X)
+        return (X,) if framework == 'numpy' else (jx,)
+
+    baselines = {
+        'nitrix-jax': ('jax', lambda x: nitrix_op(x, **kw)),
+        f'cupyx.scipy.ndimage.{_GREY[kind]}': ('cupy', cupy_fn),
+    }
+    return BuiltPoint(
+        baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
+        fidelity_note=('scale tier: fidelity pinned at the dev tier; this '
+                       'point measures scale (speed / HBM / OOM)'),
+        ratio_reference='nitrix-jax',
+    )

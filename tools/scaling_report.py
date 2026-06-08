@@ -60,7 +60,18 @@ def _size_elems(param: Dict[str, Any]) -> int:
 def _label(param: Dict[str, Any]) -> str:
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
-    return f'{b}*{shp}' if b else shp
+    base = f'{b}*{shp}' if b else shp
+    # Distinguish same-shape points by their structuring element / dtype, so a
+    # box and a disk/ball at one grid size are *separate* rows -- not merged
+    # (the morphology family has several SEs per shape; collapsing them hid the
+    # fast box behind the slow ball).
+    tags = []
+    if param.get('se'):
+        k = param.get('size', param.get('radius'))
+        tags.append(f'{param["se"]}{k}' if k is not None else str(param['se']))
+    if param.get('dtype') and param['dtype'] != 'float32':
+        tags.append(str(param['dtype']))
+    return base + (' ' + ','.join(tags) if tags else '')
 
 
 def _steady_min(row: Dict[str, Any]) -> Optional[float]:
@@ -144,17 +155,23 @@ def _analyse(case, pts: Dict[str, Dict]) -> Dict[str, Any]:
     wins = [r for r in ranked if r['ratio'] <= 1.0]
     losses = sorted((r for r in ranked if r['ratio'] > 1.0),
                     key=lambda r: -r['ratio'])
-    largest = max(ranked, key=lambda r: r['size']) if ranked else None
+    # The verdict point: the largest measured size, tie-broken to the *worst*
+    # ratio (the binding scale risk when several SEs share a size).
+    largest = (max(ranked, key=lambda r: (r['size'], r['ratio'] or 0))
+               if ranked else None)
 
-    # Projected OOM: per-element HBM rate at the largest measured point, vs the
-    # device budget.  Linear (HBM ~ O(elements)); a guide, not a guarantee.
+    # Projected OOM: the device budget over the per-element HBM rate at the
+    # **heaviest measured allocation** (the binding point -- the disk/ball SE,
+    # at a large size where the fixed allocator overhead is amortised; a small
+    # point's rate is inflated by that fixed cost and must not drive the
+    # projection).  Linear (HBM ~ O(elements)); a guide, not a guarantee.
     def _proj(kind: str) -> Optional[float]:
-        sized = [r for r in rows if r[kind] is not None and r['size'] > 0]
+        sized = [r for r in rows
+                 if r[kind] is not None and r[kind] > 0 and r['size'] > 0]
         if not sized:
             return None
-        big = max(sized, key=lambda r: r['size'])
-        rate = big[kind] / big['size']  # MB per element
-        return _HBM_BUDGET_MB / rate if rate > 0 else None  # elements
+        heavy = max(sized, key=lambda r: r[kind])
+        return _HBM_BUDGET_MB / (heavy[kind] / heavy['size'])  # elements
 
     # OOM-as-signal: nitrix oom/skipped while a baseline ran.
     ooms = [r for r in rows

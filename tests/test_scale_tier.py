@@ -7,7 +7,8 @@ memory growth loses -- or OOMs -- before brain scale.  The defence is the
 (``Case.large_param_points``) kept distinct from the small dev/representative
 anchor, and surfaced by ``tools/scaling_report.py`` (speed crossover, HBM
 multiplier, projected OOM, OOM-as-signal).  These checks pin that machinery on
-the template op (distance_transform / EDT).
+the template op (distance_transform / EDT) and its replication to morphology
+(the OOM exemplar -- disk/ball im2col OOMs at 256^3).
 """
 import sys
 from pathlib import Path
@@ -16,10 +17,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+from nitrix.morphology import dilate as nx_dilate
 from nitrix.morphology import distance_transform
 
+from nperf import measure
 from nperf.cases import distance_transform as dt
 from nperf.cases._distance import blob_stack, scipy_edt_batched
+from nperf.cases._morphology import _GREY, disk_footprint, morph_stack
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import scaling_report as sr  # noqa: E402
@@ -110,3 +114,45 @@ def test_approximate_baseline_excluded_from_crossover():
     ]
     a = sr._analyse(case, sr._collect(rows, case, _P))
     assert a['rows'][0]['base_name'] == _CUPY.split('.')[-1]  # cupy, not ITK
+
+
+# --- morphology replication (the OOM exemplar) -----------------------------
+
+@pytest.mark.parametrize('cname', ['dilate', 'erode', 'open', 'close'])
+def test_morphology_declares_size_tier_with_oom_exemplar(cname):
+    case = measure.CASES[cname]
+    lp = case.large_param_points
+    assert lp and all(p.get('tier') == 'large' for p in lp)
+    assert case.complexity and 'OOM' in case.complexity
+    # a 256^3 ball (the im2col OOM exemplar) and a batched cohort are present.
+    assert any(p.get('se') == 'ball' and tuple(p['shape']) == (256, 256, 256)
+               for p in lp)
+    assert any(p.get('batch') for p in lp)
+
+
+@pytest.mark.parametrize('cname', ['dilate', 'erode', 'open', 'close'])
+def test_morph_large_tier_is_nitrix_plus_cupy_no_oracle(cname):
+    # The scale tier measures scale, not fidelity: nitrix + the cupy GPU ref
+    # only, and NO fp64 oracle (an O(N*k) CPU oracle at 256^3 is slow + beside
+    # the point; correctness is pinned at the dev tier).
+    case = measure.CASES[cname]
+    p = {'shape': [16, 16, 16], 'se': 'ball', 'radius': 2, 'tier': 'large',
+         'seed': 0}
+    built = case.build(p)
+    assert set(built.baselines) == {'nitrix-jax',
+                                    f'cupyx.scipy.ndimage.{_GREY[cname]}'}
+    assert built.fp64_reference is None and built.fidelity_note
+
+
+def test_morph_batched_is_per_image_no_leak():
+    # The batched-cohort tier relies on the explicit-SE contract: a rank-d SE
+    # on a (B, *spatial) stack windows 1 on the batch axis, so nitrix consumes
+    # the stack directly and the result equals a per-image loop (no leak).
+    stack = morph_stack(3, [16, 16, 16], seed=0)
+    fp = disk_footprint(2, 3)
+    se = jnp.asarray(np.where(fp, 0.0, -np.inf).astype(np.float32))
+    batched = np.asarray(nx_dilate(jnp.asarray(stack), structuring_element=se))
+    per = np.stack([
+        np.asarray(nx_dilate(jnp.asarray(stack[i]), structuring_element=se))
+        for i in range(3)])
+    assert np.abs(batched - per).max() < 1e-4

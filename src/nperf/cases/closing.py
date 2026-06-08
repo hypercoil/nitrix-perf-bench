@@ -24,6 +24,7 @@ from nitrix.morphology import close as morph_close
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._morphology import (
+    build_morph_large,
     cupy_morph,
     morph_input,
     nitrix_kwargs,
@@ -35,6 +36,8 @@ _KIND = 'close'
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
+    if param.get('tier') == 'large':  # brain-scale size tier (nitrix + cupy)
+        return build_morph_large(_KIND, morph_close, param)
     dtype = param.get('dtype', 'float32')
     se_spec, se = resolve_se(param, dtype)
     X = morph_input(param['shape'], param.get('seed', 0), dtype)
@@ -69,6 +72,16 @@ _POINTS = [
     {'shape': [64, 64, 64], 'se': 'ball', 'radius': 2},  # 3-D ball, slow
 ]
 
+# Brain-scale size tier (COVERAGE_MANDATE §2.6): two-pass op; flat box
+# doubly-fast, disk/ball doubly the im2col, which OOMs at 256^3. nitrix + cupy.
+_LARGE = [
+    {'shape': [256, 256, 256], 'se': 'box', 'size': 3},     # fast box
+    {'shape': [256, 256, 256], 'se': 'ball', 'radius': 2},  # im2col hog
+    {'shape': [256, 256, 256], 'se': 'ball', 'radius': 4},  # im2col OOM
+    {'shape': [128, 128, 128], 'se': 'ball', 'radius': 2,
+     'batch': 4},                                           # cohort hog
+]
+
 CASE = Case(
     name='close',
     op_qualname='nitrix.morphology.close',
@@ -76,7 +89,15 @@ CASE = Case(
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
     param_points=[{**p, 'seed': 0} for p in _POINTS],
+    large_param_points=tuple(
+        {**p, 'tier': 'large', 'seed': 0} for p in _LARGE),
     representative={'shape': [256, 256], 'se': 'box', 'size': 3, 'seed': 0},
+    complexity=(
+        'time: flat box O(N) (two fused reduce_windows) vs explicit SE '
+        'O(N*k^d) (two im2col passes); HBM: box O(N), explicit-SE O(N*k^d) -> '
+        '256^3 ball OOMs (~49 GB) while cupy (O(N*k), in-place) holds. The '
+        'flat box scales; the disk/ball footprint does not.'
+    ),
     build=_build,
     rtol=1e-3,
     atol=1e-4,

@@ -26,6 +26,7 @@ from nitrix.morphology import erode
 from ._base import BuiltPoint, Case, to_cupy
 from ._itk import sitk_grey_morph
 from ._morphology import (
+    build_morph_large,
     cupy_morph,
     morph_input,
     nitrix_kwargs,
@@ -37,6 +38,8 @@ _KIND = 'erode'
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
+    if param.get('tier') == 'large':  # brain-scale size tier (nitrix + cupy)
+        return build_morph_large(_KIND, erode, param)
     dtype = param.get('dtype', 'float32')
     se_spec, se = resolve_se(param, dtype)
     X = morph_input(param['shape'], param.get('seed', 0), dtype)
@@ -81,6 +84,17 @@ _POINTS = [
      'dtype': 'float16'},                               # fp16 precision row
 ]
 
+# Brain-scale size tier (scale-gaming defence, COVERAGE_MANDATE §2.6): mirrors
+# dilate -- flat-box fast path vs the disk/ball im2col that OOMs at 256^3, plus
+# a cohort batch.  nitrix + cupy only (scale, not fidelity).
+_LARGE = [
+    {'shape': [256, 256, 256], 'se': 'box', 'size': 3},     # fast box
+    {'shape': [256, 256, 256], 'se': 'ball', 'radius': 2},  # im2col hog
+    {'shape': [256, 256, 256], 'se': 'ball', 'radius': 4},  # im2col OOM
+    {'shape': [128, 128, 128], 'se': 'ball', 'radius': 2,
+     'batch': 4},                                           # cohort hog
+]
+
 CASE = Case(
     name='erode',
     op_qualname='nitrix.morphology.erode',
@@ -88,7 +102,15 @@ CASE = Case(
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
     param_points=[{**p, 'seed': 0} for p in _POINTS],
+    large_param_points=tuple(
+        {**p, 'tier': 'large', 'seed': 0} for p in _LARGE),
     representative={'shape': [256, 256], 'se': 'box', 'size': 3, 'seed': 0},
+    complexity=(
+        'time: flat box O(N) (fused reduce_window) vs explicit SE O(N*k^d) '
+        '(im2col); HBM: box O(N), explicit-SE im2col O(N*k^d) -> 256^3 ball '
+        'OOMs (~49 GB) while cupy/scipy (O(N*k), in-place) hold. The flat box '
+        'scales; the disk/ball footprint does not.'
+    ),
     build=_build,
     rtol=1e-3,
     atol=1e-4,
