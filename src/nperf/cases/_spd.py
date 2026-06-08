@@ -7,19 +7,22 @@ GPU reference both compute ``f`` via an explicit symmetric eigendecomposition
 (numpy / cupy), mirroring nitrix's own method -- so for **well-conditioned**
 SPD inputs nitrix-jax, scipy, cupy, and the oracle all agree to round-off.
 
-**GPU note (cuSOLVER eigh broken at d≥256; matrix functions dodge it).**  Dense
-cuSOLVER ``eigh`` is broken at d≥256 on this L4 / driver-580 stack: both
+**GPU note (observed on this L4 / driver-580; cause + scope uncharacterised).**
+On this box a dense ``eigh`` does not run on the GPU at d≥256: both
 ``cupy.linalg.eigh`` (standalone) and a **bare** ``jnp.linalg.eigh`` (eager and
-jitted) fail with a cuSolver internal error; d=64 works.  But these are
-**matrix functions** that *consume* the decomposition into ``V diag(f(λ)) Vᵀ``,
-and (tested) XLA lowers a *consumed* jitted eigh to a non-cuSolver path -- so
-**nitrix runs symlog/symsqrt/sympower on the GPU honestly** (verified correct
-in a provably cuda-only process), where cupy / bare eigh cannot.  This is *not*
+jitted) fail with a cuSOLVER internal error; d=64 works.  We treat this as a
+cuSOLVER-class failure *seen here* -- we do not know its root cause or whether
+it holds on other L4s / driver / Lovelace parts, so we don't lean on it as a
+portable property.  What we *can* warrant: these are **matrix functions** that
+*consume* the decomposition into ``V diag(f(λ)) Vᵀ``, and (tested) XLA lowers a
+*consumed* jitted eigh to a path that **does** run on the GPU here -- so nitrix
+runs symlog/symsqrt/sympower on the GPU on this box (verified correct in a
+provably cuda-only process), where bare / cupy eigh does not.  This is *not*
 ``safe_eigh`` (a raw-eigh matrix-log behaves identically) and does **not**
-extend to ops that *return* eigenpairs (e.g. ``laplacian_eigenmap``, which
-would still hit the cuSolver failure).  The trade-off: the **cupy GPU ref fails
-at d≥256** (recorded ``gpu_solver_unavailable``), so the apples-to-apples GPU
-bar holds only at d=64.  ``scipy.linalg`` is the CPU floor.
+extend to ops that *return* eigenpairs (e.g. ``laplacian_eigenmap``).  The
+trade-off: the **cupy GPU ref also fails at d≥256** here (recorded
+``gpu_solver_unavailable``), so the apples-to-apples GPU bar holds only at
+d=64.  ``scipy.linalg`` is the CPU floor.
 """
 from __future__ import annotations
 
@@ -46,8 +49,9 @@ def eig_matrix_fn(a: np.ndarray, fn: Callable[[np.ndarray], np.ndarray]
 
 def cupy_matrix_fn(kind: str, power: float = 1.0) -> Callable[[Any], Any]:
     '''Build the CuPy eigh-based matrix-function baseline (GPU); cupy lazy so
-    only the cupy worker (refs-cupy env) imports it.  CuPy's eigh works on the
-    L4 where jax's does not (the jaxlib cuSOLVER blocker).'''
+    only the cupy worker (refs-cupy env) imports it.  CuPy's eigh runs on the
+    GPU here at the smaller sizes (d=64) but, like bare jax eigh, fails at
+    d≥256 on this box (the cuSOLVER-class issue noted above).'''
 
     def run(a: Any) -> Any:
         import cupy as cp

@@ -4,8 +4,9 @@
 Inverse covariance ``inv(cov(X))``.  nitrix (jax) vs a numpy inverse-covariance
 (CPU floor) + a CuPy inverse-covariance (GPU ref), scored against an fp64
 oracle.  See ``cases/_precision.py`` for the construction and the GPU /
-cuSolver story (nitrix's jitted inv lowers off cuSolver and runs on GPU; the
-cupy ref's ``cupy.linalg.inv`` fails at large ``c``).  Ratio vs
+cuSolver story (on this box nitrix's jitted consumed-inv runs on the GPU where
+the cupy ref's raw ``cupy.linalg.inv`` fails at large ``c`` -- a cuSOLVER-class
+issue observed here, cause/scope uncharacterised).  Ratio vs
 ``numpy.inv_cov``.
 """
 from __future__ import annotations

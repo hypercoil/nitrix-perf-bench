@@ -7,12 +7,13 @@ eigenvalues/eigenvectors of the normalised Laplacian
 The op exposes two solvers, both benchmarked:
 
 - ``solver='eigh'`` -- dense ``jnp.linalg.eigh`` via nitrix's ``safe_eigh``,
-  which on this cuSOLVER-broken L4 **silently runs on CPU** (no hang, but not
+  which on this L4 routes the decomposition to the CPU (a cuSOLVER-class
+  failure observed here -- cause/scope uncharacterised, see the GPU notes; not
   GPU-pure); exact, full-spectrum, fast for small dense graphs;
 - ``solver='lobpcg'`` -- matrix-free iterative top-k
-  (``jax.experimental.sparse.linalg.lobpcg_standard``), which **runs genuinely
-  on the GPU** (dodges the dense cuSOLVER path), the win at large / sparse
-  scale.
+  (``jax.experimental.sparse.linalg.lobpcg_standard``), which runs on the GPU
+  on this box (where the dense eigh path does not) and is the matrix-free path
+  that scales to large / sparse sizes.
 
 Eigenvectors carry a sign / degenerate-subspace ambiguity, so the
 **eigenvalues** are the clean fidelity target: the case returns them and
@@ -152,7 +153,7 @@ def spectral_baselines(
 
     The headline ``nitrix-jax`` is the *default* (``solver='auto'``): the
     branch a user actually hits -- ``eigh`` for dense (full spectrum via
-    ``safe_eigh``, CPU on the cuSolver-broken L4), ``lobpcg`` for sparse.  On
+    ``safe_eigh``, which routes to CPU on this L4), ``lobpcg`` for sparse.  On
     dense, ``auto != lobpcg`` so a distinct ``lobpcg`` row is added; on ELL
     ``auto`` *is* lobpcg, so no separate row.  ``shift_invert`` / ``poly`` are
     the preconditioned (~1e-3) approximate paths; ``-vjp`` times the implicit-

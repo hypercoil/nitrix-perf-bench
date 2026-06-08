@@ -14,15 +14,15 @@ flip + the ``|diag|`` normalisation are the subtle parts -- a naive ``inv``
 reference gets partialcorr signs/scale wrong), and matches nitrix's ``cov``
 normalisation (default ``bias=False`` == numpy/cupy ``cov`` default).
 
-**GPU (eigh-family pattern).**  Jitted nitrix runs these on the GPU: XLA lowers
-the consumed ``inv`` off the (broken-on-this-L4) cuSolver path -- verified the
-ops succeed on GPU even while a bare ``jnp.linalg.eigh`` is wedged (see
-[[perfbench-gpu-eigh-blocker]]).  The CuPy reference, by contrast, calls
-``cupy.linalg.inv`` -> cuSolver ``getrf``, which fails at large ``c`` (and
-whenever the device's cuSolver is wedged) -- so the apples-to-apples GPU bar
-holds only at small ``c`` on a healthy device; the large-``c`` cupy failures
-are recorded ``gpu_solver_unavailable`` and are themselves evidence of nitrix's
-robustness.  ``scipy``/numpy is the CPU floor.
+**GPU (eigh-family pattern).**  Jitted nitrix runs these on the GPU on this
+box: XLA lowers the consumed ``inv`` to a path that runs even when a bare
+``jnp.linalg.eigh`` does not (a cuSOLVER-class issue observed here --
+cause/scope uncharacterised, see [[perfbench-gpu-eigh-blocker]]).  The CuPy
+reference, by contrast, calls ``cupy.linalg.inv`` -> cuSolver ``getrf``, which
+fails at large ``c`` (and whenever the device's cuSolver is wedged) here -- so
+the apples-to-apples GPU bar holds only at small ``c`` on a healthy device;
+the large-``c`` cupy failures are recorded ``gpu_solver_unavailable``.
+``scipy``/numpy is the CPU floor.
 """
 from __future__ import annotations
 

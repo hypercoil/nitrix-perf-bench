@@ -8,9 +8,10 @@ the eigh-based exp) + a CuPy eigh-based GPU reference, scored against an fp64
 eigh-based oracle on a well-conditioned SPD input.
 
 Like symlog/symsqrt/sympower, the matrix function *consumes* the eigh, which
-XLA lowers off the broken cuSOLVER path -- so **nitrix runs this on the GPU**;
-the cupy eigh ref fails / lags only when the device's cuSOLVER is wedged (see
-``cases/_spd.py``). Ratio vs nitrix-jax.
+XLA lowers to a path that runs on the GPU on this box, where bare / cupy eigh
+does not at d≥256 (a cuSOLVER-class issue observed here -- cause/scope
+uncharacterised, not a portable claim; see ``cases/_spd.py``). Ratio vs
+nitrix-jax.
 """
 from __future__ import annotations
 

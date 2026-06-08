@@ -5,9 +5,10 @@ SPD matrix power ``A**p`` (here ``p = 0.75``), sibling of the ``symlog`` /
 ``symsqrt`` cases (see ``cases/_spd.py`` for the eigh-family / GPU-blocker
 story).  nitrix (jax, eigh-based) vs ``scipy.linalg.fractional_matrix_power``
 (CPU floor) + a CuPy eigh-based GPU reference, scored against an fp64
-eigh-based oracle.  nitrix runs this on the GPU (jitted; the matrix function
-consumes the eigh, dodging the cuSOLVER path -- see ``cases/_spd.py``); the
-cupy GPU ref fails at d≥256.  Ratio via
+eigh-based oracle.  nitrix runs this on the GPU on this box (jitted; the matrix
+function consumes the eigh into a path that runs where bare / cupy eigh does
+not -- see ``cases/_spd.py`` for the this-box caveat); the cupy GPU ref also
+fails at d≥256.  Ratio via
 ``--reference scipy.linalg.fractional_matrix_power``.
 """
 from __future__ import annotations

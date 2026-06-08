@@ -17,9 +17,10 @@ The reference R here is a fixed, well-conditioned SPD (the batch Euclidean mean
 exercises the identical eigh-based code path.
 
 GPU note: like symlog/symsqrt/sympower, both matrix functions (sympower then
-symlog) *consume* their eigh into ``V diag(f) Vt``, which XLA lowers off the
-broken cuSOLVER path -- so **nitrix runs tangent on the GPU** even while the
-dense cuSOLVER potrf/eigh path is wedged (see ``cases/_spd.py``).
+symlog) *consume* their eigh into ``V diag(f) Vt``, which XLA lowers to a path
+that runs on the GPU on this box, even when the dense potrf/eigh path does not
+(a cuSOLVER-class issue observed here -- cause/scope uncharacterised; see
+``cases/_spd.py``).
 """
 from __future__ import annotations
 

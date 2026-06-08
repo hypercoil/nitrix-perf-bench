@@ -92,7 +92,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
 # Single matrices across n (the matmul-stack scaling); norm pinned so accuracy
 # is fp32-tight at every n.  The affine regime is small (n=3/4); these moderate
-# n make the matmul work -- and the GPU-native-vs-Padé-solve gap -- measurable.
+# n make the matmul work -- and the matmul-stack-vs-Padé-solve gap -- visible.
 _NS = [16, 64, 256]
 
 # Scale tier (COVERAGE_MANDATE §2.6): larger n where the O(n^3) matmul stack

@@ -5,11 +5,13 @@ SPD matrix logarithm.  nitrix (jax, eigh-based) vs the textbook
 ``scipy.linalg.logm`` (CPU floor) and a CuPy eigh-based GPU reference, all
 scored against an fp64 eigh-based oracle on a well-conditioned SPD input.
 
-**nitrix runs this on the GPU** (jitted; the matrix function *consumes* the
-eigh, which XLA lowers off the cuSOLVER path that breaks cupy / bare eigh at
-d≥256 -- see ``cases/_spd.py``).  The **cupy GPU ref fails at d≥256** (recorded
-``gpu_solver_unavailable``), so the GPU-vs-GPU bar holds only at d=64;
-scipy.linalg.logm is the CPU floor.  Ratio vs ``scipy.linalg.logm``.
+nitrix runs this on the GPU on this box (jitted; the matrix function
+*consumes* the eigh, which XLA lowers to a path that runs where bare / cupy
+eigh does not at d≥256 -- a cuSOLVER-class issue observed here, cause/scope
+uncharacterised; see ``cases/_spd.py``).  The cupy GPU ref **also fails at
+d≥256** here (recorded ``gpu_solver_unavailable``), so the GPU-vs-GPU bar holds
+only at d=64; scipy.linalg.logm is the CPU floor.  Ratio vs
+``scipy.linalg.logm``.
 """
 from __future__ import annotations
 

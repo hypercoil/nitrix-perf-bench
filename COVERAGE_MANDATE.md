@@ -312,16 +312,18 @@ torch-CUDA refs for conv/pooling are Phase C.
 **Shipped (2026-05-29) — Tier-2 breadth begins: the linalg eigh-family.**
 `symlog` / `symsqrt` / `sympower` ported (nitrix-jax + `scipy.linalg` CPU floor
 + a CuPy GPU ref + an fp64 eigh oracle). A measure-on-the-target finding (and a
-caution-driven deep-dive): **dense cuSOLVER `eigh` is broken at d≥256 on this
-L4 / driver-580** — *both* `cupy.linalg.eigh` and a *bare* `jnp.linalg.eigh`
-(eager and jitted) fail; d=64 works (the documented jaxlib/cuSOLVER class of
-issue). **But nitrix's matrix-function ops run on the GPU honestly** because
-they *consume* the decomposition into `f(A)=V·diag(f(λ))·Vᵀ`, which XLA lowers
-off the broken cuSOLVER path (verified correct on a provably cuda-only process;
-tested to be the *consumed-eigh* lowering, **not** `safe_eigh`). So nitrix does
-GPU eigh at sizes where CuPy/bare-eigh can't — a real, scoped win. **Caveat:**
-it does **not** extend to ops that *return* eigenpairs (e.g.
-`graph.laplacian_eigenmap`), which would still hit the cuSOLVER failure on GPU.
+caution-driven deep-dive): **on this L4 / driver-580 a dense `eigh` does not
+run on the GPU at d≥256** — *both* `cupy.linalg.eigh` and a *bare*
+`jnp.linalg.eigh` (eager and jitted) fail; d=64 works. We label this a
+cuSOLVER-class failure *observed on this box* — we do **not** know its root
+cause or whether it holds on other L4s / drivers / Lovelace parts, so it is not
+claimed as a portable property. What is warranted: nitrix's matrix-function ops
+*consume* the decomposition into `f(A)=V·diag(f(λ))·Vᵀ`, which XLA lowers to a
+path that **does** run on the GPU here (verified correct on a provably
+cuda-only process; the *consumed-eigh* lowering, **not** `safe_eigh`) — so on
+this box nitrix runs them on the GPU where CuPy/bare-eigh do not. **Caveat:** it
+does **not** extend to ops that *return* eigenpairs (e.g.
+`graph.laplacian_eigenmap`), which still hit the failure on GPU here.
 Infra: runner classification `gpu_solver_unavailable` (genuine cuSOLVER) /
 `backend_unavailable`; a reason-robust `gpu_blocked` report flag (dormant for
 this family, since nitrix runs). The CuPy ref's d≥256 failures are recorded
@@ -385,8 +387,10 @@ counts (`n` = 10k / 41k / 120k), via `build_spectral_large` (nitrix `auto`=
 lobpcg + the differentiable `-vjp` backward + sparse scipy/cupy `eigsh`, no
 oracle — scale, not fidelity). The result *inverts* the EDT/morphology pattern:
 the dense path is brain-scale-**infeasible** (a 100k dense operator is ~40 GB)
-and skips on GPU (cuSolver), but nitrix's matrix-free sparse lobpcg **scales and
-wins** — at small `n` it trails `eigsh` ~3× (iterative overhead), but at
+and the dense `eigh` does not run on the GPU on this box anyway (the
+cuSOLVER-class issue above — a this-machine observation), but nitrix's
+matrix-free sparse lobpcg **scales and wins** — at small `n` it trails `eigsh`
+~3× (iterative overhead), but at
 `n`=10k→120k it is **14×→43×→69× faster** with near-flat HBM (~150–200 MB), and
 unlike `eigsh` it is **differentiable** (the implicit-VJP backward stays sparse,
 O(nnz·k), confirmed finite to 120k). So the scale tier **certifies a win**, not

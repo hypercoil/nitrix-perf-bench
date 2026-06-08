@@ -4,9 +4,10 @@
 SPD matrix square root, sibling of ``symlog`` (see it + ``cases/_spd.py`` for
 the eigh-family / GPU-blocker story).  nitrix (jax, eigh-based) vs
 ``scipy.linalg.sqrtm`` (CPU floor) + a CuPy eigh-based GPU reference, scored
-against an fp64 eigh-based oracle.  nitrix runs this on the GPU (jitted; the
-matrix function consumes the eigh, dodging the cuSOLVER path -- see
-``cases/_spd.py``); the cupy GPU ref fails at d≥256.  Ratio via
+against an fp64 eigh-based oracle.  nitrix runs this on the GPU on this box
+(jitted; the matrix function consumes the eigh into a path that runs where
+bare / cupy eigh does not -- see ``cases/_spd.py`` for the this-box caveat);
+the cupy GPU ref also fails at d≥256.  Ratio via
 ``--reference scipy.linalg.sqrtm``.
 """
 from __future__ import annotations

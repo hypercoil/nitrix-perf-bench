@@ -13,8 +13,8 @@ No fp64 oracle (``fp64_reference=None``): the **interior** matches sitk to
 ~1e-4 (window + both Gaussians + normalisation match exactly), but the r-pixel
 **boundary** diverges (ITK's edge handling vs nitrix's replicate stencil), so
 interior parity is asserted in ``tests/test_bilateral_cases.py`` instead.
-GPU-native (semiring gather+reduce, no solver). Ratio vs SimpleITK. (No GPU
-ref: cupy has no bilateral primitive.)
+Runs on the GPU (semiring gather+reduce, no solver). Ratio vs SimpleITK. (No
+GPU ref: cupy has no bilateral primitive.)
 """
 from __future__ import annotations
 

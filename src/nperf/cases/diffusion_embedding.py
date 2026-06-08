@@ -5,10 +5,11 @@ Coifman-Lafon diffusion-map embedding -- the **largest** nontrivial eigenpairs
 of the anisotropic diffusion operator (alpha=0.5).  The sibling of
 ``laplacian_eigenmap`` and hardened the same way for B18 Win 4:
 
-- ``nitrix-jax`` is the **default** ``solver='auto'`` (``eigh`` for dense ->
-  CPU on the cuSolver-broken L4; ``lobpcg`` for sparse) -- the branch users
-  hit, not the old lobpcg-pinned headline.  ``lobpcg`` / ``shift_invert`` /
-  ``poly`` ride as labelled variants.
+- ``nitrix-jax`` is the **default** ``solver='auto'`` (``eigh`` for dense,
+  which routes to CPU on this L4 -- a cuSOLVER-class issue observed here,
+  cause/scope uncharacterised; ``lobpcg`` for sparse) -- the branch users hit,
+  not the old lobpcg-pinned headline.  ``lobpcg`` / ``shift_invert`` / ``poly``
+  ride as labelled variants.
 - The gate is tight (rtol=atol=1e-4): ``eigh`` / ``lobpcg`` pass;
   ``shift_invert`` (~1e-3) / ``poly`` (~5e-4) are declared ``ApproxBaseline``
   (accuracy reported beside speed -- the tradeoff is the signal).

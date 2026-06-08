@@ -10,7 +10,8 @@ Hardened for B18 Win 4 (post the eigensolver rehome to ``linalg._eigsolve``):
 
 - **Headline = the default users hit.**  ``nitrix-jax`` is ``solver='auto'`` --
   which the dispatcher resolves to **``eigh`` for dense** (full spectrum via
-  ``safe_eigh`` -> CPU on the cuSolver-broken L4) and ``lobpcg`` for sparse.
+  ``safe_eigh``, which routes to CPU on this L4 -- a cuSOLVER-class issue
+  observed here, cause/scope uncharacterised) and ``lobpcg`` for sparse.
   The old case pinned ``solver='lobpcg'`` as the headline; that is *not* the
   dense default.  ``lobpcg`` / ``shift_invert`` / ``poly`` ride as labelled
   variants.

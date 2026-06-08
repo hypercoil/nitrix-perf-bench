@@ -10,9 +10,10 @@ reference in the suite*, and the only reference this op had) + a CuPy
 eigh-based GPU reference, all scored against an fp64 eigh-based oracle on
 well-conditioned SPD input.
 
-Both matrix functions *consume* their eigh, so XLA lowers them off the broken
-cuSOLVER path: **nitrix runs this on the GPU** even while the dense cuSOLVER
-potrf/eigh path is wedged (see ``cases/_spd.py``). Ratio vs nilearn's tangent.
+Both matrix functions *consume* their eigh, so XLA lowers them to a path that
+runs on the GPU on this box, even when the dense potrf/eigh path does not (a
+cuSOLVER-class issue observed here -- cause/scope uncharacterised; see
+``cases/_spd.py``). Ratio vs nilearn's tangent.
 
 The nilearn floor runs with BLAS pinned to 1 thread (see ``_tangent.py``) --
 its loop-of-small-eigh kernel churns a multi-threaded pool catastrophically

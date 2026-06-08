@@ -7,9 +7,10 @@
 is ``P_sym = D_a^-1/2 A_a D_a^-1/2`` where ``A_a = D^-alpha A D^-alpha`` -- its
 eigenvalues are the diffusion eigenvalues (verified to match nitrix to ~7e-8).
 
-Like ``laplacian_eigenmap`` it exposes the two solvers (eigh via safe_eigh ->
-CPU on the broken cuSOLVER stack; lobpcg matrix-free -> genuine GPU), and the
-eigenvalues are the clean fidelity target (eigenvectors carry sign ambiguity).
+Like ``laplacian_eigenmap`` it exposes the two solvers (eigh via safe_eigh,
+which routes to CPU on this L4 -- a cuSOLVER-class issue observed here; lobpcg
+matrix-free -> runs on the GPU), and the eigenvalues are the clean fidelity
+target (eigenvectors carry sign ambiguity).
 There is no standard diffusion-map library, so the reference is the
 well-defined operator's own ``scipy.sparse.linalg.eigsh`` (largest) + a CuPy
 eigsh GPU ref,

@@ -30,9 +30,9 @@ tests** instead of via the fidelity gate.
 GPU: nitrix routes the K x K Gram eigh through ``safe_eigh`` -> CPU on this L4
 (eigh-family; see [[perfbench-gpu-eigh-blocker]]), the batched solve stays on
 device -- so nitrix runs on GPU (hybrid).  The CuPy reference's
-``cupy.linalg.eigh`` hits cuSolver and fails at K>=256 (recorded
-``gpu_solver_unavailable``), so the apples-to-apples GPU bar holds at small
-K (small ``obs``).
+``cupy.linalg.eigh`` fails at K>=256 on this box (a cuSOLVER-class issue
+observed here; recorded ``gpu_solver_unavailable``), so the apples-to-apples
+GPU bar holds at small K (small ``obs``).
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ def joint_glm(data: Any, mask: Any, xp: Any) -> Any:
 
 def cupy_joint_glm() -> Callable[[Any, Any], Any]:
     '''CuPy GPU joint-GLM (cupy lazy; refs-cupy env).  ``cupy.linalg.eigh``
-    hits cuSolver -> fails at K>=256.'''
+    fails at K>=256 on this box (a cuSOLVER-class issue observed here).'''
 
     def run(data: Any, mask: Any) -> Any:
         import cupy as cp
