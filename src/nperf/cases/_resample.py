@@ -33,28 +33,40 @@ def resize_coords(in_shape: Sequence[int], out_shape: Sequence[int]
     return np.stack(np.meshgrid(*axes, indexing='ij'), axis=0)
 
 
-def scipy_resize(coords: np.ndarray) -> Callable[[Any], Any]:
-    '''Linear resize via ``scipy.ndimage.map_coordinates`` on the align_corners
-    grid (CPU floor); channel-last single channel.'''
+# Each interpolation kernel maps to a ``map_coordinates`` spline ``order`` and
+# the prefilter boundary ``mode`` that matches nitrix's kernel (verified):
+#   Linear -> order 1, NearestNeighbour -> order 0, CubicBSpline -> order 3
+#   with ``mode='mirror'`` (nitrix forces the mirror spline prefilter).
+#   Lanczos has no ``map_coordinates`` equivalent (and nitrix's is the ANTs
+#   algorithm class, not bit-exact ITK parity), so it has no cross-impl oracle.
+_KERNEL_ORDER = {'linear': (1, 'nearest'), 'nearest': (0, 'nearest'),
+                 'cubic': (3, 'mirror')}
+
+
+def scipy_resize(coords: np.ndarray, order: int = 1,
+                 mode: str = 'nearest') -> Callable[[Any], Any]:
+    '''Resize via ``scipy.ndimage.map_coordinates`` on the align_corners grid
+    (CPU floor + fp64 oracle for the spline kernels); channel-last.'''
     import scipy.ndimage as spnd
 
     def run(img: Any) -> Any:
-        out = spnd.map_coordinates(np.asarray(img)[..., 0], coords, order=1,
-                                   mode='nearest')
+        out = spnd.map_coordinates(np.asarray(img)[..., 0], coords,
+                                   order=order, mode=mode)
         return out[..., None]
 
     return run
 
 
-def cupy_resize(coords: np.ndarray) -> Callable[[Any], Any]:
+def cupy_resize(coords: np.ndarray, order: int = 1,
+                mode: str = 'nearest') -> Callable[[Any], Any]:
     '''GPU twin of ``scipy_resize`` (cupyx.scipy.ndimage); cupy lazy.'''
 
     def run(img: Any) -> Any:
         import cupy as cp
         from cupyx.scipy import ndimage as cnd
 
-        out = cnd.map_coordinates(img[..., 0], cp.asarray(coords), order=1,
-                                  mode='nearest')
+        out = cnd.map_coordinates(img[..., 0], cp.asarray(coords),
+                                  order=order, mode=mode)
         return out[..., None]
 
     return run

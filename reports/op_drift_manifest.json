@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-09T06:21:36Z",
+    "generated": "2026-06-09T06:44:41Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -2859,7 +2859,7 @@
     "resample": {
       "case": "resample",
       "qualname": "nitrix.geometry.resample",
-      "signature": "(image: \"Float[Array, '*spatial c']\", target_shape: 'Sequence[int]', *, mode: 'BoundaryMode' = 'constant', cval: 'float' = 0.0) -> \"Float[Array, '*target c']\"",
+      "signature": "(image: \"Float[Array, '*spatial c']\", target_shape: 'Sequence[int]', *, mode: 'BoundaryMode' = 'constant', cval: 'float' = 0.0, method: 'Interpolator' = Linear()) -> \"Float[Array, '*target c']\"",
       "behaviour": {
         "point": {
           "shape": [
@@ -2869,7 +2869,8 @@
           "out": [
             512,
             512
-          ]
+          ],
+          "kernel": "linear"
         },
         "leaves": [
           {
@@ -3045,7 +3046,7 @@
     "spatial_transform": {
       "case": "spatial_transform",
       "qualname": "nitrix.geometry.spatial_transform",
-      "signature": "(image: \"Float[Array, '*leading *spatial c']\", deformation: \"Float[Array, '*leading *spatial ndim']\", *, mode: 'BoundaryMode' = 'constant', cval: 'float' = 0.0) -> \"Float[Array, '*leading *spatial c']\"",
+      "signature": "(image: \"Float[Array, '*leading *spatial c']\", deformation: \"Float[Array, '*leading *spatial ndim']\", *, mode: 'BoundaryMode' = 'constant', cval: 'float' = 0.0, method: 'Interpolator' = Linear()) -> \"Float[Array, '*leading *spatial c']\"",
       "behaviour": {
         "point": {
           "shape": [
