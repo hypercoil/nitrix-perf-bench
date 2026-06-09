@@ -42,7 +42,7 @@ from pathlib import Path  # noqa: E402
 import jax  # noqa: E402
 
 from .core import capture, write_jsonl  # noqa: E402
-from .measure import CASES, measure_attempt  # noqa: E402
+from .measure import load_case, measure_attempt  # noqa: E402
 
 
 def main() -> None:
@@ -66,7 +66,7 @@ def main() -> None:
     if cvd is not None:
         prov['cuda_visible_devices'] = cvd  # the assigned physical GPU id
 
-    case = CASES[spec['case']]
+    case = load_case(spec['case'])  # imports ONLY this case (DESIGN §7.1)
     param = spec['param_point']
     built = case.build(param)
     rec = measure_attempt(

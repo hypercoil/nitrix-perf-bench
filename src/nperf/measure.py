@@ -9,95 +9,18 @@ difference is process isolation, which is what makes per-attempt memory honest
 """
 from __future__ import annotations
 
+import importlib
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import jax
 import numpy as np
 
-from .cases import (
-    BuiltPoint,
-    Case,
-    affine_register,
-    analytic_signal,
-    bilateral_gaussian,
-    cartesian_to_latlong,
-    center_of_mass_grid,
-    center_of_mass_points,
-    closing,
-    coaffiliation,
-    compactness_penalty,
-    corr,
-    correlation_ratio,
-    cosine_kernel,
-    cov,
-    degree_vector,
-    diffeomorphic_demons,
-    diffusion_embedding,
-    dilate,
-    displacement_from_reference_grid,
-    displacement_from_reference_points,
-    distance_transform,
-    distance_transform_chamfer,
-    ell_edge_aggregate,
-    envelope,
-    erode,
-    flame_two_level,
-    gaussian,
-    gaussian_kernel,
-    girvan_newman_null,
-    hilbert_transform,
-    histogram_match,
-    integrate_velocity_field,
-    intensity_normalize,
-    jacobian_det_displacement,
-    jacobian_displacement,
-    laplacian,
-    laplacian_eigenmap,
-    latlong_to_cartesian,
-    linear_distance,
-    linear_kernel,
-    lncc,
-    lomb_scargle_interpolate,
-    lomb_scargle_periodogram,
-    matrix_exp,
-    median_filter,
-    modularity_matrix,
-    mutual_information,
-    n4_bias_field_correction,
-    ncc,
-    opening,
-    partialcorr,
-    partialcov,
-    polynomial_detrend,
-    polynomial_kernel,
-    precision,
-    psc_normalize,
-    rbf_kernel,
-    relaxed_modularity,
-    reml_fit,
-    resample,
-    residualise,
-    rigid_register,
-    robust_zscore_normalize,
-    semiring_matmul,
-    sigmoid_kernel,
-    sosfilt,
-    sosfiltfilt,
-    spatial_transform,
-    sphere_grid_pad_2d,
-    sphere_grid_unpad_2d,
-    spherical_conv,
-    spherical_geodesic_distance,
-    ssd,
-    symexp,
-    symlog,
-    sympower,
-    symsqrt,
-    tangent_project_spd,
-    throwaway,
-    tsconv,
-    zscore_normalize,
-)
+# Only the base types -- NOT the case modules (DESIGN §7.1: the case registry
+# is lazy, so importing `measure` no longer drags in all 80 cases + their
+# top-level deps; a worker imports just the one case it runs via `load_case`).
+from .cases import BuiltPoint, Case
 from .core import (
     METRICS,
     AttemptRecord,
@@ -143,91 +66,76 @@ def _validate_case(case: Case) -> Case:
     return case
 
 
-# The case registry (L2).  Lives here so both entrypoints share one source;
-# each case is validated against the metric registry on registration.
-CASES: Dict[str, Case] = {
-    c.name: c
-    for c in (_validate_case(throwaway.CASE),
-              _validate_case(semiring_matmul.CASE),
-              _validate_case(sosfilt.CASE),
-              _validate_case(sosfiltfilt.CASE),
-              _validate_case(ell_edge_aggregate.CASE),
-              _validate_case(cov.CASE),
-              _validate_case(corr.CASE),
-              _validate_case(residualise.CASE),
-              _validate_case(resample.CASE),
-              _validate_case(gaussian.CASE),
-              _validate_case(bilateral_gaussian.CASE),
-              _validate_case(erode.CASE),
-              _validate_case(dilate.CASE),
-              _validate_case(opening.CASE),
-              _validate_case(closing.CASE),
-              _validate_case(distance_transform.CASE),
-              _validate_case(distance_transform_chamfer.CASE),
-              _validate_case(spatial_transform.CASE),
-              _validate_case(median_filter.CASE),
-              _validate_case(histogram_match.CASE),
-              _validate_case(n4_bias_field_correction.CASE),
-              _validate_case(laplacian.CASE),
-              _validate_case(laplacian_eigenmap.CASE),
-              _validate_case(diffusion_embedding.CASE),
-              _validate_case(modularity_matrix.CASE),
-              _validate_case(degree_vector.CASE),
-              _validate_case(girvan_newman_null.CASE),
-              _validate_case(coaffiliation.CASE),
-              _validate_case(relaxed_modularity.CASE),
-              _validate_case(center_of_mass_grid.CASE),
-              _validate_case(center_of_mass_points.CASE),
-              _validate_case(displacement_from_reference_grid.CASE),
-              _validate_case(displacement_from_reference_points.CASE),
-              _validate_case(latlong_to_cartesian.CASE),
-              _validate_case(cartesian_to_latlong.CASE),
-              _validate_case(jacobian_displacement.CASE),
-              _validate_case(jacobian_det_displacement.CASE),
-              _validate_case(integrate_velocity_field.CASE),
-              _validate_case(spherical_geodesic_distance.CASE),
-              _validate_case(compactness_penalty.CASE),
-              _validate_case(sphere_grid_pad_2d.CASE),
-              _validate_case(sphere_grid_unpad_2d.CASE),
-              _validate_case(spherical_conv.CASE),
-              _validate_case(zscore_normalize.CASE),
-              _validate_case(psc_normalize.CASE),
-              _validate_case(robust_zscore_normalize.CASE),
-              _validate_case(intensity_normalize.CASE),
-              _validate_case(symexp.CASE),
-              _validate_case(symlog.CASE),
-              _validate_case(symsqrt.CASE),
-              _validate_case(sympower.CASE),
-              _validate_case(tangent_project_spd.CASE),
-              _validate_case(analytic_signal.CASE),
-              _validate_case(hilbert_transform.CASE),
-              _validate_case(envelope.CASE),
-              _validate_case(rbf_kernel.CASE),
-              _validate_case(linear_kernel.CASE),
-              _validate_case(linear_distance.CASE),
-              _validate_case(gaussian_kernel.CASE),
-              _validate_case(cosine_kernel.CASE),
-              _validate_case(polynomial_kernel.CASE),
-              _validate_case(sigmoid_kernel.CASE),
-              _validate_case(polynomial_detrend.CASE),
-              _validate_case(tsconv.CASE),
-              _validate_case(lomb_scargle_periodogram.CASE),
-              _validate_case(precision.CASE),
-              _validate_case(partialcov.CASE),
-              _validate_case(partialcorr.CASE),
-              _validate_case(reml_fit.CASE),
-              _validate_case(flame_two_level.CASE),
-              _validate_case(matrix_exp.CASE),
-              _validate_case(ssd.CASE),
-              _validate_case(ncc.CASE),
-              _validate_case(lncc.CASE),
-              _validate_case(mutual_information.CASE),
-              _validate_case(correlation_ratio.CASE),
-              _validate_case(rigid_register.CASE),
-              _validate_case(affine_register.CASE),
-              _validate_case(diffeomorphic_demons.CASE),
-              _validate_case(lomb_scargle_interpolate.CASE))
+# The case registry (L2), lazy (DESIGN §7.1).  A case is `cases/<name>.py`
+# exporting `CASE` with `CASE.name == <name>` (the file-stem == case-name
+# invariant, asserted by `load_case` + tests/test_lazy_cases.py); `_`-prefixed
+# modules are shared helpers, not cases.  The name->module-path table is built
+# by *listing* the directory -- it imports nothing -- so importing `measure`
+# (and thus a worker) costs only the one case it later loads, not all 80 +
+# their top-level deps.  Adding a case is just dropping a file: no edit here.
+_CASES_DIR = Path(__file__).resolve().parent / 'cases'
+CASE_MODULES: Dict[str, str] = {
+    p.stem: '%s.cases.%s' % (__package__, p.stem)
+    for p in _CASES_DIR.glob('*.py')
+    if not p.stem.startswith('_')
 }
+
+_CASE_CACHE: Dict[str, Case] = {}
+
+
+def load_case(name: str) -> Case:
+    '''Import + validate the single case ``name`` and return its ``CASE``.
+
+    **The only place a case module is imported** -- so a worker pulls in just
+    the case it runs (DESIGN §7.1), not the whole registry.  Asserts the
+    file-stem == case-name invariant, runs ``_validate_case`` (metric
+    registry), and memoises so repeated loads in one process are free.'''
+    cached = _CASE_CACHE.get(name)
+    if cached is not None:
+        return cached
+    try:
+        module_path = CASE_MODULES[name]
+    except KeyError:
+        raise KeyError(
+            f'unknown case {name!r}; known: {sorted(CASE_MODULES)} '
+            '(a case is cases/<name>.py exporting CASE with name == <stem>).'
+        ) from None
+    case = importlib.import_module(module_path).CASE
+    if case.name != name:
+        raise ValueError(
+            f'case file cases/{name}.py exports CASE.name={case.name!r}; the '
+            'file stem and case name must match (DESIGN §7.1 invariant) -- '
+            f'rename the file to cases/{case.name}.py or fix CASE.name.'
+        )
+    _CASE_CACHE[name] = _validate_case(case)
+    return _CASE_CACHE[name]
+
+
+class _CaseRegistry(Mapping):
+    '''Lazy, dict-like view of the case registry (DESIGN §7.1).
+
+    Keys / iteration / ``len`` / ``in`` are cheap (the ``CASE_MODULES`` table,
+    no imports); ``__getitem__`` imports one case via ``load_case``; the
+    inherited ``.values()`` / ``.items()`` import every case on demand (used
+    only by the base-env coverage / scaling / op-matrix tools that genuinely
+    want the whole registry).  Drop-in for the old eager ``{name: CASE}`` dict
+    so all call sites -- ``sorted(CASES)``, ``CASES[name]``, ``CASES.values()``
+    -- keep working unchanged.'''
+
+    def __getitem__(self, name: str) -> Case:
+        return load_case(name)
+
+    def __iter__(self):
+        return iter(CASE_MODULES)
+
+    def __len__(self) -> int:
+        return len(CASE_MODULES)
+
+    def __contains__(self, name: object) -> bool:
+        return name in CASE_MODULES
+
+
+CASES: Mapping = _CaseRegistry()
 
 
 def platform_from(prov: Dict[str, Any]) -> str:

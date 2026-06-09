@@ -174,10 +174,9 @@ Config-driven sweep over `{case × param × baseline × platform}`.
 - **Isolation:** one subprocess worker per `(framework, platform)`, dispatched
   via `uv run --group <env>` (or pixi for `isolation: pixi` baselines), each
   emitting result records merged centrally — avoiding torch/jax-cuda context
-  clashes and yielding clean per-process `memory_stats`. (The worker should
-  import only the *one* case it runs; today it eagerly imports all of them via
-  `measure.CASES`, which over-couples every isolated refs env — see §7.1 for
-  the fragility and the lazy-per-case migration.)
+  clashes and yielding clean per-process `memory_stats`. (The worker imports
+  only the *one* case it runs, via `measure.load_case` — see §7.1 for the
+  lazy-per-case registry and the over-coupling it replaced.)
 - **Non-contention:** GPU-bound workers acquire a **per-physical-device lock**
   and run **serially per device**; parallelism is allowed only across distinct
   devices or on CPU. Without this, concurrent GPU workers corrupt each other's
@@ -387,14 +386,17 @@ both uv- and pixi-spawned workers (a uv `nitrix-jax` worker and a pixi
 `torch_geometric` worker on the same GPU serialise against the *same* lock —
 `SCHEMA_AND_LIFECYCLE.md` §E).
 
-### 7.1 The eager-import coupling (and the lazy-per-case migration)
+### 7.1 The eager-import coupling → the lazy-per-case registry (DONE)
 
-**The coupling.** A worker is spawned for exactly **one**
+> **Status: implemented** (2026-06-09). The migration below is live; the
+> "coupling" / "fragile" subsections are kept as the *why*.
+
+**The coupling (was).** A worker is spawned for exactly **one**
 `(case, param, baseline, platform)` attempt (`worker.py`), but the way it
-reaches its case today pulls in *all* of them. `worker.py` does
-`from .measure import CASES, measure_attempt`, and `measure.py` builds `CASES`
-from a module-top `from .cases import (…)` that lists **every** case module —
-so importing the worker **executes every case module's top-level imports**.
+reached its case used to pull in *all* of them. `worker.py` did
+`from .measure import CASES, measure_attempt`, and `measure.py` built `CASES`
+from a module-top `from .cases import (…)` that listed **every** case module —
+so importing the worker **executed every case module's top-level imports**.
 Most cases top-level-import only `{jax, numpy, scipy, nitrix.<subpkg>}` (the
 heavy domain tools — `ants`, `cupy`, `dipy`, `SimpleITK`, `statsmodels` — are
 deliberately imported *lazily inside the run fn*, so the base env stays
@@ -416,45 +418,54 @@ already bitten:
   to import before it ever reaches the dipy case. Every new top-level dep in
   any case silently widens the install surface of *every* refs env.
 
-**The migration — lazy per-case import.** The worker should import only the
-case it runs. Concretely:
-1. **A name→module table, no imports.** Replace the eager
-   `from .cases import (…)` + the hand-maintained `CASES` tuple in `measure.py`
-   with `CASE_MODULES: Dict[str, str]` (case name → dotted module path),
+**The migration — lazy per-case import (implemented).** The worker now imports
+only the case it runs:
+1. **A name→module table, no imports.** The eager `from .cases import (…)` +
+   the hand-maintained `CASES` tuple in `measure.py` are gone, replaced by
+   `CASE_MODULES: Dict[str, str]` (case name → dotted module path),
    **auto-derived** by listing `cases/*.py` stems that don't start with `_`
    (the `_*` helpers are not cases). This is pure string work — it imports
-   nothing — and it deletes the *two* places a new case is registered today
-   (the import block and the tuple): dropping a `cases/<name>.py` file is now
-   the whole registration.
+   nothing — and it deletes the *two* places a case used to be registered (the
+   import block and the tuple): **dropping a `cases/<name>.py` file is now the
+   whole registration.**
 2. **`load_case(name) -> Case`** imports that *one* module
    (`importlib.import_module(CASE_MODULES[name]).CASE`), runs the existing
-   `_validate_case`, asserts `CASE.name == name` (catches stem/name drift), and
-   memoises. This is the only place a case module is imported.
-3. **`worker.py` calls `load_case(spec['case'])`** instead of `CASES[…]`, and
-   imports `from .measure import load_case, measure_attempt` — so importing the
-   worker no longer triggers the eager block.
-4. **`CASES` stays, but lazy** for the base-env consumers that legitimately
-   want the whole registry (the orchestrator's `--case` choices; the tools —
+   `_validate_case`, asserts `CASE.name == name`, and memoises. This is the only
+   place a case module is imported.
+3. **`worker.py` calls `load_case(spec['case'])`** (not `CASES[…]`) and imports
+   `from .measure import load_case, measure_attempt` — so importing the worker
+   no longer triggers any case import.
+4. **`CASES` stays, but lazy** for the base-env consumers that legitimately want
+   the whole registry (the orchestrator's `--case` choices; the tools —
    `coverage_report`, `scaling_report`, `op_matrix_feed`, `drift_check`,
-   `decision_bundle`; `bundle.py`; `report/html.py`; the tests): a small
-   lazy `Mapping` whose **keys/iteration are cheap** (from `CASE_MODULES`) and
-   whose `__getitem__` / `.values()` import on demand via `load_case`. Existing
-   call sites (`sorted(CASES)`, `CASES[name]`, `CASES.values()`) keep working
+   `decision_bundle`; `bundle.py`; `report/html.py`; the tests): a
+   `_CaseRegistry(collections.abc.Mapping)` whose **keys/iteration/`len`/`in`
+   are cheap** (from `CASE_MODULES`) and whose `__getitem__` (and so the
+   inherited `.values()` / `.items()`) import on demand via `load_case`. Every
+   existing call site (`sorted(CASES)`, `CASES[name]`, `CASES.values()`) works
    unchanged; only `.values()` imports everything, and only base-env code calls
    it.
 
+**The `file-stem == case-name` invariant.** Because the table keys by file stem
+and the registry keys by case name, a case is now exactly `cases/<name>.py`
+exporting `CASE` with `CASE.name == <name>` (`load_case` asserts it; a test
+sweeps all of them). Aligning the three pre-existing exceptions to this
+invariant was a one-time, name-preserving rename — only the *files* changed, not
+the case *names* (the keys in the store / op_matrix / gate): `closing.py →
+close.py`, `opening.py → open.py`, `throwaway.py → dense_matmul.py`.
+
 **What stays unchanged.** The orchestrator and tools run in the base env (which
 has the full stack), so importing many cases there was never the problem — the
-fragility is purely in the **isolated refs-env workers**. After the migration a
-refs-env worker imports exactly its one case module, so a refs env needs only
-*that case's* nitrix subpackage + third-party deps. `venv-dipy` would no longer
-need `scikit-learn`; a stale `nitrix.metrics` could not fail an ANTs/dipy/cupy
+fragility was purely in the **isolated refs-env workers**. Now a refs-env worker
+imports exactly its one case module, so a refs env needs only *that case's*
+nitrix subpackage + third-party deps. `venv-dipy` no longer needs
+`scikit-learn`; a stale `nitrix.metrics` can no longer fail an ANTs/dipy/cupy
 attempt that never imports metrics; and worker startup imports one module, not
-eighty. (A natural follow-on, not required: let a case *declare* its
-third-party refs, so `setup_refs_env.sh` builds each env from the cases that
-actually use it rather than the current union.) The migration is incremental
-and low-risk — steps 1–3 are sufficient to fix the worker; step 4 is a
-mechanical follow-up that touches no measurement logic.
+eighty (a `tests/test_lazy_cases.py` subprocess pins exactly this — loading one
+case imports only that module and pulls in no `sklearn`). (A natural follow-on,
+not required: let a case *declare* its third-party refs, so `setup_refs_env.sh`
+builds each env from the cases that actually use it rather than the current
+union.)
 
 ## 8. Open questions (not blocking the architecture)
 

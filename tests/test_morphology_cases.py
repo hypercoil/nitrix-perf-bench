@@ -29,7 +29,9 @@ from nitrix.morphology import dilate as nx_dilate
 from nitrix.morphology import erode as nx_erode
 from nitrix.morphology import open as nx_open
 
-from nperf.cases import closing, dilate, erode, opening
+from nperf.cases import close as closing
+from nperf.cases import dilate, erode
+from nperf.cases import open as opening
 from nperf.cases._morphology import disk_footprint, scipy_morph
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
