@@ -40,11 +40,20 @@ def test_case_contract(mod):
     assert built.ratio_reference == 'nitrix-jax'
     # task-level: no shared oracle, but a documented reason + the compile law.
     assert built.fp64_reference is None and built.fidelity_note
-    assert mod.CASE.complexity and 'compile' in mod.CASE.complexity
+    assert mod.CASE.complexity and 'compile' in mod.CASE.complexity.lower()
     assert mod.CASE.op_qualname.startswith('nitrix.register.')
-    # param points span the unrolled iteration count (the compile axis).
+    # dev points span (levels, iters) -- post loop-roll, to show compile is
+    # flat in iters; the size tier varies the volume (the steady-scaling axis).
     iters = {(p['levels'], p['iters']) for p in mod.CASE.param_points}
     assert len(iters) >= 2
+    # brain-scale size tier (COVERAGE_MANDATE §7-D): a larger-volume tier past
+    # the representative, for the scaling curve + HBM-headroom projection.
+    assert mod.CASE.large_param_points
+
+    def _vox(p):
+        return p['shape'][0] * p['shape'][1] * p['shape'][2]
+    assert max(_vox(p) for p in mod.CASE.large_param_points) > _vox(
+        mod.CASE.representative)
 
 
 @pytest.mark.parametrize('recipe,spec', _RECOVER,
