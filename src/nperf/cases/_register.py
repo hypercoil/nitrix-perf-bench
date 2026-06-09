@@ -20,9 +20,18 @@ is therefore **task-level**: plant a known warp, register, and read
 
 The planted warp is applied with **scipy** (independent of nitrix's own
 ``spatial_transform``), so the input is not produced by the op family under
-test.  ANTs is the task-level domain reference (``ants.registration``); it is
-not jit-compiled (compiled C++), so the honest framing is nitrix
-*steady* (post-compile) + its one-time compile, vs ANTs wall-clock.
+test.  **Two** task-level domain references run alongside nitrix, both CPU and
+neither jit-compiled (so each one's wall-clock is the full registration with no
+separate compile -- the honest framing is nitrix *steady* (post-compile) + its
+one-time compile, vs the tool's wall-clock):
+
+- ANTsPy (``ants_register`` -> ``ants.registration``): ITK-backed C++, runs its
+  own fixed internal multi-resolution schedule (it ignores our ``levels`` /
+  ``iterations``), so its wall-clock is roughly flat across our param points.
+- **dipy** (``dipy_register``): numpy / scipy / cython.  Its pyramid is
+  settable, so -- unlike ANTs -- we drive it with the *same* ``(levels,
+  iterations)`` the nitrix recipe uses, and its wall-clock scales with that
+  budget like nitrix's steady does (the apples-to-apples per-config foil).
 """
 from __future__ import annotations
 
@@ -78,5 +87,62 @@ def ants_register(transform: str = 'Rigid') -> Callable[..., Any]:
         reg = ants.registration(fixed=f, moving=m,
                                 type_of_transform=transform)
         return reg['warpedmovout'].numpy()
+
+    return run
+
+
+def _dipy_pyramid(levels: int, iters: int
+                  ) -> Tuple[list, list, list]:
+    '''The coarse->fine schedule for dipy, truncated to ``levels`` stages and
+    ``iters`` iterations per stage -- the same knob the nitrix recipe uses, so
+    dipy's work tracks the config (the standard downsample factors / smoothing
+    sigmas, finest ``levels`` of ``[4,2,1]`` / ``[3,1,0]``).'''
+    factors = [4, 2, 1][-levels:]
+    sigmas = [3.0, 1.0, 0.0][-levels:]
+    level_iters = [iters] * levels
+    return level_iters, sigmas, factors
+
+
+def dipy_register(kind: str, levels: int, iters: int) -> Callable[..., Any]:
+    '''dipy registration (the numpy/scipy/cython task-level domain reference),
+    returning the warped moving.  ``kind`` picks the counterpart of the nitrix
+    recipe: ``'rigid'`` / ``'affine'`` -> ``AffineRegistration`` (mutual
+    information, the rigid / 12-DOF transforms), ``'syn'`` -> the symmetric
+    diffeomorphic ``SymmetricDiffeomorphicRegistration`` on SSD (the
+    counterpart of nitrix's SSD-driven log-Demons).  Its pyramid is driven by
+    the case's ``(levels, iters)`` via ``_dipy_pyramid``, so dipy's wall-clock
+    scales with the same budget.  dipy lazy (only its refs env imports it); not
+    jit-compiled, so its wall-clock is the full registration (no separate
+    compile) -- read against nitrix's steady + one-time compile.'''
+
+    def run(moving: Any, fixed: Any) -> Any:
+        # static = fixed, moving = moving; register moving->fixed and apply to
+        # moving (recovery == ncc(warped, fixed)).  dipy works in fp64.
+        stat = np.asarray(fixed, np.float64)
+        mov = np.asarray(moving, np.float64)
+        level_iters, sigmas, factors = _dipy_pyramid(levels, iters)
+        if kind == 'syn':
+            from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+            from dipy.align.metrics import SSDMetric
+
+            sdr = SymmetricDiffeomorphicRegistration(
+                SSDMetric(3), level_iters=level_iters)
+            sdr.verbosity = 0
+            mapping = sdr.optimize(stat, mov)
+            return mapping.transform(mov)
+        from dipy.align.imaffine import (
+            AffineRegistration,
+            MutualInformationMetric,
+        )
+        from dipy.align.transforms import AffineTransform3D, RigidTransform3D
+
+        transform = (RigidTransform3D() if kind == 'rigid'
+                     else AffineTransform3D())
+        areg = AffineRegistration(
+            metric=MutualInformationMetric(nbins=32, sampling_proportion=None),
+            level_iters=level_iters, sigmas=sigmas, factors=factors,
+            verbosity=0)
+        amap = areg.optimize(stat, mov, transform, None)
+        return amap.transform(mov)
 
     return run

@@ -135,6 +135,17 @@ PROVIDERS: Dict[str, Provider] = {
         Provider('ants', 'ants', requires='cpu',
                  description='ANTsPy ref (resample/transforms); refs-ants env '
                              '(NPERF_PYTHON_ANTS); CPU-only'),
+        # dipy reference (the numpy/scipy/cython registration toolkit -- the
+        # second cross-tool registration foil alongside ANTs).  Pure-Python /
+        # cython CPU tool returning host numpy arrays (framework 'dipy' -> the
+        # numpy no-op sync); its own refs env (it pins its own numpy/scipy),
+        # selected per attempt via NPERF_PYTHON_DIPY; lazy-imported in-case.
+        # requires='cpu' (like ants/statsmodels): no GPU path, and its refs env
+        # ships CPU-only jax, so it runs on jax-cpu only -- the nitrix-GPU-vs-
+        # dipy comparison is read cross-platform from nitrix's two rows.
+        Provider('dipy', 'dipy', requires='cpu',
+                 description='dipy registration ref (numpy/scipy/cython); '
+                             'refs-dipy env (NPERF_PYTHON_DIPY); CPU-only'),
     )
 }
 

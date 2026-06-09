@@ -5,11 +5,10 @@ CPU build + oracle agreement for the host baselines (nitrix + the numpy
 exact-convention reimplementation + the domain references). Pins the verified
 convention relationships (2026-06-09): ssd == ITK ``MeanSquares`` (a
 co-oracle); ncc == signed Pearson, ITK ``Correlation`` == ``-ncc**2``; lncc ==
-ANTs
-``ANTSNeighborhoodCorrelation`` interior (sign + boundary); MI order-1 Parzen vs
-ITK Mattes (order-3) / sklearn (order-0); CR has no domain co-oracle. The
-divergent domain tools ride as labelled ``ApproxBaseline``s (not gated). cupy
-GPU refs are skipped here.
+ANTs ``ANTSNeighborhoodCorrelation`` interior (sign + boundary); MI order-1
+Parzen vs ITK Mattes (order-3) / sklearn (order-0); CR has no domain co-oracle.
+The divergent domain tools ride as labelled ``ApproxBaseline``s (not gated).
+cupy GPU refs are skipped here.
 """
 import numpy as np
 import pytest

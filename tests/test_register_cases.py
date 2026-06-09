@@ -35,7 +35,8 @@ _RECOVER = [
 @pytest.mark.parametrize('mod', _MODS, ids=lambda m: m.CASE.name)
 def test_case_contract(mod):
     built = mod._build(mod.CASE.representative)
-    assert set(built.baselines) == {'nitrix-jax', 'ants.registration'}
+    assert set(built.baselines) == {'nitrix-jax', 'ants.registration',
+                                     'dipy.registration'}
     assert built.ratio_reference == 'nitrix-jax'
     # task-level: no shared oracle, but a documented reason + the compile law.
     assert built.fp64_reference is None and built.fidelity_note

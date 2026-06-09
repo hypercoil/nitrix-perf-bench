@@ -10,9 +10,11 @@ iteration count and dominates first-call latency.  Affine also evaluates
 ``matrix_exp`` (the linear-block exp) inside each iteration's linearised
 Jacobian, so its per-iteration graph is a little heavier than rigid's.
 
-ANTsPy ``registration(type_of_transform='Affine')`` is the task-level domain
-reference (CPU; not jit-compiled -> wall-clock with no separate compile, read
-against nitrix's steady + one-time compile).  Ratio vs ``nitrix-jax``.
+Two task-level domain references (CPU, not jit-compiled -> wall-clock with no
+separate compile, read against nitrix's steady + one-time compile): ANTsPy
+``registration(Affine)`` (fixed internal schedule) and **dipy** affine (12-DOF
+mutual information, pyramid driven by this case's ``levels`` x ``iters`` -- see
+``cases/_register.py``).  Ratio vs ``nitrix-jax``.
 """
 from __future__ import annotations
 
@@ -23,7 +25,7 @@ import jax.numpy as jnp
 from nitrix.register import RegistrationSpec, affine_register
 
 from ._base import BuiltPoint, Case
-from ._register import ants_register, warp_pair
+from ._register import ants_register, dipy_register, warp_pair
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -43,8 +45,11 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'nitrix-jax': (
             'jax',
             lambda mv, fx: affine_register(mv, fx, spec=spec).params),
-        'ants.registration': (  # task-level domain ref
+        'ants.registration': (  # task-level domain ref (ANTs Affine)
             'ants', ants_register('Affine')),
+        'dipy.registration': (  # task-level domain ref (dipy affine MI)
+            'dipy', dipy_register('affine', int(param['levels']),
+                                  int(param['iters']))),
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,

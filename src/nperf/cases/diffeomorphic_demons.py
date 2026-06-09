@@ -16,11 +16,13 @@ smooths -- still all unrolled.  Param points use modest configs (total iters
 20/40/80) so the compile is benchable; the ``L3×80`` default is documented (it
 would compile for minutes -- the same roll-the-loop fix applies).
 
-ANTsPy ``registration(type_of_transform='SyNOnly')`` is the diffeomorphic
-task-level domain reference -- pure SyN deformable (no rigid/affine pre-step),
-the counterpart of nitrix's pure log-Demons (the default ``'SyN'`` preset,
-which prepends rigid+affine, fails on this pair).  CPU; not jit-compiled.
-Ratio vs ``nitrix-jax``.
+Two diffeomorphic task-level domain references (CPU, not jit-compiled): ANTsPy
+``registration(SyNOnly)`` -- pure SyN deformable, no rigid/affine pre-step, the
+counterpart of nitrix's pure log-Demons (the default ``'SyN'`` preset, which
+prepends rigid+affine, fails on this pair) -- and **dipy**
+``SymmetricDiffeomorphicRegistration`` on SSD (the counterpart of nitrix's
+SSD-driven log-Demons; pyramid driven by this case's ``levels`` x ``iters`` --
+see ``cases/_register.py``).  Ratio vs ``nitrix-jax``.
 """
 from __future__ import annotations
 
@@ -31,7 +33,7 @@ import jax.numpy as jnp
 from nitrix.register import DemonsSpec, diffeomorphic_demons_register
 
 from ._base import BuiltPoint, Case
-from ._register import ants_register, warp_pair
+from ._register import ants_register, dipy_register, warp_pair
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -54,8 +56,11 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             'jax',
             lambda mv, fx: diffeomorphic_demons_register(
                 mv, fx, spec=spec).velocity),
-        'ants.registration': (  # diffeomorphic task-level domain ref
+        'ants.registration': (  # diffeomorphic task-level domain ref (SyNOnly)
             'ants', ants_register('SyNOnly')),
+        'dipy.registration': (  # diffeomorphic ref (dipy SyN on SSD)
+            'dipy', dipy_register('syn', int(param['levels']),
+                                  int(param['iters']))),
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,

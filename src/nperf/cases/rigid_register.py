@@ -20,10 +20,12 @@ closed-form affine Jacobian).  Param points span the spec configs so the
 compile scaling is visible; the representative is the fast ``L1×10`` so
 ``--quick`` / drift stay cheap.
 
-ANTsPy ``registration(type_of_transform='Rigid')`` is the task-level domain
-reference (its own refs env, CPU; not jit-compiled, so its wall-clock is the
-full registration with no separate compile) -- read cross-platform against
-nitrix's steady + one-time compile.  Ratio vs ``nitrix-jax``.
+Two task-level domain references (both own refs env, CPU, not jit-compiled, so
+wall-clock is the full registration with no separate compile) -- read against
+nitrix's steady + one-time compile: ANTsPy ``registration(Rigid)`` (fixed
+internal schedule) and **dipy** rigid (mutual information, pyramid driven by
+this case's ``levels`` x ``iters`` -- see ``cases/_register.py``).  Ratio vs
+``nitrix-jax``.
 """
 from __future__ import annotations
 
@@ -34,7 +36,7 @@ import jax.numpy as jnp
 from nitrix.register import RegistrationSpec, rigid_register
 
 from ._base import BuiltPoint, Case
-from ._register import ants_register, warp_pair
+from ._register import ants_register, dipy_register, warp_pair
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -55,8 +57,11 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         # unrolled loop to run, so compile_time is the real cold compile).
         'nitrix-jax': (
             'jax', lambda mv, fx: rigid_register(mv, fx, spec=spec).params),
-        'ants.registration': (  # task-level domain ref
+        'ants.registration': (  # task-level domain ref (ANTs Rigid)
             'ants', ants_register('Rigid')),
+        'dipy.registration': (  # task-level domain ref (dipy rigid MI)
+            'dipy', dipy_register('rigid', int(param['levels']),
+                                  int(param['iters']))),
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,

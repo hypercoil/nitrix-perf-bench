@@ -45,6 +45,7 @@ kernel-vs-kernel* comparison is even possible.
 | **nilearn** | Python (numpy/scipy/sklearn/nibabel) · BSD | pip | in-memory fns on arrays | none | connectome **partialcorr / precision / tangent / cov / corr**; `signal.clean` (detrend / filter / confound); smoothing; resampling | A · **Tier 1** |
 | **SimpleITK** | C++ ITK + Py bindings · Apache-2 | pip | in-memory `sitk.Image` ↔ numpy | none | **erode / dilate**, **distance_transform**, **gaussian**, **median_filter**, **bilateral_gaussian**, **spatial_transform** (Resample), **N4 bias**, histogram-matching (Nyul-Udupa) | A · **Tier 1** |
 | **ANTsPy** | C++ ITK + Py bindings · Apache-2 | pip wheel / build | in-memory `ANTsImage` (numpy-backed) | minimal (some temp files) | smoothing, **N4 bias**, registration, `apply_transforms` (spatial_transform) | A · Tier 2 |
+| **dipy** | Python (numpy / scipy / cython) · BSD-3 | pip | in-memory `dipy.align` on arrays | none | **registration**: `AffineRegistration` (rigid / 12-DOF affine, MI), `SymmetricDiffeomorphicRegistration` (SyN; SSD/CC) ≈ **rigid_register / affine_register / diffeomorphic_demons** | A · **Tier 2 (shipped)** |
 | **AFNI** | C, binary suite · free (NIH) | installer / container | CLI on NIfTI/BRIK | **mandatory disk I/O** | **3dLME / 3dMEMA** (reml / flame), `3dTproject` (detrend / filter), `3dTcorrelate`, `3dBlurToFWHM`, `3dDespike` | B · Tier 3 |
 | **FSL** | C++, binary suite · non-commercial | installer / container | CLI on NIfTI (fslpy ~file-based) | **mandatory disk I/O** | **FLAME** (flame_two_level), `susan` (smoothing), `fslmaths`, flirt / fnirt, melodic | B · Tier 3 |
 | **FreeSurfer** | C/C++, large suite · license | installer + license | CLI on FS surface/volume files | I/O + format conversion | surface smoothing / sphere geometry (narrow) | B · Tier 4 |
@@ -96,9 +97,16 @@ kernel-vs-kernel* comparison is even possible.
      distance / resample / bias family (currently referenced only against
      `scipy.ndimage` + `cupyx`): a more credible bar than a scipy snippet, and
      the same ITK engine ANTs uses — closer to the raw primitive.
-2. **Tier 2 — ANTsPy.** In-memory, pip-ish; smoothing / N4-bias / transform /
-   registration. Overlaps SimpleITK on the ITK engine but adds the
-   neuroimaging-level conveniences.
+2. **Tier 2 — ANTsPy + dipy (the registration foils; shipped).** Both
+   in-memory, pip-installable, Class A. ANTsPy (ITK engine): smoothing /
+   N4-bias / transform / registration, the neuroimaging-level conveniences over
+   SimpleITK. **dipy** (numpy / scipy / cython): the *second, independent*
+   registration foil for the recipe family — `AffineRegistration` (rigid /
+   affine, mutual information) and `SymmetricDiffeomorphicRegistration` (SyN on
+   SSD, the log-Demons counterpart). Unlike ANTs' fixed internal schedule,
+   dipy's pyramid is settable, so the recipe cases drive it with the *same*
+   `(levels, iterations)` knob nitrix uses (the apples-to-apples per-config
+   foil). Both run task-level (no shared oracle; recovery pinned in the tests).
 3. **Tier 3 — external-CLI spike (FSL + AFNI).** Prove the end-to-end+I/O-floor
    methodology on *one* op each — **FSL `FLAME`** for `flame_two_level` and
    **AFNI `3dTproject`** for detrend — then generalize. This is where the
@@ -142,6 +150,16 @@ the exact convention before trusting the reference. Known traps:
   reverse **(z, y, x)** — a silent transpose if unhandled. Filter conventions
   also differ (DiscreteGaussian takes *variance*, distance maps are
   signed / squared by flag).
+- **dipy** registration is **task-level**, not op-vs-oracle: it converges to
+  its *own* transform (a different optimum from nitrix / ANTs), so there is no
+  shared oracle — recovery is pinned in the tests, not gated. Convention notes:
+  its `AffineRegistration` metric is **mutual information** (so it differs from
+  nitrix's SSD-driven GN/LM), `static`/`moving` map to **fixed**/**moving**
+  (register moving→fixed, apply to moving), and `SymmetricDiffeomorphicRegistr-
+  ation` takes its metric explicitly — we use **SSDMetric** as the log-Demons
+  counterpart (dipy also offers CC/EM). Pyramid = `(level_iters, sigmas,
+  factors)`, ordered **coarse→fine**, which we derive from the case's
+  `(levels, iters)`.
 - **AFNI `3dLME`** shells out to **R's `lme`/`nlme`** under the hood — its
   convergence and parameterisation are R's, not statsmodels'.
 - **FSL FLAME** has its own MCMC / fixed-effects modes — match the mode
