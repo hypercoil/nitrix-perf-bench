@@ -34,7 +34,7 @@ import jax.numpy as jnp
 from nitrix.register import RegistrationSpec, rigid_register
 
 from ._base import BuiltPoint, Case
-from ._register import ants_rigid, warp_pair
+from ._register import ants_register, warp_pair
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -55,7 +55,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         # unrolled loop to run, so compile_time is the real cold compile).
         'nitrix-jax': (
             'jax', lambda mv, fx: rigid_register(mv, fx, spec=spec).params),
-        'ants.registration': ('ants', ants_rigid()),  # task-level domain ref
+        'ants.registration': (  # task-level domain ref
+            'ants', ants_register('Rigid')),
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
@@ -86,11 +87,14 @@ CASE = Case(
         'cold compile scales ~linearly with the total unrolled iters '
         '(levels x iterations): the optimizer loop is Python-unrolled, so XLA '
         'compiles the whole graph -- ~145 s at the default L3x30 (vs ~38 ms '
-        'steady) on the L4, the "slow on GPU". Each unrolled iteration also '
-        'carries a matrix-free autodiff Jacobian (jax.linearize through the '
-        'warp; ~4.5x a bare warp, no closed form), inflating both steady cost '
-        'and graph size. Steady state is fast; the first-call latency is the '
-        'cost. Fix: roll the loop (lax.scan) + closed-form affine Jacobian.'),
+        'steady) on the L4, the "slow on GPU". Each GN/LM outer iter runs '
+        'an inner CG solve whose matvecs ARE a matrix-free autodiff Jacobian '
+        '(jax.linearize through the warp, ~2 warp-passes each, no closed '
+        'form) -- so an iteration ~= 10-20 warp-passes, which is why demons '
+        '(no inner solve) is ~5x cheaper per iteration at the same budget, '
+        'and inflates both steady cost and graph size. Steady state is fast; '
+        'first-call latency is the cost. Fix: roll the loop (lax.scan) + a '
+        'closed-form affine Jacobian.'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,

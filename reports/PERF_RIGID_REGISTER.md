@@ -10,6 +10,7 @@
 ### Platforms
 
 - **jax-cuda12** — NVIDIA L4 (gpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=1
+- **jax-cpu** — cpu (cpu) | jax 0.10.0 | precision highest | x64 True | isolation subprocess | sched cpu_slots=1/par=1
 
 ## Measurements
 
@@ -17,10 +18,16 @@
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `ants.registration` | ok | 31.03 ms / 32.86 ms | 2.919 s | 703 MB (rss) | n/a (no oracle) | 0.11x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `nitrix-jax` | ok | 272.65 ms / 281.09 ms | 5.277 s | 870 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=1,iters=10 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=1,iters=10 | `nitrix-jax` | ok | 16.19 ms / 16.31 ms | 16.644 s | 437.10 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `ants.registration` | ok | 31.21 ms / 33.85 ms | 1.765 s | 703 MB (rss) | n/a (no oracle) | 0.05x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `nitrix-jax` | ok | 642.75 ms / 649.62 ms | 23.158 s | 1525 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=2,iters=20 | `nitrix-jax` | ok | 44.68 ms / 44.93 ms | 64.430 s | 437.10 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `ants.registration` | ok | 32.61 ms / 36.53 ms | 2.387 s | 703 MB (rss) | n/a (no oracle) | 0.04x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `nitrix-jax` | ok | 817.10 ms / 828.44 ms | 59.457 s | 2936 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=3,iters=30 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=3,iters=30 | `nitrix-jax` | ok | 63.95 ms / 65.53 ms | 140.869 s | 437.10 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
 

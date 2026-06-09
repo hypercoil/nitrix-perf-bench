@@ -17,6 +17,7 @@ import numpy as np
 from .cases import (
     BuiltPoint,
     Case,
+    affine_register,
     analytic_signal,
     bilateral_gaussian,
     cartesian_to_latlong,
@@ -30,6 +31,7 @@ from .cases import (
     cosine_kernel,
     cov,
     degree_vector,
+    diffeomorphic_demons,
     diffusion_embedding,
     dilate,
     displacement_from_reference_grid,
@@ -222,6 +224,8 @@ CASES: Dict[str, Case] = {
               _validate_case(mutual_information.CASE),
               _validate_case(correlation_ratio.CASE),
               _validate_case(rigid_register.CASE),
+              _validate_case(affine_register.CASE),
+              _validate_case(diffeomorphic_demons.CASE),
               _validate_case(lomb_scargle_interpolate.CASE))
 }
 

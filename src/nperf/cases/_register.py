@@ -62,17 +62,21 @@ def ncc(a: Any, b: Any) -> float:
     return float((x * y).sum() / den)
 
 
-def ants_rigid() -> Callable[..., Any]:
-    '''ANTsPy rigid registration (the task-level domain reference); returns the
-    warped moving.  ants lazy (only its refs env imports it); not jit-compiled,
-    so its wall-clock is the full registration (no separate compile).'''
+def ants_register(transform: str = 'Rigid') -> Callable[..., Any]:
+    '''ANTsPy registration (the task-level domain reference) for the given
+    ``type_of_transform`` (``'Rigid'`` / ``'Affine'`` / ``'SyN'`` -- the
+    rigid / affine / diffeomorphic counterparts of the nitrix recipes);
+    returns the warped moving.  ants lazy (only its refs env imports it); not
+    jit-compiled, so its wall-clock is the full registration (no separate
+    compile) -- read against nitrix's steady + one-time compile.'''
 
     def run(moving: Any, fixed: Any) -> Any:
         import ants
 
         f = ants.from_numpy(np.asarray(fixed, np.float32))
         m = ants.from_numpy(np.asarray(moving, np.float32))
-        reg = ants.registration(fixed=f, moving=m, type_of_transform='Rigid')
+        reg = ants.registration(fixed=f, moving=m,
+                                type_of_transform=transform)
         return reg['warpedmovout'].numpy()
 
     return run
