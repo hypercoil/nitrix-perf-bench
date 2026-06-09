@@ -215,4 +215,10 @@ def test_diffusion_sparse_ref_matches_dense_diffusion_operator():
     val, idx, A = sparse_graph_ell(400, degree=12, seed=1)
     dense = diffusion_eigenvalues(A.toarray(), k=6)
     sparse = scipy_sparse_eigsh_diffusion(k=6)(val, idx, 400)
-    assert np.abs(np.asarray(sparse) - dense).max() < 1e-6
+    # 1e-5, not 1e-6: ARPACK (scipy.sparse eigsh) seeds its start vector from
+    # the *global* numpy RNG, so its achieved accuracy on this operator drifts
+    # ~3e-7..1e-6 run-to-run depending on what earlier tests drew. 1e-6 sat on
+    # that boundary (a full-suite-order flake); 1e-5 still proves the sparse
+    # ref computes the *diffusion* operator (P_sym) -- it clears the
+    # Laplacian's different spectrum by orders of magnitude -- with margin.
+    assert np.abs(np.asarray(sparse) - dense).max() < 1e-5
