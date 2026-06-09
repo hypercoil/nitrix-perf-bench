@@ -224,7 +224,7 @@ wheels = [
 [[package]]
 name = "nitrix"
 version = "0.0.0.dev0"
-source = { editable = "../nitrix" }
+source = { editable = "../nitrix-main" }
 dependencies = [
     { name = "jax" },
     { name = "jaxtyping" },
@@ -307,16 +307,16 @@ dev = [
 ]
 jax-cpu = [
     { name = "jax", specifier = "==0.10.0" },
-    { name = "nitrix", editable = "../nitrix" },
+    { name = "nitrix", editable = "../nitrix-main" },
 ]
 jax-cuda12 = [
     { name = "jax", extras = ["cuda12"], specifier = "==0.10.0" },
-    { name = "nitrix", editable = "../nitrix" },
+    { name = "nitrix", editable = "../nitrix-main" },
 ]
 refs-cupy = [
     { name = "cupy-cuda12x" },
     { name = "jax", extras = ["cuda12"], specifier = "==0.10.0" },
-    { name = "nitrix", editable = "../nitrix" },
+    { name = "nitrix", editable = "../nitrix-main" },
 ]
 
 [[package]]

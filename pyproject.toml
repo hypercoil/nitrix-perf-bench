@@ -71,7 +71,17 @@ conflicts = [
 ]
 
 [tool.uv.sources]
-nitrix = { path = "../nitrix", editable = true }
+# Pin to a dedicated, perf-bench-owned checkout that stays on nitrix `main`
+# (`../nitrix-main`, a `git worktree --detach main` of the shared `../nitrix`
+# tree).  The shared dev tree is re-branched by the registration/feature agent;
+# pointing at it would silently bench whatever WIP branch happened to be checked
+# out (or break mid-run when it switches).  This worktree is decoupled from the
+# dev tree's branch -- re-sync it to current main deliberately, between bench
+# rounds, never mid-sweep:  `git -C ../nitrix-main checkout --detach main`.
+# Recreate if it vanishes (it's off the tiny root overlay, on /root/capsule):
+#   git -C ../nitrix worktree add --detach ../nitrix-main main
+# Still a path source (DESIGN §7); the resolved nitrix SHA is in provenance.
+nitrix = { path = "../nitrix-main", editable = true }
 
 [tool.ruff]
 line-length = 79
