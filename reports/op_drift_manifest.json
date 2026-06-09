@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-09T06:44:41Z",
+    "generated": "2026-06-09T07:42:44Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3542,6 +3542,35 @@
             "l1": 0.916065,
             "l2sq": 0.839175,
             "linf": 0.916065
+          }
+        ]
+      }
+    },
+    "rigid_register": {
+      "case": "rigid_register",
+      "qualname": "nitrix.register.rigid_register",
+      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric='ssd', optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, lncc_radius=4, bins=32, cg_tol=1e-06)) -> 'RegistrationResult'",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "levels": 1,
+          "iters": 10
+        },
+        "leaves": [
+          {
+            "shape": [
+              6
+            ],
+            "dtype": "float32",
+            "n_finite": 6,
+            "n_nonfinite": 0,
+            "l1": 3.11124,
+            "l2sq": 3.14196,
+            "linf": 1.28977
           }
         ]
       }

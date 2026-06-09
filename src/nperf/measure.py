@@ -75,6 +75,7 @@ from .cases import (
     reml_fit,
     resample,
     residualise,
+    rigid_register,
     robust_zscore_normalize,
     semiring_matmul,
     sigmoid_kernel,
@@ -220,6 +221,7 @@ CASES: Dict[str, Case] = {
               _validate_case(lncc.CASE),
               _validate_case(mutual_information.CASE),
               _validate_case(correlation_ratio.CASE),
+              _validate_case(rigid_register.CASE),
               _validate_case(lomb_scargle_interpolate.CASE))
 }
 
