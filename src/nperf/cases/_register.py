@@ -71,19 +71,33 @@ def ncc(a: Any, b: Any) -> float:
     return float((x * y).sum() / den)
 
 
-def ants_register(transform: str = 'Rigid') -> Callable[..., Any]:
+def ants_register(transform: str = 'Rigid',
+                  spacing: Any = None) -> Callable[..., Any]:
     '''ANTsPy registration (the task-level domain reference) for the given
     ``type_of_transform`` (``'Rigid'`` / ``'Affine'`` / ``'SyN'`` -- the
     rigid / affine / diffeomorphic counterparts of the nitrix recipes);
     returns the warped moving.  ants lazy (only its refs env imports it); not
     jit-compiled, so its wall-clock is the full registration (no separate
-    compile) -- read against nitrix's steady + one-time compile.'''
+    compile) -- read against nitrix's steady + one-time compile.
+
+    ``spacing`` (per-axis voxel size, or ``(fixed_spacing, moving_spacing)``
+    for a cross-grid pair) sets the images' physical spacing so ANTs registers
+    in the *same* physical space nitrix's ``WorldSpace`` uses -- the
+    apples-to-apples comparison on anisotropic / different grids (ANTs is a
+    physical-space tool, so this is its native regime). ``None`` keeps ANTs'
+    default 1 mm isotropic (the shared-grid IndexSpace case).'''
 
     def run(moving: Any, fixed: Any) -> Any:
         import ants
 
         f = ants.from_numpy(np.asarray(fixed, np.float32))
         m = ants.from_numpy(np.asarray(moving, np.float32))
+        if spacing is not None:
+            sp = tuple(spacing)
+            # one shared spacing, or an explicit (fixed, moving) pair.
+            f_sp, m_sp = (sp, sp) if np.isscalar(sp[0]) else (sp[0], sp[1])
+            f.set_spacing(tuple(float(s) for s in f_sp))
+            m.set_spacing(tuple(float(s) for s in m_sp))
         reg = ants.registration(fixed=f, moving=m,
                                 type_of_transform=transform)
         return reg['warpedmovout'].numpy()
@@ -103,7 +117,8 @@ def _dipy_pyramid(levels: int, iters: int
     return level_iters, sigmas, factors
 
 
-def dipy_register(kind: str, levels: int, iters: int) -> Callable[..., Any]:
+def dipy_register(kind: str, levels: int, iters: int,
+                  affines: Any = None) -> Callable[..., Any]:
     '''dipy registration (the numpy/scipy/cython task-level domain reference),
     returning the warped moving.  ``kind`` picks the counterpart of the nitrix
     recipe: ``'rigid'`` / ``'affine'`` -> ``AffineRegistration`` (mutual
@@ -113,13 +128,21 @@ def dipy_register(kind: str, levels: int, iters: int) -> Callable[..., Any]:
     the case's ``(levels, iters)`` via ``_dipy_pyramid``, so dipy's wall-clock
     scales with the same budget.  dipy lazy (only its refs env imports it); not
     jit-compiled, so its wall-clock is the full registration (no separate
-    compile) -- read against nitrix's steady + one-time compile.'''
+    compile) -- read against nitrix's steady + one-time compile.
+
+    ``affines`` = ``(static_grid2world, moving_grid2world)`` voxel->world
+    homogeneous affines passed to dipy's ``optimize`` so it registers in
+    physical space (anisotropy- / cross-grid-correct), matching nitrix's
+    ``WorldSpace``; ``None`` is voxel space (the shared-grid case).'''
+    s2w, m2w = (None, None) if affines is None else affines
 
     def run(moving: Any, fixed: Any) -> Any:
         # static = fixed, moving = moving; register moving->fixed and apply to
         # moving (recovery == ncc(warped, fixed)).  dipy works in fp64.
         stat = np.asarray(fixed, np.float64)
         mov = np.asarray(moving, np.float64)
+        sw = None if s2w is None else np.asarray(s2w, np.float64)
+        mw = None if m2w is None else np.asarray(m2w, np.float64)
         level_iters, sigmas, factors = _dipy_pyramid(levels, iters)
         if kind == 'syn':
             from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
@@ -128,7 +151,8 @@ def dipy_register(kind: str, levels: int, iters: int) -> Callable[..., Any]:
             sdr = SymmetricDiffeomorphicRegistration(
                 SSDMetric(3), level_iters=level_iters)
             sdr.verbosity = 0
-            mapping = sdr.optimize(stat, mov)
+            mapping = sdr.optimize(stat, mov, static_grid2world=sw,
+                                   moving_grid2world=mw)
             return mapping.transform(mov)
         from dipy.align.imaffine import (
             AffineRegistration,
@@ -142,7 +166,8 @@ def dipy_register(kind: str, levels: int, iters: int) -> Callable[..., Any]:
             metric=MutualInformationMetric(nbins=32, sampling_proportion=None),
             level_iters=level_iters, sigmas=sigmas, factors=factors,
             verbosity=0)
-        amap = areg.optimize(stat, mov, transform, None)
+        amap = areg.optimize(stat, mov, transform, None,
+                             static_grid2world=sw, moving_grid2world=mw)
         return amap.transform(mov)
 
     return run
@@ -179,5 +204,167 @@ def sitk_demons_register(iters: int, *, sigma: float = 1.0,
         tx = sitk.DisplacementFieldTransform(disp)
         warped = sitk.Resample(m, f, tx, sitk.sitkLinear, 0.0)
         return sitk.GetArrayFromImage(warped)
+
+    return run
+
+
+# -- cross-grid / anisotropic / non-rigid input generators -------------------
+
+
+def _affine(spacing: Sequence[float]) -> np.ndarray:
+    '''Voxel->world homogeneous affine for a diagonal (anisotropic) spacing --
+    ``diag([*spacing, 1])`` (the NIfTI-sform contract nitrix ``WorldSpace`` and
+    the ANTs/dipy refs both consume).'''
+    return np.diag([*[float(s) for s in spacing], 1.0]).astype(np.float32)
+
+
+def warp_pair_cross_grid(
+    fixed_shape: Sequence[int],
+    moving_shape: Sequence[int],
+    *,
+    fixed_spacing: Sequence[float] = (1.0, 1.0, 1.0),
+    moving_spacing: Sequence[float] = (1.2, 1.0, 0.9),
+    seed: int = 0,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    '''A cross-grid ``(moving, fixed, moving_affine, fixed_affine)``: the two
+    images live on **different grids** (different shape *and* anisotropic voxel
+    spacing) with a known **world-space** rigid transform between them -- the
+    realistic cross-resolution / cross-modal regime (e.g. a 2 mm EPI against a
+    1 mm T1) that ``IndexSpace`` (shared grid) cannot express.
+
+    ``fixed`` is the structured ``warp_pair`` field; ``moving`` is ``fixed``
+    resampled into the ``moving_shape`` grid through the composed voxel map
+    ``A_moving^-1 . T_world . A_fixed`` with **scipy** (independent of nitrix),
+    so the input is not produced by the op under test.  The recipe (with
+    ``WorldSpace(fixed_affine, moving_affine)``) must recover ``T_world``.  The
+    rotation is kept within the recipes' capture range (~3 deg, like
+    ``warp_pair``).'''
+    import scipy.ndimage as spnd
+    from scipy.spatial.transform import Rotation
+
+    fixed_shape = tuple(int(s) for s in fixed_shape)
+    moving_shape = tuple(int(s) for s in moving_shape)
+    ndim = len(fixed_shape)
+    rng = np.random.default_rng(seed)
+    fixed = spnd.gaussian_filter(
+        rng.standard_normal(fixed_shape).astype(np.float32), 2.0)
+    fixed = (fixed - fixed.mean()) / (fixed.std() + 1e-6)
+
+    a_f = _affine(fixed_spacing).astype(np.float64)
+    a_m = _affine(moving_spacing).astype(np.float64)
+    rot = Rotation.from_euler('xyz', [3.0, 2.0, 1.5], degrees=True).as_matrix()
+    # T_world: rotate about the fixed image's world centre + a small mm shift.
+    fc = a_f[:ndim, :ndim] @ ((np.asarray(fixed_shape) - 1) / 2.0)
+    t_world = np.eye(ndim + 1)
+    t_world[:ndim, :ndim] = rot
+    t_world[:ndim, ndim] = fc - rot @ fc + np.array([1.5, -1.0, 0.8])[:ndim]
+    # fixed-voxel -> moving-voxel; invert to pull fixed into the moving grid.
+    m = np.linalg.inv(a_m) @ t_world @ a_f
+    m_inv = np.linalg.inv(m)
+    moving = spnd.affine_transform(
+        fixed, m_inv[:ndim, :ndim], offset=m_inv[:ndim, ndim],
+        output_shape=moving_shape, order=1, mode='nearest')
+    return (moving.astype(np.float32), fixed.astype(np.float32),
+            a_m.astype(np.float32), a_f.astype(np.float32))
+
+
+def syn_pair(shape: Sequence[int], seed: int = 0, *,
+             max_disp: float = 3.0, smooth: float = 4.0
+             ) -> Tuple[np.ndarray, np.ndarray]:
+    '''An identical-shape ``(moving, fixed)`` pair related by a **smooth
+    non-rigid** deformation -- the canonical diffeomorphic-recovery test for
+    greedy SyN / demons (a rigid warp would understate the deformable work).
+    ``fixed`` is the ``warp_pair`` field; ``moving`` is ``fixed`` pushed by a
+    low-frequency random displacement (gaussian-smoothed, scaled to
+    ``max_disp`` voxels) applied with **scipy** ``map_coordinates`` --
+    independent of nitrix's own integrate / spatial_transform path.'''
+    import scipy.ndimage as spnd
+
+    shape = tuple(int(s) for s in shape)
+    ndim = len(shape)
+    rng = np.random.default_rng(seed)
+    fixed = spnd.gaussian_filter(
+        rng.standard_normal(shape).astype(np.float32), 2.0)
+    fixed = (fixed - fixed.mean()) / (fixed.std() + 1e-6)
+    disp = [spnd.gaussian_filter(rng.standard_normal(shape), smooth)
+            for _ in range(ndim)]
+    disp = [d / (np.abs(d).max() + 1e-6) * max_disp for d in disp]
+    coords = np.indices(shape, dtype=np.float32)
+    warped = [coords[i] + disp[i] for i in range(ndim)]
+    moving = spnd.map_coordinates(fixed, warped, order=1, mode='nearest')
+    return moving.astype(np.float32), fixed.astype(np.float32)
+
+
+def aniso_pair(shape: Sequence[int], spacing: Sequence[float], seed: int = 0
+               ) -> Tuple[np.ndarray, np.ndarray, Tuple[float, ...]]:
+    '''A same-grid non-rigid ``(moving, fixed, spacing)`` triple for the
+    **anisotropic** demons / SyN points: the pair is the ``syn_pair`` smooth
+    warp, registered on a grid whose voxels are anisotropic (e.g. ``1x1x3``).
+    The op corrects the bias (a voxel-isotropic Gaussian / force is physically
+    anisotropic) via its ``spacing`` argument; the refs get the matching
+    ``diag([*spacing, 1])`` affine.'''
+    moving, fixed = syn_pair(shape, seed)
+    return moving, fixed, tuple(float(s) for s in spacing)
+
+
+def bbr_boundary(shape: Sequence[int], n_points: int, seed: int = 0, *,
+                 radius_frac: float = 0.3
+                 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    '''A ``(moving, points, normals)`` triple for boundary-based registration:
+    a bright smoothed sphere (interior bright, exterior dark) on a ``shape``
+    grid, ``n_points`` samples on its surface with **outward** radial unit
+    normals (so ``-normal`` points into the bright interior -- the Greve-Fischl
+    convention ``bbr_cost`` expects: ``inside = q - step*n``).  The points are
+    displaced by a small **planted** rigid offset so the boundary sits *off*
+    the true edge at identity; a correct ``bbr_register`` seats it back (the
+    recovery pin is ``cost_history[-1] < cost_history[0]``).'''
+    import scipy.ndimage as spnd
+    from scipy.spatial.transform import Rotation
+
+    shape = tuple(int(s) for s in shape)
+    ndim = len(shape)
+    rng = np.random.default_rng(seed)
+    center = (np.asarray(shape) - 1) / 2.0
+    radius = radius_frac * float(min(shape))
+    coords = np.indices(shape, dtype=np.float32)
+    dist = np.sqrt(sum((coords[i] - center[i]) ** 2 for i in range(ndim)))
+    moving = spnd.gaussian_filter(
+        (dist < radius).astype(np.float32), 1.5).astype(np.float32)
+
+    dirs = rng.standard_normal((int(n_points), ndim))
+    dirs = dirs / (np.linalg.norm(dirs, axis=1, keepdims=True) + 1e-8)
+    pts_true = center + radius * dirs  # on the true boundary
+    # planted small rigid offset (within BBR's narrow capture range).
+    rot = Rotation.from_euler(
+        'xyz', [2.0, 1.5, 1.0], degrees=True).as_matrix()[:ndim, :ndim]
+    trans = np.array([1.0, -0.8, 0.6])[:ndim]
+    points = (rot @ (pts_true - center).T).T + center + trans
+    normals = (rot @ dirs.T).T
+    return (moving, points.astype(np.float32), normals.astype(np.float32))
+
+
+def ants_motion_correction(type_of_transform: str = 'Rigid'
+                           ) -> Callable[..., Any]:
+    '''ANTsPy ``motion_correction`` -- the volreg gold standard (the
+    ``3dvolreg`` / ``mcflirt`` task, ITK-backed).  Realigns a ``(T, *spatial)``
+    series to the per-volume mean (matching nitrix ``reference='mean'``).  ANTs
+    realigns **frame-by-frame on CPU** (T sequential registrations), so its
+    wall-clock is ~ ``T x per-frame`` -- the foil for nitrix's vmap-batched
+    GPU realignment (the gap GROWS with T).  ``type_of_transform='Rigid'`` (not
+    the ``'BOLDRigid'`` default, which adds BOLD-specific pre-steps nitrix does
+    not).  Time is moved to the last axis (ANTs' x,y,z,t convention) and back.
+    ants lazy / not jit-compiled (full wall-clock); returns the realigned
+    series ``(T, *spatial)``.'''
+
+    def run(series: Any) -> Any:
+        import ants
+
+        arr = np.asarray(series, np.float32)
+        img = ants.from_numpy(np.moveaxis(arr, 0, -1))  # (T,*sp) -> (*sp,T)
+        fixed = ants.from_numpy(arr.mean(axis=0))       # per-volume mean
+        mc = ants.motion_correction(image=img, fixed=fixed,
+                                    type_of_transform=type_of_transform)
+        out = mc['motion_corrected'].numpy()            # (*sp, T)
+        return np.moveaxis(out, -1, 0)                  # -> (T, *sp)
 
     return run
