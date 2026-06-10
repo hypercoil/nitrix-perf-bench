@@ -55,6 +55,9 @@ def _size_elems(param: Dict[str, Any]) -> int:
     '''The scale axis the curve sorts on.  Image/grid ops: prod(spatial) *
     batch.  Graph ops (no ``shape``, carry ``n``): the node count * degree
     (~nnz, the work/memory driver for the sparse operator).'''
+    # volreg: a (T, *spatial) series -- the work / HBM axis is T * voxels.
+    if 'shape' in param and 'T' in param:
+        return _prod(param['shape']) * int(param['T'])
     if 'shape' in param:
         return _prod(param['shape']) * int(param.get('batch', 1) or 1)
     # PCA family (n samples, d features, k components): the (n,d)@(d,k)-class
@@ -116,6 +119,9 @@ def _label(param: Dict[str, Any]) -> str:
         return f'b={param["b"]}'
     if 'shape' not in param and 'c' in param:
         return f'c={param["c"]}'
+    # volreg: a (T, *spatial) series -- tag the batch (the scale axis).
+    if 'shape' in param and 'T' in param:
+        return f'T{param["T"]} {"x".join(str(s) for s in param["shape"])}'
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp

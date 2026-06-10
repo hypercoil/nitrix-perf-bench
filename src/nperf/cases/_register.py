@@ -307,6 +307,37 @@ def aniso_pair(shape: Sequence[int], spacing: Sequence[float], seed: int = 0
     return moving, fixed, tuple(float(s) for s in spacing)
 
 
+def motion_series(shape: Sequence[int], n_frames: int, seed: int = 0, *,
+                  max_shift: float = 2.0) -> np.ndarray:
+    '''A ``(T, *spatial)`` motion-corrupted series: one structured base volume
+    under ``T`` small **known rigid** perturbations (scipy) + per-frame jitter
+    -- a synthetic fMRI run for ``volreg`` to realign to a common reference.
+    Each frame is the base rotated <=1.5 deg and shifted <= ``max_shift``
+    voxels, so realignment must recover real (small) motion.'''
+    import scipy.ndimage as spnd
+    from scipy.spatial.transform import Rotation
+
+    shape = tuple(int(s) for s in shape)
+    ndim = len(shape)
+    rng = np.random.default_rng(seed)
+    base = spnd.gaussian_filter(
+        rng.standard_normal(shape).astype(np.float32), 2.0)
+    base = (base - base.mean()) / (base.std() + 1e-6)
+    center = (np.asarray(shape) - 1) / 2.0
+    frames = []
+    for _ in range(int(n_frames)):
+        rot = Rotation.from_euler(
+            'xyz', rng.uniform(-1.5, 1.5, 3), degrees=True
+        ).as_matrix()[:ndim, :ndim]
+        shift = rng.uniform(-max_shift, max_shift, ndim)
+        fr = spnd.affine_transform(
+            base, rot, offset=center - rot @ center + shift,
+            order=1, mode='nearest')
+        fr = fr + 0.02 * rng.standard_normal(shape)  # acquisition jitter
+        frames.append(fr.astype(np.float32))
+    return np.stack(frames)
+
+
 def bbr_boundary(shape: Sequence[int], n_points: int, seed: int = 0, *,
                  radius_frac: float = 0.3
                  ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

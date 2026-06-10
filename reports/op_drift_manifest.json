@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T21:57:12Z",
+    "generated": "2026-06-10T22:45:55Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4192,6 +4192,37 @@
             "l1": 57844.6,
             "l2sq": 16483.0,
             "linf": 1.11779
+          }
+        ]
+      }
+    },
+    "volreg": {
+      "case": "volreg",
+      "qualname": "nitrix.register.volreg",
+      "signature": "(series: \"Float[Array, 't *spatial']\", *, reference: \"Union[int, str, Float[Array, '*spatial']]\" = 'mean', passes: 'int' = 1, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto') -> 'VolregResult'",
+      "behaviour": {
+        "point": {
+          "shape": [
+            32,
+            32,
+            32
+          ],
+          "T": 8,
+          "levels": 1,
+          "iters": 10
+        },
+        "leaves": [
+          {
+            "shape": [
+              8,
+              6
+            ],
+            "dtype": "float32",
+            "n_finite": 48,
+            "n_nonfinite": 0,
+            "l1": 22.2443,
+            "l2sq": 26.3662,
+            "linf": 2.05576
           }
         ]
       }

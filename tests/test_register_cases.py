@@ -89,3 +89,35 @@ def test_syn_recovers_deformation():
     after = ncc(np.asarray(res.warped), fixed)
     assert after > before + 0.02, f'no improvement {before:.3f}->{after:.3f}'
     assert bool(jnp.all(res.jacobian_det > 0)), 'folding (jacobian_det <= 0)'
+
+
+def test_volreg_contract():
+    '''volreg carries nitrix + the (available, provisional) ANTs moco ref --
+    no dipy / no shared oracle; the size tier varies T (the batch axis).'''
+    from nperf.cases import volreg as volreg_mod
+    built = volreg_mod._build(volreg_mod.CASE.representative)
+    assert set(built.baselines) == {'nitrix-jax', 'ants.motion_correction'}
+    assert built.ratio_reference == 'nitrix-jax'
+    assert built.fp64_reference is None and built.fidelity_note
+    # ANTs moco is slow at large T (declared) -- skippable in dev cycles.
+    assert 'ants.motion_correction' in {
+        s.baseline for s in volreg_mod.CASE.slow_baselines}
+    assert volreg_mod.CASE.op_qualname == 'nitrix.register.volreg'
+    # the size tier sweeps T (the headline batch axis).
+    big_t = {p['T'] for p in volreg_mod.CASE.large_param_points}
+    assert max(big_t) > volreg_mod.CASE.representative['T']
+
+
+def test_volreg_realigns_motion():
+    '''The accuracy pin: realigning a motion-corrupted series to its reference
+    *reduces* the frame-to-frame variance (the realignment actually aligns).'''
+    from nitrix.register import RegistrationSpec, volreg
+
+    from nperf.cases._register import motion_series
+    series = motion_series([28, 28, 28], 8, seed=0)
+    res = volreg(jnp.asarray(series),
+                 spec=RegistrationSpec(levels=2, iterations=15))
+    realigned = np.asarray(res.realigned)
+    before = float(series.var(axis=0).mean())     # raw inter-frame variance
+    after = float(realigned.var(axis=0).mean())   # post-realignment
+    assert after < before * 0.9, f'no realignment {before:.4f}->{after:.4f}'
