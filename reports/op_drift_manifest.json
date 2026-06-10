@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T01:41:05Z",
+    "generated": "2026-06-10T02:35:15Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3772,6 +3772,84 @@
             "l1": 215292.0,
             "l2sq": 1237870.0,
             "linf": 20.7236
+          }
+        ]
+      }
+    },
+    "spatial_gradient": {
+      "case": "spatial_gradient",
+      "qualname": "nitrix.geometry.spatial_gradient",
+      "signature": "(image: \"Float[Array, '... *spatial']\", *, spatial_rank: 'int | None' = None, scheme: 'GradientScheme' = 'central', mode: 'BoundaryMode' = 'nearest', spacing: 'Union[float, Sequence[float]]' = 1.0) -> \"Float[Array, '... *spatial ndim']\"",
+      "behaviour": {
+        "point": {
+          "d": 48
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48,
+              3
+            ],
+            "dtype": "float32",
+            "n_finite": 331776,
+            "n_nonfinite": 0,
+            "l1": 187050.0,
+            "l2sq": 165853.0,
+            "linf": 3.39539
+          }
+        ]
+      }
+    },
+    "invert_displacement": {
+      "case": "invert_displacement",
+      "qualname": "nitrix.geometry.invert_displacement",
+      "signature": "(s: \"Float[Array, '*spatial ndim']\", *, tol: 'float' = 1e-05, max_iter: 'int' = 50, mode: 'BoundaryMode' = 'nearest') -> \"Float[Array, '*spatial ndim']\"",
+      "behaviour": {
+        "point": {
+          "d": 48
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48,
+              3
+            ],
+            "dtype": "float32",
+            "n_finite": 331776,
+            "n_nonfinite": 0,
+            "l1": 21388.9,
+            "l2sq": 2085.16,
+            "linf": 0.321716
+          }
+        ]
+      }
+    },
+    "compose_velocity": {
+      "case": "compose_velocity",
+      "qualname": "nitrix.geometry.compose_velocity",
+      "signature": "(v: \"Float[Array, '*spatial ndim']\", u: \"Float[Array, '*spatial ndim']\", *, order: 'int' = 1) -> \"Float[Array, '*spatial ndim']\"",
+      "behaviour": {
+        "point": {
+          "d": 48
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48,
+              3
+            ],
+            "dtype": "float32",
+            "n_finite": 331776,
+            "n_nonfinite": 0,
+            "l1": 37445.9,
+            "l2sq": 6641.26,
+            "linf": 0.631092
           }
         ]
       }

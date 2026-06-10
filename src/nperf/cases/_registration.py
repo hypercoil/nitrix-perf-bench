@@ -232,3 +232,93 @@ def cupy_bending_energy() -> Callable[[Any], Any]:
 
 def cupy_folding() -> Callable[[Any], Any]:
     return _cupy_penalty(_folding)
+
+
+# ---- spatial_gradient / compose_velocity / invert_displacement ------------ #
+# More of the deformation-field algebra (deformation.py). Same roll-based
+# central diff -> the numpy/cupy reimpls match nitrix's exact convention.
+
+
+def scalar_field_input(spatial: Sequence[int], seed: int = 0) -> np.ndarray:
+    '''A scalar field ``(*spatial,)`` -- the image for ``spatial_gradient``.'''
+    rng = np.random.default_rng(seed)
+    return rng.standard_normal(tuple(spatial)).astype(np.float32)
+
+
+def _spatial_grad(field: Any, xp: Any) -> Any:
+    '''``∂field/∂x_j`` per spatial axis -> ``(*spatial, ndim)`` (central).'''
+    ndim = field.ndim
+    return xp.stack([_central_diff(field, ax, xp) for ax in range(ndim)], -1)
+
+
+def _compose_velocity2(v: Any, u: Any, xp: Any) -> Any:
+    '''BCH order-2 ``v + u + ½[v,u]``; ``[v,u] = (v·∇)u - (u·∇)v``.'''
+    d = u.shape[-1]
+    du = _jacobian(u, xp) - xp.eye(d, dtype=u.dtype)
+    dv = _jacobian(v, xp) - xp.eye(d, dtype=v.dtype)
+    du_v = xp.einsum('...ij,...j->...i', du, v)
+    dv_u = xp.einsum('...ij,...j->...i', dv, u)
+    return v + u + 0.5 * (du_v - dv_u)
+
+
+def _invert_disp(s: Any, xp: Any, ndimage: Any, tol: float = 1e-5,
+                 max_iter: int = 50) -> Any:
+    '''Inverse displacement by Picard fixed point ``s_inv = -s∘(id+s_inv)``,
+    iterated to a relative ``tol`` (nitrix's ``fixed_point_solve`` convention;
+    the per-iteration host check syncs cupy -- the naive iterative reimpl that
+    nitrix's jitted ``lax.while_loop`` improves on).'''
+    sp = s.shape[:-1]
+    idg = xp.stack(
+        xp.meshgrid(*[xp.arange(n, dtype=s.dtype) for n in sp], indexing='ij'),
+        -1)
+    s_inv = xp.zeros_like(s)
+    for _ in range(max_iter):
+        new = -_sample(s, idg + s_inv, xp, ndimage)
+        moved = float(xp.sqrt(xp.sum((new - s_inv) ** 2)))
+        scale = float(xp.sqrt(xp.sum(new ** 2)))
+        s_inv = new
+        if moved <= tol * (scale + 1e-12):
+            break
+    return s_inv
+
+
+def np_spatial_gradient(field: Any) -> np.ndarray:
+    return np.asarray(_spatial_grad(np.asarray(field), np))
+
+
+def np_compose_velocity(v: Any, u: Any) -> np.ndarray:
+    return np.asarray(_compose_velocity2(np.asarray(v), np.asarray(u), np))
+
+
+def np_invert_displacement(s: Any) -> np.ndarray:
+    import scipy.ndimage as ndi
+
+    return np.asarray(_invert_disp(np.asarray(s), np, ndi))
+
+
+def cupy_spatial_gradient() -> Callable[[Any], Any]:
+    def run(field: Any) -> Any:
+        import cupy as cp
+
+        return _spatial_grad(field, cp)
+
+    return run
+
+
+def cupy_compose_velocity() -> Callable[[Any, Any], Any]:
+    def run(v: Any, u: Any) -> Any:
+        import cupy as cp
+
+        return _compose_velocity2(v, u, cp)
+
+    return run
+
+
+def cupy_invert_displacement() -> Callable[[Any], Any]:
+    def run(s: Any) -> Any:
+        import cupy as cp
+        import cupyx.scipy.ndimage as cndi
+
+        return _invert_disp(s, cp, cndi)
+
+    return run

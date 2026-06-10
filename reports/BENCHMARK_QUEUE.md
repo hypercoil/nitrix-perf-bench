@@ -37,11 +37,13 @@ is the Tier-A worklist.
 
 ## 1. Registration (continue the current thrust)
 
-> **Progress (2026-06-10):** ✅ the 3 penalties (`gradient_smoothness`,
-> `bending_energy`, `jacobian_folding_penalty`) shipped — commit `63b145a`;
-> ✅ the transform-exps (`rigid_exp`, `affine_exp`, `rigid_log`) shipped —
-> commit `0c5dae1`. **Remaining:** `spatial_gradient`, `invert_displacement`
-> (iterative + IFT — apply the iterative-op caveat), `compose_velocity`.
+> **§1 COMPLETE (2026-06-10).** ✅ penalties (`gradient_smoothness`,
+> `bending_energy`, `jacobian_folding_penalty`) — `63b145a`; ✅ transform-exps
+> (`rigid_exp`, `affine_exp`, `rigid_log`) — `0c5dae1`; ✅ field algebra
+> (`spatial_gradient`; `invert_displacement` — the iterative + IFT-diff
+> unique-win, with `lax.while_loop` early-exit done right; `compose_velocity`
+> BCH order-2). All with warranted oracles + scale/batch tiers + drift seeds.
+> **Next: §2 Morphology.**
 
 | op | ref strategy | discipline notes |
 |---|---|---|
