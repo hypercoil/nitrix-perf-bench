@@ -69,6 +69,9 @@ def _size_elems(param: Dict[str, Any]) -> int:
     # the c x c matrix is the HBM driver + the c^3 inverse's axis.
     if 'c' in param:
         return int(param['c']) ** 2
+    # Batched LME ops carry the voxel batch ``V`` -- the linear scale axis.
+    if 'V' in param:
+        return int(param['V'])
     return 1
 
 
@@ -87,6 +90,8 @@ def _label(param: Dict[str, Any]) -> str:
         return f'b={param["b"]}'
     if 'shape' not in param and 'c' in param:
         return f'c={param["c"]}'
+    if 'shape' not in param and 'V' in param:
+        return f'V={param["V"]}'
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp

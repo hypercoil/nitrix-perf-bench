@@ -63,6 +63,9 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 # (voxels, subjects): N subjects per voxel (typical fMRI group size); V scales
 # the batch.  Larger V is where the device-resident batched fit pulls ahead.
 _SHAPES = [(1024, 60), (8192, 60), (65536, 60)]
+# Brain-volume scale; on GPU these hit the cuSOLVER ceiling (see complexity) so
+# they record a skip there and run on CPU -- the documented scale ceiling.
+_LARGE = [(131072, 60), (262144, 60)]
 
 CASE = Case(
     name='flame_two_level',
@@ -72,6 +75,17 @@ CASE = Case(
              'throughput'],
     param_points=[{'V': v, 'N': n, 'seed': 0} for (v, n) in _SHAPES],
     representative={'V': 8192, 'N': 60, 'seed': 0},
+    large_param_points=tuple(
+        {'V': v, 'N': n, 'seed': 0} for (v, n) in _LARGE),
+    complexity=(
+        'batched single-param REML for the between-subject variance over V '
+        'voxels (FSL FLAME equiv): O(V * iters * N) -- linear in the voxel '
+        'batch V. MEASURED (L4): scales cleanly on the GPU through the dev '
+        'tier to V=65536, but V>=131072 fails the GPU SOLVER (gpusolverDnCreate '
+        '-- a cuSOLVER-class blocker on this box), a hard GPU scale CEILING; '
+        'the batched FLAME still runs on CPU at brain-volume V. No '
+        'fair external perf competitor (statsmodels cannot consume known '
+        'per-subject variances; FSL FLAME is file-coupled). HBM ~ V.'),
     build=_build,
     rtol=5e-3,  # iterative-solver convergence floor (lme design doc)
     atol=5e-3,

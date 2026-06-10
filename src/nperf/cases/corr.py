@@ -50,6 +50,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
 # (variables, samples): same ladder as cov.
 _SHAPES = [(50, 500), (500, 2000), (2000, 1000)]
+_LARGE = [(4000, 2000), (8000, 2000)]  # large parcellation
 
 CASE = Case(
     name='corr',
@@ -59,6 +60,13 @@ CASE = Case(
              'throughput'],
     param_points=[{'n': n, 't': t, 'seed': 0} for (n, t) in _SHAPES],
     representative={'n': 2000, 't': 1000, 'seed': 0},
+    large_param_points=tuple(
+        {'n': n, 't': t, 'seed': 0} for (n, t) in _LARGE),
+    complexity=(
+        'corrcoef = the centred/standardised cov: O(n^2 * t) -- a single '
+        'BLAS-class matmul (same GPU-friendly regime as cov), the larger n '
+        'being where it pulls ahead. HBM ~ n^2 (the n x n output). The size '
+        'tier varies n to large-parcellation scale.'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,

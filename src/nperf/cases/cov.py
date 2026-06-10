@@ -65,6 +65,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 # (channels, observations): the PERF_AUDIT ladder -- (50,500) is near parity,
 # the larger shapes are where the BLAS path pulls ahead.
 _SHAPES = [(50, 500), (500, 2000), (2000, 1000)]
+_LARGE = [(4000, 2000), (8000, 2000)]  # large parcellation / sub-parcellation
 
 CASE = Case(
     name='cov',
@@ -77,6 +78,13 @@ CASE = Case(
              'throughput'],
     param_points=[{'c': c, 'n_obs': n, 'seed': 0} for (c, n) in _SHAPES],
     representative={'c': 2000, 'n_obs': 1000, 'seed': 0},
+    large_param_points=tuple(
+        {'c': c, 'n_obs': n, 'seed': 0} for (c, n) in _LARGE),
+    complexity=(
+        'centred X @ X.T / (n-1): O(c^2 * n_obs) -- a single BLAS-class '
+        'matmul, the GPU-friendly regime (the larger c is where the matmul '
+        'path pulls ahead of the CPU floor). HBM ~ c^2 (c x c output). The '
+        'size tier varies c to large-parcellation scale.'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,
