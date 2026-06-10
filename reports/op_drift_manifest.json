@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T22:45:55Z",
+    "generated": "2026-06-10T22:59:19Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4223,6 +4223,35 @@
             "l1": 22.2443,
             "l2sq": 26.3662,
             "linf": 2.05576
+          }
+        ]
+      }
+    },
+    "bbr_register": {
+      "case": "bbr_register",
+      "qualname": "nitrix.register.bbr_register",
+      "signature": "(moving: \"Float[Array, '*spatial']\", points: \"Float[Array, ' n d']\", normals: \"Float[Array, ' n d']\", *, moving_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_params: \"Optional[Float[Array, ' p']]\" = None, spec: 'BBRSpec' = BBRSpec(step=1.0, slope=0.5, q0=0.0, iterations=100, interpolation=Linear(), boundary_mode='nearest', cval=0.0, eps=0.001)) -> 'BBRResult'",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "N": 2000,
+          "iters": 50
+        },
+        "leaves": [
+          {
+            "shape": [
+              6
+            ],
+            "dtype": "float32",
+            "n_finite": 6,
+            "n_nonfinite": 0,
+            "l1": 2.92299,
+            "l2sq": 1.92866,
+            "linf": 0.913746
           }
         ]
       }

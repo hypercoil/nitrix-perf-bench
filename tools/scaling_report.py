@@ -58,6 +58,9 @@ def _size_elems(param: Dict[str, Any]) -> int:
     # volreg: a (T, *spatial) series -- the work / HBM axis is T * voxels.
     if 'shape' in param and 'T' in param:
         return _prod(param['shape']) * int(param['T'])
+    # bbr: N boundary points -- the cost axis (volume-independent).
+    if 'shape' in param and 'N' in param:
+        return int(param['N'])
     if 'shape' in param:
         return _prod(param['shape']) * int(param.get('batch', 1) or 1)
     # PCA family (n samples, d features, k components): the (n,d)@(d,k)-class
@@ -122,6 +125,9 @@ def _label(param: Dict[str, Any]) -> str:
     # volreg: a (T, *spatial) series -- tag the batch (the scale axis).
     if 'shape' in param and 'T' in param:
         return f'T{param["T"]} {"x".join(str(s) for s in param["shape"])}'
+    # bbr: N boundary points -- the scale axis.
+    if 'shape' in param and 'N' in param:
+        return f'N{param["N"]} {"x".join(str(s) for s in param["shape"])}'
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp

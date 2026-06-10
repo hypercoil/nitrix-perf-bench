@@ -121,3 +121,32 @@ def test_volreg_realigns_motion():
     before = float(series.var(axis=0).mean())     # raw inter-frame variance
     after = float(realigned.var(axis=0).mean())   # post-realignment
     assert after < before * 0.9, f'no realignment {before:.4f}->{after:.4f}'
+
+
+def test_bbr_contract():
+    '''bbr is nitrix-only (no ITK/ANTs BBR): a single nitrix baseline, the gap
+    documented in the fidelity note; the size tier varies N (the cost axis).'''
+    from nperf.cases import bbr_register as bbr_mod
+    built = bbr_mod._build(bbr_mod.CASE.representative)
+    assert set(built.baselines) == {'nitrix-jax'}
+    assert built.ratio_reference == 'nitrix-jax'
+    assert built.fp64_reference is None
+    # the no-ITK/ANTs gap is documented (the mandate is unmet by necessity).
+    assert 'ITK/ANTs' in built.fidelity_note
+    assert bbr_mod.CASE.op_qualname == 'nitrix.register.bbr_register'
+    big_n = {p['N'] for p in bbr_mod.CASE.large_param_points}
+    assert max(big_n) > bbr_mod.CASE.representative['N']
+
+
+def test_bbr_recovers_boundary_offset():
+    '''The accuracy pin: BBR seats the planted boundary offset back -- the
+    final boundary cost is below the initial (the optimiser did work).'''
+    from nitrix.register import BBRSpec, bbr_register
+
+    from nperf.cases._register import bbr_boundary
+    moving, points, normals = bbr_boundary([32, 32, 32], 1000, seed=0)
+    res = bbr_register(jnp.asarray(moving), jnp.asarray(points),
+                       jnp.asarray(normals), spec=BBRSpec(iterations=100))
+    hist = np.asarray(res.cost_history)
+    assert hist[-1] < hist[0], (
+        f'cost did not decrease {hist[0]:.4f}->{hist[-1]:.4f}')
