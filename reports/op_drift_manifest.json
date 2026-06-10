@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T02:35:15Z",
+    "generated": "2026-06-10T03:12:21Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3850,6 +3850,81 @@
             "l1": 37445.9,
             "l2sq": 6641.26,
             "linf": 0.631092
+          }
+        ]
+      }
+    },
+    "distance_transform_edt": {
+      "case": "distance_transform_edt",
+      "qualname": "nitrix.morphology.distance_transform_edt",
+      "signature": "(mask: \"Num[Array, '... *spatial']\", *, backend: 'Backend' = 'auto') -> \"Float[Array, '... *spatial']\"",
+      "behaviour": {
+        "point": {
+          "d": 48
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "float32",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 42348.3,
+            "l2sq": 60022.0,
+            "linf": 3.74166
+          }
+        ]
+      }
+    },
+    "connected_components": {
+      "case": "connected_components",
+      "qualname": "nitrix.morphology.connected_components",
+      "signature": "(mask: \"Bool[Array, '*spatial']\", *, connectivity: 'int' = 1) -> \"Int[Array, '*spatial']\"",
+      "behaviour": {
+        "point": {
+          "d": 48
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "int32",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 1090120.0,
+            "l2sq": 35897400.0,
+            "linf": 33.0
+          }
+        ]
+      }
+    },
+    "largest_connected_component": {
+      "case": "largest_connected_component",
+      "qualname": "nitrix.morphology.largest_connected_component",
+      "signature": "(mask: \"Bool[Array, '*spatial']\", *, connectivity: 'int' = 1) -> \"Bool[Array, '*spatial']\"",
+      "behaviour": {
+        "point": {
+          "d": 48
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "bool",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 32806.0,
+            "l2sq": 32806.0,
+            "linf": 1.0
           }
         ]
       }

@@ -59,6 +59,12 @@ def _size_elems(param: Dict[str, Any]) -> int:
         return _prod(param['shape']) * int(param.get('batch', 1) or 1)
     if 'n' in param:
         return int(param['n']) * int(param.get('degree', 1) or 1)
+    # Cube-field ops (registration / morphology) carry a side length ``d`` ->
+    # a (d, d, d) volume; batched ops (the transform-exps) carry a batch ``b``.
+    if 'd' in param:
+        return int(param['d']) ** 3
+    if 'b' in param:
+        return int(param['b'])
     return 1
 
 
@@ -71,6 +77,10 @@ def _label(param: Dict[str, Any]) -> str:
         if param.get('k') not in (None, 8):
             lbl += f' k{param["k"]}'
         return lbl
+    if 'shape' not in param and 'd' in param:
+        return f'{param["d"]}^3'
+    if 'shape' not in param and 'b' in param:
+        return f'b={param["b"]}'
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp

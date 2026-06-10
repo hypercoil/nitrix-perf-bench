@@ -58,6 +58,15 @@ is the Tier-A worklist.
 
 ## 2. Morphology
 
+> **Progress (2026-06-10):** ✅ distance/connectivity (`distance_transform_edt`,
+> `connected_components`, `largest_connected_component`). **Finding (filed on
+> nitrix `main`, `ce04d7c`):** the connectivity ops scale *poorly* vs cupyx
+> `label` (~2×→18× behind by 160³ — a kernel/algorithm scale risk); the EDT is
+> the semiring euclidean alias (wins small / loses large — the known
+> depth-vs-FLOP trade-off; a scale-aware semiring↔F-H dispatch was filed lower-
+> priority). Also fixed `scaling_report` to size `d`/`b` params. **Remaining:**
+> `max_pool_with_indices_nd` / `max_unpool_nd` (pooling).
+
 | op | ref strategy | discipline notes |
 |---|---|---|
 | `morphology.distance_transform_edt` | `scipy.ndimage.distance_transform_edt` (oracle) + cupyx | sibling of the benched `distance_transform` EDT exemplar; **scale tier already templated** (depth-vs-FLOPs crossover, HBM hog) |
