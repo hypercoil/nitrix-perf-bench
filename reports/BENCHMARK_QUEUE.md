@@ -67,7 +67,7 @@ is the Tier-A worklist.
 > priority). Also fixed `scaling_report` to size `d`/`b` params.
 > ✅ pooling (`max_pool_with_indices_nd`, `max_unpool_nd`) — a clean nitrix-GPU
 > win (1.6–1.9× over cupy; the with-indices argmax is ~2.6× a max-only pool,
-> measured with a DCE guard). **§2 COMPLETE. Next: §3 Stats.**
+> measured with a DCE guard). **§2 COMPLETE. §3 Stats: PCA family landed.**
 
 | op | ref strategy | discipline notes |
 |---|---|---|
@@ -78,9 +78,26 @@ is the Tier-A worklist.
 
 ## 3. Stats
 
+> **Progress (2026-06-10):** ✅ PCA family (`pca_fit`, `pca_transform`,
+> `pca_inverse_transform`). Sign/rotation ambiguity dodged by scoring the
+> invariant quantity: `pca_fit` gates on `explained_variance` (the unique top-k
+> covariance eigenvalues, not the ±/rotation-ambiguous components);
+> transform/inverse share one fixed pre-fitted basis across all frameworks, so
+> their matmul output is unambiguous. **Finding (re-measured, corrects
+> [[perfbench-gpu-eigh-blocker]]):** the older "`safe_eigh` routes to CPU at
+> d≥256" assumption did **not** reproduce — in a fresh worker the cuSOLVER eigh
+> stays GPU-native through d=2048 (nitrix 44.9 ms vs cupy device-eigh 41.6 ms:
+> parity), the CPU fallback a latent net that only fires on handle-creation
+> failure in long-lived/pressured contexts. So `pca_fit` is GPU-parity with
+> cupy + a 6–12× CPU win over sklearn's full-SVD (`sklearn.PCA` made a
+> `slow_baseline` — times out at d=2048). The matmul twins: `pca_transform`
+> parity with cupy; `pca_inverse_transform` beats cupy 1.8–2.7× at scale (it
+> consumes the small `Z (n,k)`, not the full `X (n,d)`). **Next: conditional /
+> paired.**
+
 | op | ref strategy | discipline notes |
 |---|---|---|
-| `stats.pca_transform` / `pca_fit` / `pca_inverse_transform` | `sklearn.decomposition.PCA` (floor) + numpy SVD (oracle) + cupy | **sign/component-order ambiguity** (eigenvector sign — cf. the ARPACK flake we just fixed): use a sign-robust comparison; pin the centring/whitening convention |
+| `stats.pca_transform` / `pca_fit` / `pca_inverse_transform` | `sklearn.decomposition.PCA` (floor) + numpy SVD (oracle) + cupy | ✅ **DONE.** sign/rotation ambiguity → score `explained_variance` (fit) + a fixed shared basis (transform/inverse); eigh measured GPU-native to d=2048 |
 | `stats.conditionalcorr` / `conditionalcov` | numpy exact (oracle) + nilearn | siblings of the benched precision/partialcorr family; warranted: the exact conditioning estimator |
 | `stats.pairedcorr` / `pairedcov` | numpy exact (oracle) | warranted: paired vs pooled definition |
 

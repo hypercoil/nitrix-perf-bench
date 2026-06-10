@@ -57,6 +57,17 @@ def _size_elems(param: Dict[str, Any]) -> int:
     (~nnz, the work/memory driver for the sparse operator).'''
     if 'shape' in param:
         return _prod(param['shape']) * int(param.get('batch', 1) or 1)
+    # PCA family (n samples, d features, k components): the (n,d)@(d,k)-class
+    # work axis. Checked before the bare ``n`` / ``V`` branches (PCA carries
+    # both an ``n`` and a ``d``, which neither of those expects).
+    if 'n' in param and 'd' in param:
+        return (int(param['n']) * int(param['d'])
+                * int(param.get('k', 1) or 1))
+    # Batched LME ops carry the voxel batch ``V`` -- the linear scale axis.
+    # Checked before ``n`` because reml_fit carries BOTH ``V`` and a per-group
+    # ``n`` (constant across its points); ``V`` is the real scale axis.
+    if 'V' in param:
+        return int(param['V'])
     if 'n' in param:
         return int(param['n']) * int(param.get('degree', 1) or 1)
     # Cube-field ops (registration / morphology) carry a side length ``d`` ->
@@ -69,13 +80,17 @@ def _size_elems(param: Dict[str, Any]) -> int:
     # the c x c matrix is the HBM driver + the c^3 inverse's axis.
     if 'c' in param:
         return int(param['c']) ** 2
-    # Batched LME ops carry the voxel batch ``V`` -- the linear scale axis.
-    if 'V' in param:
-        return int(param['V'])
     return 1
 
 
 def _label(param: Dict[str, Any]) -> str:
+    # PCA family (n + d + k): n x d, components tag. Before the bare ``n`` /
+    # ``V`` branches (PCA carries both n and d).
+    if 'shape' not in param and 'n' in param and 'd' in param:
+        return f'{param["n"]}x{param["d"]} k{param.get("k")}'
+    # Batched LME ops (V the scale axis); before ``n`` (reml carries both).
+    if 'shape' not in param and 'V' in param:
+        return f'V={param["V"]}'
     # Graph ops are keyed by node count (n) + format / k; image ops by shape.
     if 'shape' not in param and 'n' in param:
         lbl = f'n={param["n"]}'
@@ -90,8 +105,6 @@ def _label(param: Dict[str, Any]) -> str:
         return f'b={param["b"]}'
     if 'shape' not in param and 'c' in param:
         return f'c={param["c"]}'
-    if 'shape' not in param and 'V' in param:
-        return f'V={param["V"]}'
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp

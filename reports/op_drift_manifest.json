@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T04:17:26Z",
+    "generated": "2026-06-10T06:49:47Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3979,6 +3979,83 @@
             "l1": 118327.0,
             "l2sq": 199559.0,
             "linf": 4.73196
+          }
+        ]
+      }
+    },
+    "pca_fit": {
+      "case": "pca_fit",
+      "qualname": "nitrix.stats.pca_fit",
+      "signature": "(X: \"Float[Array, 'n d']\", *, n_components: 'Optional[int]' = None, center: 'bool' = True, solver: 'Solver' = 'full', n_oversamples: 'int' = 10, n_power_iterations: 'int' = 2, key: 'Optional[Array]' = None) -> 'PCAResult'",
+      "behaviour": {
+        "point": {
+          "n": 2048,
+          "d": 256,
+          "k": 16
+        },
+        "leaves": [
+          {
+            "shape": [
+              16
+            ],
+            "dtype": "float32",
+            "n_finite": 16,
+            "n_nonfinite": 0,
+            "l1": 263.247,
+            "l2sq": 9856.63,
+            "linf": 65.5435
+          }
+        ]
+      }
+    },
+    "pca_transform": {
+      "case": "pca_transform",
+      "qualname": "nitrix.stats.pca_transform",
+      "signature": "(X: \"Float[Array, 'n d']\", components: \"Float[Array, 'k d']\", mean: \"Float[Array, 'd']\") -> \"Float[Array, 'n k']\"",
+      "behaviour": {
+        "point": {
+          "n": 16384,
+          "d": 512,
+          "k": 64
+        },
+        "leaves": [
+          {
+            "shape": [
+              16384,
+              64
+            ],
+            "dtype": "float32",
+            "n_finite": 1048576,
+            "n_nonfinite": 0,
+            "l1": 2833890.0,
+            "l2sq": 16207700.0,
+            "linf": 33.452
+          }
+        ]
+      }
+    },
+    "pca_inverse_transform": {
+      "case": "pca_inverse_transform",
+      "qualname": "nitrix.stats.pca_inverse_transform",
+      "signature": "(Z: \"Float[Array, 'n k']\", components: \"Float[Array, 'k d']\", mean: \"Float[Array, 'd']\") -> \"Float[Array, 'n d']\"",
+      "behaviour": {
+        "point": {
+          "n": 16384,
+          "d": 512,
+          "k": 64
+        },
+        "leaves": [
+          {
+            "shape": [
+              16384,
+              512
+            ],
+            "dtype": "float32",
+            "n_finite": 8388608,
+            "n_nonfinite": 0,
+            "l1": 9238380.0,
+            "l2sq": 16208500.0,
+            "linf": 8.48452
           }
         ]
       }
