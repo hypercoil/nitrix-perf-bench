@@ -64,8 +64,10 @@ is the Tier-A worklist.
 > `label` (~2×→18× behind by 160³ — a kernel/algorithm scale risk); the EDT is
 > the semiring euclidean alias (wins small / loses large — the known
 > depth-vs-FLOP trade-off; a scale-aware semiring↔F-H dispatch was filed lower-
-> priority). Also fixed `scaling_report` to size `d`/`b` params. **Remaining:**
-> `max_pool_with_indices_nd` / `max_unpool_nd` (pooling).
+> priority). Also fixed `scaling_report` to size `d`/`b` params.
+> ✅ pooling (`max_pool_with_indices_nd`, `max_unpool_nd`) — a clean nitrix-GPU
+> win (1.6–1.9× over cupy; the with-indices argmax is ~2.6× a max-only pool,
+> measured with a DCE guard). **§2 COMPLETE. Next: §3 Stats.**
 
 | op | ref strategy | discipline notes |
 |---|---|---|
