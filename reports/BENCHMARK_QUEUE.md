@@ -37,6 +37,12 @@ is the Tier-A worklist.
 
 ## 1. Registration (continue the current thrust)
 
+> **Progress (2026-06-10):** ✅ the 3 penalties (`gradient_smoothness`,
+> `bending_energy`, `jacobian_folding_penalty`) shipped — commit `63b145a`;
+> ✅ the transform-exps (`rigid_exp`, `affine_exp`, `rigid_log`) shipped —
+> commit `0c5dae1`. **Remaining:** `spatial_gradient`, `invert_displacement`
+> (iterative + IFT — apply the iterative-op caveat), `compose_velocity`.
+
 | op | ref strategy | discipline notes |
 |---|---|---|
 | `register.bending_energy` | numpy exact reimpl (oracle) + cupy | stencil over a displacement field; **scale tier** (bandwidth, brain-scale); differentiable (training penalty) |
