@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T01:02:47Z",
+    "generated": "2026-06-10T01:41:05Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3698,6 +3698,80 @@
             "l1": 0.233181,
             "l2sq": 0.0543735,
             "linf": 0.233181
+          }
+        ]
+      }
+    },
+    "rigid_exp": {
+      "case": "rigid_exp",
+      "qualname": "nitrix.geometry.rigid_exp",
+      "signature": "(params: \"Float[Array, '... p']\", *, ndim: 'int') -> \"Float[Array, '... d1 d1']\"",
+      "behaviour": {
+        "point": {
+          "b": 16384
+        },
+        "leaves": [
+          {
+            "shape": [
+              16384,
+              4,
+              4
+            ],
+            "dtype": "float32",
+            "n_finite": 262144,
+            "n_nonfinite": 0,
+            "l1": 284548.0,
+            "l2sq": 1291080.0,
+            "linf": 20.7236
+          }
+        ]
+      }
+    },
+    "affine_exp": {
+      "case": "affine_exp",
+      "qualname": "nitrix.geometry.affine_exp",
+      "signature": "(params: \"Float[Array, '... p']\", *, ndim: 'int') -> \"Float[Array, '... d1 d1']\"",
+      "behaviour": {
+        "point": {
+          "b": 16384
+        },
+        "leaves": [
+          {
+            "shape": [
+              16384,
+              4,
+              4
+            ],
+            "dtype": "float32",
+            "n_finite": 262144,
+            "n_nonfinite": 0,
+            "l1": 270531.0,
+            "l2sq": 1304620.0,
+            "linf": 22.97
+          }
+        ]
+      }
+    },
+    "rigid_log": {
+      "case": "rigid_log",
+      "qualname": "nitrix.geometry.rigid_log",
+      "signature": "(matrix: \"Float[Array, '... d1 d1']\", *, ndim: 'int') -> \"Float[Array, '... p']\"",
+      "behaviour": {
+        "point": {
+          "b": 16384
+        },
+        "leaves": [
+          {
+            "shape": [
+              16384,
+              6
+            ],
+            "dtype": "float32",
+            "n_finite": 98304,
+            "n_nonfinite": 0,
+            "l1": 215292.0,
+            "l2sq": 1237870.0,
+            "linf": 20.7236
           }
         ]
       }
