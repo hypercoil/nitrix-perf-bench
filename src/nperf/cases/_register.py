@@ -146,3 +146,38 @@ def dipy_register(kind: str, levels: int, iters: int) -> Callable[..., Any]:
         return amap.transform(mov)
 
     return run
+
+
+def sitk_demons_register(iters: int, *, sigma: float = 1.0,
+                         hist_match: bool = True) -> Callable[..., Any]:
+    '''SimpleITK ``DiffeomorphicDemonsRegistrationFilter`` -- the *direct*
+    canonical ITK diffeomorphic-demons reference (Vercauteren), the closest
+    cross-tool counterpart of nitrix's log-Demons.  Like nitrix (and unlike
+    ANTs / dipy, which terminate on convergence) ITK's demons filter runs to
+    its configured iteration count -- no metric-based early-exit in the basic
+    filter -- so it is the fairest *per-iteration* demons comparison (see the
+    fixed-iteration vs early-stop caveat in reports/REGISTRATION_SCALING.md).
+    Single-resolution at the case's ``iters``, with the canonical
+    histogram-match pre-step (demons assumes intensity correspondence).
+    SimpleITK is lazy (base env, numpy fw); returns the warped moving.'''
+
+    def run(moving: Any, fixed: Any) -> Any:
+        import SimpleITK as sitk
+
+        f = sitk.GetImageFromArray(np.asarray(fixed, np.float32))
+        m = sitk.GetImageFromArray(np.asarray(moving, np.float32))
+        if hist_match:
+            hm = sitk.HistogramMatchingImageFilter()
+            hm.SetNumberOfHistogramLevels(128)
+            hm.SetNumberOfMatchPoints(10)
+            hm.ThresholdAtMeanIntensityOn()
+            m = hm.Execute(m, f)
+        demons = sitk.DiffeomorphicDemonsRegistrationFilter()
+        demons.SetNumberOfIterations(int(iters))
+        demons.SetStandardDeviations(sigma)
+        disp = demons.Execute(f, m)
+        tx = sitk.DisplacementFieldTransform(disp)
+        warped = sitk.Resample(m, f, tx, sitk.sitkLinear, 0.0)
+        return sitk.GetArrayFromImage(warped)
+
+    return run

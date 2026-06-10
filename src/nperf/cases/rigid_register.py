@@ -33,7 +33,7 @@ import jax
 import jax.numpy as jnp
 from nitrix.register import RegistrationSpec, rigid_register
 
-from ._base import BuiltPoint, Case
+from ._base import BuiltPoint, Case, SlowBaseline
 from ._register import ants_register, dipy_register, warp_pair
 
 
@@ -92,6 +92,11 @@ CASE = Case(
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 10, 'seed': 0},
     large_param_points=tuple(
         {'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE),
+    # dipy MI is slow at scale (128^3 ~35 s on CPU); skippable for dev cycles.
+    slow_baselines=(SlowBaseline(
+        'dipy.registration',
+        reason='dipy MI ~35 s at 128^3 on CPU (CPU-only cython); '
+               'worker-timeout-capped in the full matrix.'),),
     complexity=(
         'post loop-roll (lax.scan): COMPILE ~flat in iterations AND volume '
         '(XLA compiles the per-iteration op graph, not an unrolled chain) -- '

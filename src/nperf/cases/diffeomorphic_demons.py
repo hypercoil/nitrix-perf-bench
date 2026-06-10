@@ -35,8 +35,13 @@ import jax
 import jax.numpy as jnp
 from nitrix.register import DemonsSpec, diffeomorphic_demons_register
 
-from ._base import BuiltPoint, Case
-from ._register import ants_register, dipy_register, warp_pair
+from ._base import BuiltPoint, Case, SlowBaseline
+from ._register import (
+    ants_register,
+    dipy_register,
+    sitk_demons_register,
+    warp_pair,
+)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -64,6 +69,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'dipy.registration': (  # diffeomorphic ref (dipy SyN on SSD)
             'dipy', dipy_register('syn', int(param['levels']),
                                   int(param['iters']))),
+        'simpleitk.demons': (  # the DIRECT canonical ITK diffeomorphic demons
+            'simpleitk', sitk_demons_register(int(param['iters']))),
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
@@ -81,8 +88,8 @@ _CONFIGS = [(1, 20), (2, 20), (2, 40)]
 _SHAPE = [48, 48, 48]
 # Size tier (brain-scale): fix a mid config, vary the volume. Capped at 160^3:
 # demons' SVF field + scaling-squaring intermediates cost ~3 KB/voxel (~1.7x
-# rigid/affine), so it is the HBM-bound recipe -- scaling_report projects OOM
-# ~187^3 on the L4 from this curve (the binding brain-scale constraint).
+# rigid/affine) at the clean small sizes, so it is the HBM-heaviest recipe --
+# but cold peak_hbm is autotune-contaminated (see complexity / the report).
 _LARGE = [[96, 96, 96], [128, 128, 128], [160, 160, 160]]
 
 CASE = Case(
@@ -96,6 +103,14 @@ CASE = Case(
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 20, 'seed': 0},
     large_param_points=tuple(
         {'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE),
+    # dipy SyN is pathologically slow at scale (128^3 ~126 s on CPU, vs ITK
+    # demons ~few s) -- declare it slow so --skip-slow drops it for dev cycles
+    # (the full matrix still runs it, each attempt capped by --worker-timeout).
+    slow_baselines=(SlowBaseline(
+        'dipy.registration',
+        reason='dipy SyN ~126 s at 128^3 on CPU (CPU-only cython, '
+               'super-linear); the full-matrix dipy point is '
+               'worker-timeout-capped.'),),
     complexity=(
         'post loop-roll (lax.scan): COMPILE flat in iterations -- L2x20 == '
         'L2x40 (~6.8 s on the L4); even the default L3x80 (240 iters), once '

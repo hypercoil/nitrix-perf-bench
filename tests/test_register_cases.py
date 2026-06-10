@@ -35,9 +35,15 @@ _RECOVER = [
 @pytest.mark.parametrize('mod', _MODS, ids=lambda m: m.CASE.name)
 def test_case_contract(mod):
     built = mod._build(mod.CASE.representative)
-    assert set(built.baselines) == {'nitrix-jax', 'ants.registration',
-                                     'dipy.registration'}
+    # every recipe carries nitrix + the ANTs/dipy cross-tool refs; the demons
+    # case additionally carries the direct ITK demons counterpart.
+    common = {'nitrix-jax', 'ants.registration', 'dipy.registration'}
+    expected = common | ({'simpleitk.demons'}
+                         if mod is demons_mod else set())
+    assert set(built.baselines) == expected
     assert built.ratio_reference == 'nitrix-jax'
+    # dipy is declared slow on every recipe (skippable via --skip-slow).
+    assert 'dipy.registration' in {s.baseline for s in mod.CASE.slow_baselines}
     # task-level: no shared oracle, but a documented reason + the compile law.
     assert built.fp64_reference is None and built.fidelity_note
     assert mod.CASE.complexity and 'compile' in mod.CASE.complexity.lower()
