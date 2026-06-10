@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T17:47:03Z",
+    "generated": "2026-06-10T21:57:12Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4160,6 +4160,38 @@
             "l1": 9202.81,
             "l2sq": 2153.55,
             "linf": 1.0
+          }
+        ]
+      }
+    },
+    "greedy_syn_register": {
+      "case": "greedy_syn_register",
+      "qualname": "nitrix.register.greedy_syn_register",
+      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'SyNSpec' = SyNSpec(levels=3, iterations=80, radius=2, step=0.25, sigma_fluid=1.0, sigma_diffusion=1.5, n_steps=5, spacing=None, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest')) -> 'SyNResult'",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "levels": 1,
+          "iters": 40
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48,
+              3
+            ],
+            "dtype": "float32",
+            "n_finite": 331776,
+            "n_nonfinite": 0,
+            "l1": 57844.6,
+            "l2sq": 16483.0,
+            "linf": 1.11779
           }
         ]
       }

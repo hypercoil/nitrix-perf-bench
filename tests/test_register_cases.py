@@ -13,17 +13,20 @@ import pytest
 from nitrix.register import (
     DemonsSpec,
     RegistrationSpec,
+    SyNSpec,
     affine_register,
     diffeomorphic_demons_register,
+    greedy_syn_register,
     rigid_register,
 )
 
 from nperf.cases import affine_register as affine_mod
 from nperf.cases import diffeomorphic_demons as demons_mod
+from nperf.cases import greedy_syn_register as syn_mod
 from nperf.cases import rigid_register as rigid_mod
-from nperf.cases._register import ncc, warp_pair
+from nperf.cases._register import ncc, syn_pair, warp_pair
 
-_MODS = [rigid_mod, affine_mod, demons_mod]
+_MODS = [rigid_mod, affine_mod, demons_mod, syn_mod]
 # (recipe fn, spec) per case -- coarse-to-fine, few iters (recovery test).
 _RECOVER = [
     (rigid_register, RegistrationSpec(levels=2, iterations=15)),
@@ -73,3 +76,16 @@ def test_recipe_recovers_planted_warp(recipe, spec):
     before = ncc(moving, fixed)
     after = ncc(np.asarray(res.warped), fixed)
     assert after > before + 0.05, f'no improvement {before:.3f}->{after:.3f}'
+
+
+def test_syn_recovers_deformation():
+    '''greedy SyN on a smooth non-rigid pair: the warp improves alignment AND
+    the deformation is diffeomorphic (jacobian_det > 0 everywhere -- no
+    folding, the op's stated QA contract).'''
+    moving, fixed = syn_pair([28, 28, 28], seed=0)
+    res = greedy_syn_register(jnp.asarray(moving), jnp.asarray(fixed),
+                              spec=SyNSpec(levels=2, iterations=40))
+    before = ncc(moving, fixed)
+    after = ncc(np.asarray(res.warped), fixed)
+    assert after > before + 0.02, f'no improvement {before:.3f}->{after:.3f}'
+    assert bool(jnp.all(res.jacobian_det > 0)), 'folding (jacobian_det <= 0)'
