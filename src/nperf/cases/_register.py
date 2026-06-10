@@ -174,7 +174,8 @@ def dipy_register(kind: str, levels: int, iters: int,
 
 
 def sitk_demons_register(iters: int, *, sigma: float = 1.0,
-                         hist_match: bool = True) -> Callable[..., Any]:
+                         hist_match: bool = True, spacing: Any = None
+                         ) -> Callable[..., Any]:
     '''SimpleITK ``DiffeomorphicDemonsRegistrationFilter`` -- the *direct*
     canonical ITK diffeomorphic-demons reference (Vercauteren), the closest
     cross-tool counterpart of nitrix's log-Demons.  Like nitrix (and unlike
@@ -184,13 +185,21 @@ def sitk_demons_register(iters: int, *, sigma: float = 1.0,
     fixed-iteration vs early-stop caveat in reports/REGISTRATION_SCALING.md).
     Single-resolution at the case's ``iters``, with the canonical
     histogram-match pre-step (demons assumes intensity correspondence).
-    SimpleITK is lazy (base env, numpy fw); returns the warped moving.'''
+    ``spacing`` (per-axis voxel size) sets the images' physical spacing so the
+    filter corrects anisotropy in the same physical space as nitrix's
+    ``DemonsSpec.spacing``; ``None`` is isotropic.  SimpleITK is lazy (base
+    env, numpy fw); returns the warped moving.'''
 
     def run(moving: Any, fixed: Any) -> Any:
         import SimpleITK as sitk
 
         f = sitk.GetImageFromArray(np.asarray(fixed, np.float32))
         m = sitk.GetImageFromArray(np.asarray(moving, np.float32))
+        if spacing is not None:
+            # SetSpacing is x,y,z; numpy/GetImageFromArray axes are reversed.
+            sp = tuple(float(s) for s in reversed(tuple(spacing)))
+            f.SetSpacing(sp)
+            m.SetSpacing(sp)
         if hist_match:
             hm = sitk.HistogramMatchingImageFilter()
             hm.SetNumberOfHistogramLevels(128)

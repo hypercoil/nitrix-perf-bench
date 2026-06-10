@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T22:59:19Z",
+    "generated": "2026-06-10T23:18:54Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3549,7 +3549,7 @@
     "rigid_register": {
       "case": "rigid_register",
       "qualname": "nitrix.register.rigid_register",
-      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06)) -> 'RegistrationResult'",
+      "signature": "(moving: \"Float[Array, '*mspatial']\", fixed: \"Float[Array, '*fspatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06), space: 'CoordinateSpace' = IndexSpace()) -> 'RegistrationResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -3578,7 +3578,7 @@
     "affine_register": {
       "case": "affine_register",
       "qualname": "nitrix.register.affine_register",
-      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06)) -> 'RegistrationResult'",
+      "signature": "(moving: \"Float[Array, '*mspatial']\", fixed: \"Float[Array, '*fspatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06), space: 'CoordinateSpace' = IndexSpace()) -> 'RegistrationResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -3607,7 +3607,7 @@
     "diffeomorphic_demons": {
       "case": "diffeomorphic_demons",
       "qualname": "nitrix.register.diffeomorphic_demons_register",
-      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'DemonsSpec' = DemonsSpec(levels=3, iterations=80, sigma_fluid=1.0, sigma_diffusion=1.5, n_steps=6, alpha=0.4, bch_order=1, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest')) -> 'DiffeomorphicResult'",
+      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'DemonsSpec' = DemonsSpec(levels=3, iterations=80, sigma_fluid=1.0, sigma_diffusion=1.5, n_steps=6, alpha=0.4, bch_order=1, spacing=None, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest')) -> 'DiffeomorphicResult'",
       "behaviour": {
         "point": {
           "shape": [

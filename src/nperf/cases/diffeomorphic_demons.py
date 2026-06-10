@@ -37,6 +37,8 @@ from nitrix.register import DemonsSpec, diffeomorphic_demons_register
 
 from ._base import BuiltPoint, Case, SlowBaseline
 from ._register import (
+    _affine,
+    aniso_pair,
     ants_register,
     dipy_register,
     sitk_demons_register,
@@ -46,9 +48,24 @@ from ._register import (
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     shape = tuple(param['shape'])
-    spec = DemonsSpec(levels=int(param['levels']),
-                      iterations=int(param['iters']))
-    moving, fixed = warp_pair(shape, param.get('seed', 0))
+    levels, iters = int(param['levels']), int(param['iters'])
+    spacing = param.get('spacing')  # None -> isotropic (voxel space)
+    seed = param.get('seed', 0)
+    if spacing is not None:
+        moving, fixed, sp = aniso_pair(shape, spacing, seed)
+        spec = DemonsSpec(levels=levels, iterations=iters, spacing=sp)
+        aff = _affine(spacing)
+        ants_ref = ants_register('SyNOnly', spacing=list(spacing))
+        dipy_ref = dipy_register('syn', levels, iters, affines=(aff, aff))
+        sitk_ref = sitk_demons_register(iters, spacing=spacing)
+    else:
+        # isotropic path unchanged (preserves the existing representative /
+        # drift seed): warp_pair's small known warp registered in voxel space.
+        moving, fixed = warp_pair(shape, seed)
+        spec = DemonsSpec(levels=levels, iterations=iters)
+        ants_ref = ants_register('SyNOnly')
+        dipy_ref = dipy_register('syn', levels, iters)
+        sitk_ref = sitk_demons_register(iters)
     mj = jax.block_until_ready(jnp.asarray(moving))
     fj = jax.block_until_ready(jnp.asarray(fixed))
 
@@ -64,13 +81,9 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             'jax',
             lambda mv, fx: diffeomorphic_demons_register(
                 mv, fx, spec=spec).velocity),
-        'ants.registration': (  # diffeomorphic task-level domain ref (SyNOnly)
-            'ants', ants_register('SyNOnly')),
-        'dipy.registration': (  # diffeomorphic ref (dipy SyN on SSD)
-            'dipy', dipy_register('syn', int(param['levels']),
-                                  int(param['iters']))),
-        'simpleitk.demons': (  # the DIRECT canonical ITK diffeomorphic demons
-            'simpleitk', sitk_demons_register(int(param['iters']))),
+        'ants.registration': ('ants', ants_ref),     # diffeo ref (SyNOnly)
+        'dipy.registration': ('dipy', dipy_ref),      # dipy SyN on SSD
+        'simpleitk.demons': ('simpleitk', sitk_ref),  # direct ITK demons
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
@@ -91,6 +104,12 @@ _SHAPE = [48, 48, 48]
 # rigid/affine) at the clean small sizes, so it is the HBM-heaviest recipe --
 # but cold peak_hbm is autotune-contaminated (see complexity / the report).
 _LARGE = [[96, 96, 96], [128, 128, 128], [160, 160, 160]]
+# Anisotropic points (1x1x3, the clinical thick-slice regime): DemonsSpec.
+# spacing corrects the bias where a voxel-isotropic Gaussian/force is
+# physically anisotropic; the refs get the matching spacing/affine.
+_LARGE_ANISO = [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0,
+                 'spacing': [1, 1, 3]}
+                for s in ([96, 96, 96], [128, 128, 128])]
 
 CASE = Case(
     name='diffeomorphic_demons',
@@ -102,7 +121,8 @@ CASE = Case(
                   for (lv, it) in _CONFIGS],
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 20, 'seed': 0},
     large_param_points=tuple(
-        {'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE),
+        [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE]
+        + _LARGE_ANISO),
     # dipy SyN is pathologically slow at scale (128^3 ~126 s on CPU, vs ITK
     # demons ~few s) -- declare it slow so --skip-slow drops it for dev cycles
     # (the full matrix still runs it, each attempt capped by --worker-timeout).

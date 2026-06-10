@@ -141,6 +141,13 @@ def _label(param: Dict[str, Any]) -> str:
         tags.append(f'{param["se"]}{k}' if k is not None else str(param['se']))
     if param.get('dtype') and param['dtype'] != 'float32':
         tags.append(str(param['dtype']))
+    # registration cross-grid / anisotropy variants sit at the same fixed
+    # shape as a shared-grid / isotropic point -- tag them so they are separate
+    # rows (else _collect merges the world row onto the index row).
+    if param.get('space') == 'world':
+        tags.append('world')
+    if param.get('spacing'):
+        tags.append('aniso' + 'x'.join(str(s) for s in param['spacing']))
     return base + (' ' + ','.join(tags) if tags else '')
 
 

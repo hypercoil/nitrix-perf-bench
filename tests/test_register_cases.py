@@ -150,3 +150,37 @@ def test_bbr_recovers_boundary_offset():
     hist = np.asarray(res.cost_history)
     assert hist[-1] < hist[0], (
         f'cost did not decrease {hist[0]:.4f}->{hist[-1]:.4f}')
+
+
+@pytest.mark.parametrize('recipe', [rigid_register, affine_register],
+                         ids=['rigid', 'affine'])
+def test_cross_grid_recovers_via_worldspace(recipe):
+    '''Cross-grid (different shape + anisotropic moving spacing) recovered in
+    physical space via WorldSpace: the warped moving (on the fixed grid) aligns
+    to fixed -- the regime IndexSpace cannot express.'''
+    from nitrix.register import WorldSpace
+
+    from nperf.cases._register import warp_pair_cross_grid
+    moving, fixed, a_m, a_f = warp_pair_cross_grid(
+        [32, 32, 32], [36, 32, 28],
+        fixed_spacing=(1, 1, 1), moving_spacing=(1.2, 1.0, 0.9), seed=0)
+    res = recipe(jnp.asarray(moving), jnp.asarray(fixed),
+                 spec=RegistrationSpec(levels=2, iterations=20),
+                 space=WorldSpace(fixed_affine=jnp.asarray(a_f),
+                                  moving_affine=jnp.asarray(a_m)))
+    after = ncc(np.asarray(res.warped), fixed)
+    assert after > 0.6, f'cross-grid registration weak (ncc {after:.3f})'
+
+
+def test_aniso_demons_recovers_warp():
+    '''Anisotropic (1x1x3) demons: ``DemonsSpec.spacing`` corrects the bias
+    (a voxel-isotropic Gaussian/force is physically anisotropic); the warp
+    still improves alignment on the anisotropic grid.'''
+    from nperf.cases._register import aniso_pair
+    moving, fixed, sp = aniso_pair([28, 28, 28], (1.0, 1.0, 3.0), seed=0)
+    res = diffeomorphic_demons_register(
+        jnp.asarray(moving), jnp.asarray(fixed),
+        spec=DemonsSpec(levels=2, iterations=20, spacing=sp))
+    before = ncc(moving, fixed)
+    after = ncc(np.asarray(res.warped), fixed)
+    assert after > before + 0.02, f'no improvement {before:.3f}->{after:.3f}'

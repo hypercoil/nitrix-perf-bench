@@ -31,17 +31,45 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.register import RegistrationSpec, rigid_register
+from nitrix.register import (
+    IndexSpace,
+    RegistrationSpec,
+    WorldSpace,
+    rigid_register,
+)
 
 from ._base import BuiltPoint, Case, SlowBaseline
-from ._register import ants_register, dipy_register, warp_pair
+from ._register import (
+    ants_register,
+    dipy_register,
+    warp_pair,
+    warp_pair_cross_grid,
+)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     shape = tuple(param['shape'])
-    spec = RegistrationSpec(levels=int(param['levels']),
-                            iterations=int(param['iters']))
-    moving, fixed = warp_pair(shape, param.get('seed', 0))
+    levels, iters = int(param['levels']), int(param['iters'])
+    spec = RegistrationSpec(levels=levels, iterations=iters)
+    seed = param.get('seed', 0)
+    if param.get('space') == 'world':
+        # cross-grid: fixed and moving on DIFFERENT grids (shape + anisotropic
+        # spacing), recovered in physical space via WorldSpace; the refs get
+        # the matching spacing/affines (their native physical-space regime).
+        f_sp = tuple(param.get('fixed_spacing', (1.0, 1.0, 1.0)))
+        m_sp = tuple(param.get('moving_spacing', (1.2, 1.0, 0.9)))
+        moving, fixed, a_m, a_f = warp_pair_cross_grid(
+            shape, tuple(param['moving_shape']),
+            fixed_spacing=f_sp, moving_spacing=m_sp, seed=seed)
+        space = WorldSpace(fixed_affine=jnp.asarray(a_f),
+                           moving_affine=jnp.asarray(a_m))
+        ants_ref = ants_register('Rigid', spacing=(f_sp, m_sp))
+        dipy_ref = dipy_register('rigid', levels, iters, affines=(a_f, a_m))
+    else:
+        moving, fixed = warp_pair(shape, seed)
+        space = IndexSpace()  # the default (shared-grid) path, unchanged
+        ants_ref = ants_register('Rigid')
+        dipy_ref = dipy_register('rigid', levels, iters)
     mj = jax.block_until_ready(jnp.asarray(moving))
     fj = jax.block_until_ready(jnp.asarray(fixed))
 
@@ -54,12 +82,11 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         # the recipe; return params (the deliverable -- forces the full scan to
         # run, so compile_time is the real cold compile).
         'nitrix-jax': (
-            'jax', lambda mv, fx: rigid_register(mv, fx, spec=spec).params),
-        'ants.registration': (  # task-level domain ref (ANTs Rigid)
-            'ants', ants_register('Rigid')),
-        'dipy.registration': (  # task-level domain ref (dipy rigid MI)
-            'dipy', dipy_register('rigid', int(param['levels']),
-                                  int(param['iters']))),
+            'jax',
+            lambda mv, fx: rigid_register(mv, fx, spec=spec,
+                                          space=space).params),
+        'ants.registration': ('ants', ants_ref),   # ANTs Rigid (physical sp.)
+        'dipy.registration': ('dipy', dipy_ref),    # dipy rigid MI
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
@@ -80,6 +107,18 @@ _SHAPE = [48, 48, 48]
 # steady cost scales on (~ N voxels). rigid is the lightest recipe (P=6, no SVF
 # field), so it carries the most HBM headroom -> runs to 192^3.
 _LARGE = [[96, 96, 96], [128, 128, 128], [160, 160, 160], [192, 192, 192]]
+# Cross-grid points (the realistic cross-resolution/cross-modal regime): fixed
+# and moving on DIFFERENT grids + anisotropic moving spacing, recovered via
+# WorldSpace (added alongside the shared-grid points -- the refs' native
+# physical-space regime, so the fairest cross-tool comparison).
+_LARGE_WORLD = [
+    {'shape': [96, 96, 96], 'moving_shape': [80, 96, 112],
+     'levels': 2, 'iters': 20, 'seed': 0, 'space': 'world',
+     'fixed_spacing': [1, 1, 1], 'moving_spacing': [1.2, 1.0, 0.9]},
+    {'shape': [128, 128, 128], 'moving_shape': [112, 128, 144],
+     'levels': 2, 'iters': 20, 'seed': 0, 'space': 'world',
+     'fixed_spacing': [1, 1, 1], 'moving_spacing': [1.2, 1.0, 0.9]},
+]
 
 CASE = Case(
     name='rigid_register',
@@ -91,7 +130,8 @@ CASE = Case(
                   for (lv, it) in _CONFIGS],
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 10, 'seed': 0},
     large_param_points=tuple(
-        {'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE),
+        [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE]
+        + _LARGE_WORLD),
     # dipy MI is slow at scale (128^3 ~35 s on CPU); skippable for dev cycles.
     slow_baselines=(SlowBaseline(
         'dipy.registration',

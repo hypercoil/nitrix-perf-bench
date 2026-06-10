@@ -27,17 +27,45 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.register import RegistrationSpec, affine_register
+from nitrix.register import (
+    IndexSpace,
+    RegistrationSpec,
+    WorldSpace,
+    affine_register,
+)
 
 from ._base import BuiltPoint, Case, SlowBaseline
-from ._register import ants_register, dipy_register, warp_pair
+from ._register import (
+    ants_register,
+    dipy_register,
+    warp_pair,
+    warp_pair_cross_grid,
+)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     shape = tuple(param['shape'])
-    spec = RegistrationSpec(levels=int(param['levels']),
-                            iterations=int(param['iters']))
-    moving, fixed = warp_pair(shape, param.get('seed', 0))
+    levels, iters = int(param['levels']), int(param['iters'])
+    spec = RegistrationSpec(levels=levels, iterations=iters)
+    seed = param.get('seed', 0)
+    if param.get('space') == 'world':
+        # cross-grid: fixed/moving on different grids + anisotropic moving
+        # spacing, recovered in physical space via WorldSpace; refs get the
+        # matching spacing/affines (their native regime).
+        f_sp = tuple(param.get('fixed_spacing', (1.0, 1.0, 1.0)))
+        m_sp = tuple(param.get('moving_spacing', (1.2, 1.0, 0.9)))
+        moving, fixed, a_m, a_f = warp_pair_cross_grid(
+            shape, tuple(param['moving_shape']),
+            fixed_spacing=f_sp, moving_spacing=m_sp, seed=seed)
+        space = WorldSpace(fixed_affine=jnp.asarray(a_f),
+                           moving_affine=jnp.asarray(a_m))
+        ants_ref = ants_register('Affine', spacing=(f_sp, m_sp))
+        dipy_ref = dipy_register('affine', levels, iters, affines=(a_f, a_m))
+    else:
+        moving, fixed = warp_pair(shape, seed)
+        space = IndexSpace()  # the default (shared-grid) path, unchanged
+        ants_ref = ants_register('Affine')
+        dipy_ref = dipy_register('affine', levels, iters)
     mj = jax.block_until_ready(jnp.asarray(moving))
     fj = jax.block_until_ready(jnp.asarray(fixed))
 
@@ -49,12 +77,10 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     baselines = {
         'nitrix-jax': (
             'jax',
-            lambda mv, fx: affine_register(mv, fx, spec=spec).params),
-        'ants.registration': (  # task-level domain ref (ANTs Affine)
-            'ants', ants_register('Affine')),
-        'dipy.registration': (  # task-level domain ref (dipy affine MI)
-            'dipy', dipy_register('affine', int(param['levels']),
-                                  int(param['iters']))),
+            lambda mv, fx: affine_register(mv, fx, spec=spec,
+                                           space=space).params),
+        'ants.registration': ('ants', ants_ref),   # ANTs Affine (physical sp.)
+        'dipy.registration': ('dipy', dipy_ref),    # dipy affine MI
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for, fp64_reference=None,
@@ -72,6 +98,17 @@ _SHAPE = [48, 48, 48]
 # the P=12 normal system + matrix_exp/iter but the same ~image-sized HBM as
 # rigid (the assembled J is P-thin), so it too keeps headroom to 192^3.
 _LARGE = [[96, 96, 96], [128, 128, 128], [160, 160, 160], [192, 192, 192]]
+# Cross-grid points (cross-resolution/cross-modal): fixed/moving on different
+# grids + anisotropic moving spacing, recovered via WorldSpace (alongside the
+# shared-grid points; the refs' native physical-space regime).
+_LARGE_WORLD = [
+    {'shape': [96, 96, 96], 'moving_shape': [80, 96, 112],
+     'levels': 2, 'iters': 20, 'seed': 0, 'space': 'world',
+     'fixed_spacing': [1, 1, 1], 'moving_spacing': [1.2, 1.0, 0.9]},
+    {'shape': [128, 128, 128], 'moving_shape': [112, 128, 144],
+     'levels': 2, 'iters': 20, 'seed': 0, 'space': 'world',
+     'fixed_spacing': [1, 1, 1], 'moving_spacing': [1.2, 1.0, 0.9]},
+]
 
 CASE = Case(
     name='affine_register',
@@ -83,7 +120,8 @@ CASE = Case(
                   for (lv, it) in _CONFIGS],
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 10, 'seed': 0},
     large_param_points=tuple(
-        {'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE),
+        [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE]
+        + _LARGE_WORLD),
     # dipy MI is slow at scale (128^3 ~25 s on CPU); skippable for dev cycles.
     slow_baselines=(SlowBaseline(
         'dipy.registration',
