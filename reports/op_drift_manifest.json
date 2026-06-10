@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-10T06:49:47Z",
+    "generated": "2026-06-10T17:47:03Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4056,6 +4056,110 @@
             "l1": 9238380.0,
             "l2sq": 16208500.0,
             "linf": 8.48452
+          }
+        ]
+      }
+    },
+    "pairedcov": {
+      "case": "pairedcov",
+      "qualname": "nitrix.stats.pairedcov",
+      "signature": "(X: \"Num[Array, '... c obs']\", Y: \"Num[Array, '... d obs']\", *, rowvar: 'bool' = True, bias: 'bool' = False, ddof: 'Optional[int]' = None, weights: \"Optional[Num[Array, '... obs']]\" = None, weight_matrix: \"Optional[Num[Array, '... obs obs']]\" = None, l2: 'float' = 0.0) -> \"Num[Array, '... c d']\"",
+      "behaviour": {
+        "point": {
+          "c": 256,
+          "d": 256,
+          "obs": 2048
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              256
+            ],
+            "dtype": "float32",
+            "n_finite": 65536,
+            "n_nonfinite": 0,
+            "l1": 140879.0,
+            "l2sq": 504854.0,
+            "linf": 16.1043
+          }
+        ]
+      }
+    },
+    "pairedcorr": {
+      "case": "pairedcorr",
+      "qualname": "nitrix.stats.pairedcorr",
+      "signature": "(X: \"Num[Array, '... c obs']\", Y: \"Num[Array, '... d obs']\", **kwargs: 'Any') -> \"Num[Array, '... c d']\"",
+      "behaviour": {
+        "point": {
+          "c": 256,
+          "d": 256,
+          "obs": 2048
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              256
+            ],
+            "dtype": "float32",
+            "n_finite": 65536,
+            "n_nonfinite": 0,
+            "l1": 18372.3,
+            "l2sq": 7601.1,
+            "linf": 0.942898
+          }
+        ]
+      }
+    },
+    "conditionalcov": {
+      "case": "conditionalcov",
+      "qualname": "nitrix.stats.conditionalcov",
+      "signature": "(X: \"Num[Array, '... c obs']\", Y: \"Num[Array, '... d obs']\", *, rowvar: 'bool' = True, bias: 'bool' = False, ddof: 'Optional[int]' = None, weights: \"Optional[Num[Array, '... obs']]\" = None, weight_matrix: \"Optional[Num[Array, '... obs obs']]\" = None, l2: 'float' = 0.0, residualise_l2: 'float' = 0.0) -> \"Num[Array, '... c c']\"",
+      "behaviour": {
+        "point": {
+          "c": 256,
+          "d": 16,
+          "obs": 2048
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              256
+            ],
+            "dtype": "float32",
+            "n_finite": 65536,
+            "n_nonfinite": 0,
+            "l1": 4286.2,
+            "l2sq": 517.306,
+            "linf": 1.02756
+          }
+        ]
+      }
+    },
+    "conditionalcorr": {
+      "case": "conditionalcorr",
+      "qualname": "nitrix.stats.conditionalcorr",
+      "signature": "(X: \"Num[Array, '... c obs']\", Y: \"Num[Array, '... d obs']\", **kwargs: 'Any') -> \"Num[Array, '... c c']\"",
+      "behaviour": {
+        "point": {
+          "c": 256,
+          "d": 16,
+          "obs": 2048
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              256
+            ],
+            "dtype": "float32",
+            "n_finite": 65536,
+            "n_nonfinite": 0,
+            "l1": 9202.81,
+            "l2sq": 2153.55,
+            "linf": 1.0
           }
         ]
       }

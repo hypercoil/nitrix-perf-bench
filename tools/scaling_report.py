@@ -70,6 +70,13 @@ def _size_elems(param: Dict[str, Any]) -> int:
         return int(param['V'])
     if 'n' in param:
         return int(param['n']) * int(param.get('degree', 1) or 1)
+    # Paired / conditional family (c variables, d second-block/confounds, obs
+    # samples): the input block c*obs is the HBM/scale driver (paired's c*d
+    # cross-block and conditional's c^2 cov are sub-dominant at obs > c).
+    # Before the bare ``d`` branch (these carry a non-scale ``d``: fixed at a
+    # few confounds for conditional, so d^3 would wrongly collapse the tiers).
+    if 'c' in param and 'd' in param and 'obs' in param:
+        return int(param['c']) * int(param['obs'])
     # Cube-field ops (registration / morphology) carry a side length ``d`` ->
     # a (d, d, d) volume; batched ops (the transform-exps) carry a batch ``b``.
     if 'd' in param:
@@ -99,6 +106,10 @@ def _label(param: Dict[str, Any]) -> str:
         if param.get('k') not in (None, 8):
             lbl += f' k{param["k"]}'
         return lbl
+    # Paired / conditional family (c + d + obs); before the bare ``d`` branch.
+    if 'shape' not in param and 'c' in param and 'd' in param \
+            and 'obs' in param:
+        return f'c{param["c"]} d{param["d"]} obs{param["obs"]}'
     if 'shape' not in param and 'd' in param:
         return f'{param["d"]}^3'
     if 'shape' not in param and 'b' in param:

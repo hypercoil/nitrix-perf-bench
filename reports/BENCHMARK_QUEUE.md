@@ -92,14 +92,29 @@ is the Tier-A worklist.
 > cupy + a 6–12× CPU win over sklearn's full-SVD (`sklearn.PCA` made a
 > `slow_baseline` — times out at d=2048). The matmul twins: `pca_transform`
 > parity with cupy; `pca_inverse_transform` beats cupy 1.8–2.7× at scale (it
-> consumes the small `Z (n,k)`, not the full `X (n,d)`). **Next: conditional /
-> paired.**
+> consumes the small `Z (n,k)`, not the full `X (n,d)`).
+>
+> **Progress (2026-06-10, cont.):** ✅ paired / conditional family
+> (`pairedcov`, `pairedcorr`, `conditionalcov`, `conditionalcorr`). Conventions
+> matched to ~1e-16 vs the jitted op (`ddof=1`, `rowvar=True`, no-intercept
+> residualise, the `+eps`-outside-sqrt corr norms); numpy fp64 oracle + cupy
+> GPU twin (no nilearn — it has no cross-/conditional-cov kind, and
+> `signal.clean` adds an intercept + detrend → a different estimator). Paired
+> are pure BLAS; conditional residualise on a **tiny `(d,d)` confound Gram**
+> (Cholesky), so matmul-bound and GPU-robust — the `(d,d)` solver ran
+> GPU-native (contrast `pca_fit`'s `(d,d)` eigh at parcel `d`). `conditionalcov`
+> wins 5/5 sizes vs cupy at scale. **Finding (filed on nitrix `main`,
+> `c865f67`):** `pairedcorr` forms the **full** `cov(X)`/`cov(Y)` just to read
+> their diagonals — ~3× matmul; the direct-variance ref is ~2× faster from
+> c≳512 on CPU+GPU (the `pairedcov` control is at parity, isolating the cost
+> to the redundant covs; flagged a scale risk in `SCALING.md`). **§3 Stats
+> COMPLETE.**
 
 | op | ref strategy | discipline notes |
 |---|---|---|
 | `stats.pca_transform` / `pca_fit` / `pca_inverse_transform` | `sklearn.decomposition.PCA` (floor) + numpy SVD (oracle) + cupy | ✅ **DONE.** sign/rotation ambiguity → score `explained_variance` (fit) + a fixed shared basis (transform/inverse); eigh measured GPU-native to d=2048 |
-| `stats.conditionalcorr` / `conditionalcov` | numpy exact (oracle) + nilearn | siblings of the benched precision/partialcorr family; warranted: the exact conditioning estimator |
-| `stats.pairedcorr` / `pairedcov` | numpy exact (oracle) | warranted: paired vs pooled definition |
+| `stats.conditionalcorr` / `conditionalcov` | numpy exact (oracle) + cupy | ✅ **DONE.** residualise (tiny `(d,d)` Gram, GPU-robust) + cov; numpy oracle (no nilearn — different estimator); `conditionalcov` wins 5/5 vs cupy at scale |
+| `stats.pairedcorr` / `pairedcov` | numpy exact (oracle) + cupy | ✅ **DONE.** pure-BLAS cross-blocks; `pairedcov` at parity, `pairedcorr` ~2× behind from redundant full covs (nitrix FR `c865f67`) |
 
 ## 4. Metrics
 
