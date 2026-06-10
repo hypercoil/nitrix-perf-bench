@@ -57,6 +57,9 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 # (variables, observations): obs > c keeps the covariance non-singular; cost is
 # ~ c·obs (cov) + c^3 (inverse).
 _SHAPES = [(128, 1024), (256, 2048), (512, 4096)]
+# Brain-parcel scale: c up to ~2048 parcels (dense voxel connectivity's C x C
+# is infeasible; parcellations top out here). obs > c keeps cov non-singular.
+_LARGE = [(1024, 4096), (2048, 8192)]
 
 CASE = Case(
     name='precision',
@@ -66,6 +69,16 @@ CASE = Case(
              'throughput'],
     param_points=[{'c': c, 'obs': o, 'seed': 0} for (c, o) in _SHAPES],
     representative={'c': 256, 'obs': 2048, 'seed': 0},
+    large_param_points=tuple(
+        {'c': c, 'obs': o, 'seed': 0} for (c, o) in _LARGE),
+    complexity=(
+        'cov is O(c^2 * obs); the INVERSE is O(c^3) and dominates at '
+        'brain-parcel c. HBM ~ c^2. MEASURED (L4): nitrix jits a consumed-inv '
+        'that scales WELL on the GPU -- it beats the cupy GPU '
+        'inverse-covariance by a GROWING margin (2.35x at c=256 -> 11.5x at '
+        'c=2048), and cupy ran across the range (no cuSOLVER failure observed '
+        'up to c=2048). numpy/nilearn are the CPU floor (slow at c>=1024). A '
+        'scale-WIN; the size tier varies c to parcel scale.'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,

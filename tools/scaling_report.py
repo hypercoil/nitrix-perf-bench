@@ -65,6 +65,10 @@ def _size_elems(param: Dict[str, Any]) -> int:
         return int(param['d']) ** 3
     if 'b' in param:
         return int(param['b'])
+    # Connectivity ops (cov / precision family) carry a variable count ``c`` ->
+    # the c x c matrix is the HBM driver + the c^3 inverse's axis.
+    if 'c' in param:
+        return int(param['c']) ** 2
     return 1
 
 
@@ -81,6 +85,8 @@ def _label(param: Dict[str, Any]) -> str:
         return f'{param["d"]}^3'
     if 'shape' not in param and 'b' in param:
         return f'b={param["b"]}'
+    if 'shape' not in param and 'c' in param:
+        return f'c={param["c"]}'
     shp = 'x'.join(str(s) for s in param.get('shape', []))
     b = param.get('batch')
     base = f'{b}*{shp}' if b else shp

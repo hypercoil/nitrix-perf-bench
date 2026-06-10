@@ -56,6 +56,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 # (variables, observations): obs > c keeps the covariance non-singular; cost is
 # ~ c·obs (cov) + c^3 (inverse).
 _SHAPES = [(128, 1024), (256, 2048), (512, 4096)]
+_LARGE = [(1024, 4096), (2048, 8192)]  # brain-parcel scale
 
 CASE = Case(
     name='partialcorr',
@@ -65,6 +66,14 @@ CASE = Case(
              'throughput'],
     param_points=[{'c': c, 'obs': o, 'seed': 0} for (c, o) in _SHAPES],
     representative={'c': 256, 'obs': 2048, 'seed': 0},
+    large_param_points=tuple(
+        {'c': c, 'obs': o, 'seed': 0} for (c, o) in _LARGE),
+    complexity=(
+        'precision (cov O(c^2*obs) + inverse O(c^3)) then normalising by the '
+        'geometric mean of the diagonal -- the inverse dominates at '
+        'brain-parcel c; HBM ~ c^2. Same GPU inverse as precision (a measured '
+        'scale-WIN: nitrix consumed-inv beats the cupy GPU inv increasingly '
+        'with c). The size tier varies c to parcel scale.'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,
