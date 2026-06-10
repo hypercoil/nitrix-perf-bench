@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-09T22:02:12Z",
+    "generated": "2026-06-10T01:02:47Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -3632,6 +3632,72 @@
             "l1": 384110.0,
             "l2sq": 605805.0,
             "linf": 5.14655
+          }
+        ]
+      }
+    },
+    "gradient_smoothness": {
+      "case": "gradient_smoothness",
+      "qualname": "nitrix.register.gradient_smoothness",
+      "signature": "(field: \"Float[Array, '*spatial ndim']\", *, reduction: 'Reduction' = 'mean') -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "d": 48,
+          "scale": 0.1
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 0.0451145,
+            "l2sq": 0.00203531,
+            "linf": 0.0451145
+          }
+        ]
+      }
+    },
+    "bending_energy": {
+      "case": "bending_energy",
+      "qualname": "nitrix.register.bending_energy",
+      "signature": "(field: \"Float[Array, '*spatial ndim']\", *, reduction: 'Reduction' = 'mean') -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "d": 48,
+          "scale": 0.1
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 0.0780389,
+            "l2sq": 0.00609007,
+            "linf": 0.0780389
+          }
+        ]
+      }
+    },
+    "jacobian_folding_penalty": {
+      "case": "jacobian_folding_penalty",
+      "qualname": "nitrix.register.jacobian_folding_penalty",
+      "signature": "(field: \"Float[Array, '*spatial ndim']\", *, reduction: 'Reduction' = 'mean') -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "d": 48,
+          "scale": 1.0
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 0.233181,
+            "l2sq": 0.0543735,
+            "linf": 0.233181
           }
         ]
       }

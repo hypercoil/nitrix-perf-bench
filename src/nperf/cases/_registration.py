@@ -162,3 +162,73 @@ def cupy_integrate() -> Callable[[Any], Any]:
 def jacobian_sizes(d: int) -> Tuple[int, int, int]:
     '''A (d, d, d) spatial cube for the 3-D registration cases.'''
     return (d, d, d)
+
+
+# ---- explicit regularisers (nitrix.register penalties) -------------------- #
+# Exact-convention reimplementations of the displacement-field penalties (all
+# reuse the same roll-based central diff above, so they match nitrix's gradient
+# / boundary convention, not numpy.gradient's). Generic over xp -> one body
+# serves the numpy fp64 oracle + the cupy GPU ref. Default reduction 'mean'
+# (the training-loss form users add to a loss).
+
+
+def _mean(x: Any, xp: Any) -> Any:
+    return xp.mean(x)
+
+
+def _gradient_smoothness(u: Any, xp: Any) -> Any:
+    '''``mean ‖∇u‖²`` -- squared Frobenius of the displacement Jacobian.'''
+    d = u.shape[-1]
+    grad_u = _jacobian(u, xp) - xp.eye(d, dtype=u.dtype)
+    return _mean(xp.sum(grad_u ** 2, axis=(-2, -1)), xp)
+
+
+def _bending_energy(u: Any, xp: Any) -> Any:
+    '''``mean ‖∇²u‖²`` -- squared Frobenius of the per-voxel Hessian (a second
+    central diff of each ``∇u`` component).'''
+    d = u.shape[-1]
+    grad_u = _jacobian(u, xp) - xp.eye(d, dtype=u.dtype)
+    flat = grad_u.reshape(u.shape[:-1] + (d * d,))
+    comps = [xp.stack([_central_diff(flat[..., c], ax, xp)
+                       for ax in range(d)], -1)
+             for c in range(d * d)]
+    hess = xp.stack(comps, -2)  # (*spatial, d*d, d)
+    return _mean(xp.sum(hess ** 2, axis=(-2, -1)), xp)
+
+
+def _folding(u: Any, xp: Any) -> Any:
+    '''``mean relu(-det J)`` of ``J = I + ∇u`` -- the folding penalty.'''
+    return _mean(xp.maximum(-_jac_det(u, xp), 0.0), xp)
+
+
+def np_gradient_smoothness(u: Any) -> np.ndarray:
+    return np.asarray(_gradient_smoothness(np.asarray(u), np))
+
+
+def np_bending_energy(u: Any) -> np.ndarray:
+    return np.asarray(_bending_energy(np.asarray(u), np))
+
+
+def np_folding(u: Any) -> np.ndarray:
+    return np.asarray(_folding(np.asarray(u), np))
+
+
+def _cupy_penalty(fn: Callable[[Any, Any], Any]) -> Callable[[Any], Any]:
+    def run(u: Any) -> Any:
+        import cupy as cp
+
+        return fn(u, cp)
+
+    return run
+
+
+def cupy_gradient_smoothness() -> Callable[[Any], Any]:
+    return _cupy_penalty(_gradient_smoothness)
+
+
+def cupy_bending_energy() -> Callable[[Any], Any]:
+    return _cupy_penalty(_bending_energy)
+
+
+def cupy_folding() -> Callable[[Any], Any]:
+    return _cupy_penalty(_folding)
