@@ -44,6 +44,22 @@ is the Tier-A worklist.
 > unique-win, with `lax.while_loop` early-exit done right; `compose_velocity`
 > BCH order-2). All with warranted oracles + scale/batch tiers + drift seeds.
 > **Next: §2 Morphology.**
+>
+> **§1 v2 — registration-suite-v2 recipes (2026-06-11).** ✅ `greedy_syn_register`
+> (SyN vs ANTs `SyNOnly` + dipy), `volreg` (motion realignment vs ANTs
+> `motion_correction`), `bbr_register` (nitrix-only — no ITK/ANTs BBR), plus
+> **cross-grid** rigid/affine (`WorldSpace`, different shape + anisotropic
+> spacing) and **anisotropic** demons/SyN (`spacing=[1,1,3]`), added alongside
+> the shared-grid points. Drove the **economic verdict** tooling
+> (`tools/economic_report.py` → `ECONOMIC.md`): the nitrix-GPU win counts only
+> if **multiplicative** over the ~4× GPU:CPU hardware premium. Findings
+> (`REGISTRATION_SCALING.md` §8): the genuine multiplicative wins are
+> **volreg** (the batching story, 54→94× amortized, grows with T) and **demons**
+> (29× vs ITK); `syn`/`rigid`/`affine` frequently **fail** the 4× bar at brain
+> scale because ANTs is fast C, and single-run is compile-dominated everywhere
+> but volreg T=500. **Caveats:** ANTs is *not* the community moco standard
+> (AFNI `3dvolreg` / FSL `mcflirt`) nor a BBR tool (FSL/FreeSurfer) — a planned
+> `/scratch` install will re-bench against the real community tools.
 
 | op | ref strategy | discipline notes |
 |---|---|---|

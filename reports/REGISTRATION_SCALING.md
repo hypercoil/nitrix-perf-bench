@@ -170,3 +170,48 @@ benched: `register.{bending_energy, gradient_smoothness, jacobian_folding_-
 penalty}` (regularisers), `linalg.implicit_minimize` (the new non-SSD IFT
 layer), `metrics.joint_histogram`, and the transform-exps `geometry.{rigid_exp,
 affine_exp, rigid_log}`.
+
+## 8. The economic verdict (registration-suite-v2): is the GPU win *multiplicative*?
+
+The v2 round added `volreg`, `greedy_syn_register`, `bbr_register`, cross-grid
+rigid/affine (`WorldSpace`) and anisotropic demons/SyN. The framing question is
+**not** "is nitrix-GPU faster than the CPU gold standard" but "is it faster by
+**more than the GPU hardware premium** (~4×)" — an incremental GPU win is not a
+win once a real user pays for the GPU. `tools/economic_report.py` →
+`reports/ECONOMIC.md` computes it: nitrix-GPU (steady + the one-time compile) vs
+the fastest CPU domain tool, both **amortized** (compile over a cohort) and
+**single-run** (cold). Headlines (4× bar, jax-cuda12 vs jax-cpu):
+
+| op | best amortized | verdict pattern | the honest read |
+|---|---|---|---|
+| **volreg** | **94×** @T=500 (grows 54→94× with T) | favorable 6/6; **single-run favorable** at T=500 (7.9×) | the batching win: nitrix vmaps the series in one compile, ANTs realigns frame-by-frame (~60 ms/frame). *Provisional* — ANTs is **not** the community moco tool (AFNI `3dvolreg` / FSL `mcflirt`, fast, are; a fast tool would shrink this) |
+| **diffeomorphic_demons** | 29× @96³ | favorable 5/5 (incl. aniso 1×1×3) | clean amortized win vs ITK demons (the direct counterpart); single-run compile-dominated |
+| **bbr_register** | 17× | favorable 3/3 (GPU-vs-own-CPU) | nitrix-only (no ITK/ANTs BBR); a real op-level GPU win, no domain bar yet |
+| **greedy_syn_register** | 9.7× (aniso) | **mixed 3/5** — 96³/128³ isotropic *not* enough (3.7×, 2.3×) | the corrected SyN story: ANTs `SyNOnly` is **fast** (~6 s @128³), so nitrix-GPU often does **not** clear 4× — the win must be earned, and at the largest isotropic sizes it isn't |
+| **rigid_register** | 5.9× @128³ | **mostly not enough (1/6)** | ANTs rigid is fast; nitrix-GPU steady is close → 1.3–3.8× at most sizes (incl. cross-grid). A GPU is **not** economically justified for a single rigid reg |
+| **affine_register** | 12.8× @96³ | mixed 2/6 (drops to 1.3–2.8× at ≥128³) | favorable small, erodes at scale as ANTs affine stays competitive |
+
+**Two cross-cutting truths the verdict surfaces (both serving the no-inflated-win
+discipline):**
+
+1. **Single-run is almost never favorable** — the cold compile (8–53 s) dwarfs a
+   single CPU registration (sub-second to seconds), so for **one** image pair the
+   GPU loses outright *except* where the CPU tool is itself slow (volreg T=500:
+   ANTs 85 s). The GPU win is an **amortized / cohort** story (many subjects, or
+   the batched `T` frames), not a single-run one. The report prints both so this
+   can't be hidden.
+2. **The win must be earned against the *fast* CPU tool.** Where the gold
+   standard is hand-optimised C that already runs in seconds (ANTs rigid/affine,
+   ANTs `SyNOnly`), nitrix-GPU frequently **fails** the 4× bar at brain scale —
+   `rigid` (1/6), `affine` (2/6), `syn` (3/5). The genuine multiplicative wins
+   are where nitrix **batches** (volreg) or the CPU tool is intrinsically slow
+   (ITK demons). This is the opposite of the naive "GPU = win" reading, and is
+   exactly why the bar exists.
+
+**Caveats** (carried from §3–§4 and `ECONOMIC.md`): the ANTs/dipy domain tools
+run a fixed internal schedule (so the verdict lives on the size/T tier, not the
+dev `(levels, iters)` configs); fixed-iteration nitrix vs early-stop ANTs/dipy
+is a wall-clock read, not a per-iteration claim; **time only** (HBM excluded —
+§6); `volreg`'s ANTs ref is provisional pending AFNI/FSL (a planned `/scratch`
+install, with FSL/FreeSurfer for BBR). cuSOLVER note: the cross-grid `WorldSpace`
+points (a 4×4 `safe_inv` per reg) ran **GPU-native** at 96³/128³ — no wedge.

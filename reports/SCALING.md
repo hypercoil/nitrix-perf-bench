@@ -8,9 +8,28 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 243.08ms | — | ok | 386.8MB | — | — |
+| 48x48x48 | 49.14ms | — | ok | 203.4MB | — | — |
+| 96x96x96 | 125.01ms | — | ok | 1309.5MB | — | — |
+| 96x96x96 world | 125.42ms | — | ok | 1514.6MB | — | — |
+| 128x128x128 | 302.79ms | — | ok | 8741.5MB | — | — |
+| 128x128x128 world | 312.50ms | — | ok | 8665.6MB | — | — |
+| 160x160x160 | 556.18ms | — | ok | 1924.7MB | — | — |
+| 192x192x192 | 1036.12ms | — | ok | 3356.5MB | — | — |
 
-- **Projected OOM (≈24GB):** nitrix ~6.9 Melem.
+- **Projected OOM (≈24GB):** nitrix ~50.6 Melem.
+
+## bbr_register  (nitrix.register.bbr_register)  [jax-cuda12]
+
+**Cost law.** STEADY ~ iters x N: BFGS over the (rigid) parameters, each cost eval samples 2N points along the boundary normals + a tanh contrast -- VOLUME-INDEPENDENT (only 2N samples touch the grid). NO ITK/ANTs equivalent (a nitrix-only capability; the comparison is GPU vs CPU + the one-time compile, no domain tool). HBM ~ N (the point arrays), tiny. The size tier varies N to cortical-mesh scale.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| N2000 48x48x48 | 5.94ms | — | ok | 336.0MB | — | — |
+| N5000 64x64x64 | 1.35ms | — | ok | 336.7MB | — | — |
+| N20000 64x64x64 | 6.86ms | — | ok | 337.1MB | — | — |
+| N80000 64x64x64 | 17.22ms | — | ok | 338.6MB | — | — |
+
+- **Projected OOM (≈24GB):** nitrix ~5.7 Melem.
 
 ## close  (nitrix.morphology.close)  [jax-cuda12]
 
@@ -93,9 +112,15 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 16.45ms | — | ok | 374.0MB | — | — |
+| 48x48x48 | 18.25ms | 604.45ms (demons) | 0.03x | 339.1MB | 0.9MB | — |
+| 96x96x96 | 80.43ms | 5105.72ms (demons) | 0.02x | 3777.4MB | 8.4MB | 450x |
+| 96x96x96 aniso1x1x3 | 83.81ms | 3665.49ms (demons) | 0.02x | 3777.4MB | 8.4MB | 450x |
+| 128x128x128 | 295.77ms | 11254.76ms (demons) | 0.03x | 8783.4MB | 16.8MB | 524x |
+| 128x128x128 aniso1x1x3 | 302.67ms | 5555.39ms (demons) | 0.05x | 8850.5MB | 16.8MB | 528x |
+| 160x160x160 | 650.22ms | 18968.41ms (demons) | 0.03x | 2652.2MB | 33.6MB | 79x |
 
-- **Projected OOM (≈24GB):** nitrix ~7.1 Melem.
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160x160x160`, nitrix 29.17x ahead.
+- **Projected OOM (≈24GB):** nitrix ~37.1 Melem vs best baseline ~2930 Melem (~79x more headroom).
 
 ## diffusion_embedding  (nitrix.graph.diffusion_embedding)  [jax-cuda12]
 
@@ -188,6 +213,21 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 | V=8192 | — | — | skipped | — | — | — |
 | V=65536 | — | — | skipped | — | — | — |
 
+
+## greedy_syn_register  (nitrix.register.greedy_syn_register)  [jax-cuda12]
+
+**Cost law.** STEADY ~ levels x iters x n_steps x N: each iteration warps both images to the midpoint (two scaling-and-squaring SVF integrations), computes the LNCC force, smooths it (fluid) + the velocity (diffusion) -- two Gaussians/iter -- then a midpoint compose+invert at the end. The heaviest recipe to COMPILE (two velocity fields), but ANTs SyNOnly (the gold standard) is FAST on CPU (~0.5/2.9/6.0 s at 48/96/128^3 measured), so the GPU win is NOT a given -- it must clear the ~4x cost bar to count (measured in ECONOMIC.md, not assumed). HBM ~ 2 velocity fields + scaling-squaring intermediates (heaviest after demons). The size tier varies the volume + carries anisotropic (1x1x3) points.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 48x48x48 | 197.69ms | — | ok | 339.1MB | — | — |
+| 64x64x64 | 171.35ms | — | ok | 1711.4MB | — | — |
+| 64x64x64 aniso1x1x3 | 195.74ms | — | ok | 1711.4MB | — | — |
+| 96x96x96 | 742.59ms | — | ok | 3777.4MB | — | — |
+| 96x96x96 aniso1x1x3 | 768.63ms | — | ok | 3777.4MB | — | — |
+| 128x128x128 | 2460.14ms | — | ok | 8808.6MB | — | — |
+
+- **Projected OOM (≈24GB):** nitrix ~5.7 Melem.
 
 ## laplacian_eigenmap  (nitrix.graph.laplacian_eigenmap)  [jax-cuda12]
 
@@ -374,7 +414,31 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 63.95ms | — | ok | 437.1MB | — | — |
+| 48x48x48 | 26.37ms | — | ok | 203.4MB | — | — |
+| 96x96x96 | 91.84ms | — | ok | 1309.5MB | — | — |
+| 96x96x96 world | 101.31ms | — | ok | 1514.6MB | — | — |
+| 128x128x128 | 227.88ms | — | ok | 8741.5MB | — | — |
+| 128x128x128 world | 231.74ms | — | ok | 8665.6MB | — | — |
+| 160x160x160 | 415.41ms | — | ok | 13694.1MB | — | — |
+| 192x192x192 | 808.46ms | — | ok | 1832.9MB | — | — |
 
-- **Projected OOM (≈24GB):** nitrix ~6.1 Melem.
+- **Projected OOM (≈24GB):** nitrix ~92.7 Melem.
+
+## volreg  (nitrix.register.volreg)  [jax-cuda12]
+
+**Cost law.** STEADY ~ T x iters x N per-frame, but the reference work (pyramid, inverse-compositional steepest-descent + Hessian) is hoisted once and the T frames are vmap-batched behind ONE compile -- so nitrix-GPU stays sublinear in T once the batch fills the device, while ANTs is T sequential CPU registrations (~T x 60 ms). The GPU:CPU gap should GROW with T (the batching/amortisation story), but the honest CPU bar is the FAST community tool (3dvolreg / mcflirt), not ANTs -- so the verdict is provisional. HBM ~ T*N (realigned series + vmap working set) -- the binding constraint; OOM at the top is reported as signal. Size tier varies T (headline) + volume.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| T8 32x32x32 | 0.99ms | — | ok | 135.5MB | — | — |
+| T16 32x32x32 | 1.42ms | — | ok | 136.3MB | — | — |
+| T32 32x32x32 | 3.06ms | — | ok | 138.4MB | — | — |
+| T50 48x48x48 | 81.21ms | — | ok | 334.8MB | — | — |
+| T100 48x48x48 | 172.66ms | — | ok | 625.3MB | — | — |
+| T200 48x48x48 | 355.52ms | — | ok | 1208.0MB | — | — |
+| T100 64x64x64 | 443.42ms | — | ok | 1347.4MB | — | — |
+| T100 80x80x80 | 1087.62ms | — | ok | 2638.0MB | — | — |
+| T500 48x48x48 | 904.54ms | — | ok | 2815.2MB | — | — |
+
+- **Projected OOM (≈24GB):** nitrix ~471.4 Melem.
 
