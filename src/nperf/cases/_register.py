@@ -408,3 +408,126 @@ def ants_motion_correction(type_of_transform: str = 'Rigid'
         return np.moveaxis(out, -1, 0)                  # -> (T, *sp)
 
     return run
+
+
+# -- AFNI / FSL command-line tools (the COMMUNITY realignment standards) ------
+# Binaries, not Python pkgs: framework 'numpy' (base env has nibabel + nitrix),
+# located via NPERF_AFNI_DIR / NPERF_FSL_DIR (absolute, not $PATH). NIfTI
+# round-trip: write the (T,*spatial) series time-last (x,y,z,t), run, read.
+# Spin-up: tools/setup_neuro_refs.sh (/scratch is ephemeral -> that's the
+# recipe; see README "Community neuro reference tools").
+
+
+def _nifti_roundtrip_moco(cmd_fn: Callable[[str, str, str], list],
+                          series: Any, *, env: Any = None) -> Any:
+    '''Shared NIfTI round-trip for a CLI motion-correction tool: write the
+    ``(T, *spatial)`` series to a temp NIfTI (time last), build + run the
+    tool's argv via ``cmd_fn(in_path, out_path, tmpdir)``, read the realigned
+    series back as ``(T, *spatial)``.  Tools that realign to the mean reference
+    match nitrix ``reference='mean'``.'''
+    import os
+    import subprocess
+    import tempfile
+
+    import nibabel as nib
+
+    arr = np.asarray(series, np.float32)
+    with tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR')) as d:
+        inp = os.path.join(d, 'in.nii.gz')
+        out = os.path.join(d, 'moco.nii.gz')
+        nib.save(nib.Nifti1Image(np.moveaxis(arr, 0, -1), np.eye(4)), inp)
+        subprocess.run(cmd_fn(inp, out, d), check=True, env=env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        moco = np.asarray(nib.load(out).get_fdata(), np.float32)  # (*sp, T)
+    return np.moveaxis(moco, -1, 0)                               # -> (T, *sp)
+
+
+def afni_volreg() -> Callable[..., Any]:
+    '''AFNI ``3dvolreg`` -- *the* canonical motion-realignment tool and a
+    community standard (cf. the ``ants_motion_correction`` caveat that ANTs is
+    seldom used for moco; 3dvolreg is hand-optimised C, much faster).  Realigns
+    to the per-volume **mean** (an external base dataset, matching nitrix
+    ``reference='mean'``).  Binary at ``$NPERF_AFNI_DIR`` (default
+    ``/scratch/nperf/abin``); not jit (full wall-clock).'''
+    import os
+
+    abin = os.environ.get('NPERF_AFNI_DIR', '/scratch/nperf/abin')
+
+    def run(series: Any) -> Any:
+        import nibabel as nib
+
+        def cmd(inp: str, out: str, d: str) -> list:
+            base = os.path.join(d, 'base.nii.gz')
+            mean = np.asarray(series, np.float32).mean(axis=0)
+            nib.save(nib.Nifti1Image(mean, np.eye(4)), base)
+            return [os.path.join(abin, '3dvolreg'), '-base', base,
+                    '-prefix', out, '-overwrite', '-quiet', inp]
+
+        return _nifti_roundtrip_moco(cmd, series)
+
+    return run
+
+
+def fsl_mcflirt() -> Callable[..., Any]:
+    '''FSL ``mcflirt`` -- the other community motion-realignment standard (the
+    FSL counterpart of AFNI 3dvolreg).  ``-meanvol`` realigns to the mean
+    volume (matching nitrix ``reference='mean'``).  Binary at
+    ``$NPERF_FSL_DIR/bin`` (default ``/scratch/nperf/fsl``); not jit.'''
+    import os
+
+    fsldir = os.environ.get('NPERF_FSL_DIR', '/scratch/nperf/fsl')
+
+    def run(series: Any) -> Any:
+        env = {**os.environ, 'FSLDIR': fsldir, 'FSLOUTPUTTYPE': 'NIFTI_GZ'}
+
+        def cmd(inp: str, out: str, d: str) -> list:
+            # mcflirt appends .nii.gz to -out; point it at moco (sans suffix).
+            return [os.path.join(fsldir, 'bin', 'mcflirt'), '-in', inp,
+                    '-out', out[:-len('.nii.gz')], '-meanvol']
+
+        return _nifti_roundtrip_moco(cmd, series, env=env)
+
+    return run
+
+
+# -- I/O floor no-ops: subtract the NIfTI round-trip from the walltime --------
+# A NO-OP with the SAME write + subprocess + read as the real tool, but trivial
+# compute -> its wall-clock IS the I/O floor (a harness artifact nitrix doesn't
+# pay; the in-memory array is serialised to NIfTI only to feed the CLI tool).
+# economic_report subtracts it: compute = tool_walltime - iofloor_walltime.
+
+
+def afni_iofloor() -> Callable[..., Any]:
+    '''AFNI ``3dcalc -expr a`` -- the identity (read 4D + write 4D, no
+    registration), the I/O floor for ``afni_volreg`` (same round-trip).'''
+    import os
+
+    abin = os.environ.get('NPERF_AFNI_DIR', '/scratch/nperf/abin')
+
+    def run(series: Any) -> Any:
+        def cmd(inp: str, out: str, d: str) -> list:
+            return [os.path.join(abin, '3dcalc'), '-a', inp, '-expr', 'a',
+                    '-prefix', out, '-overwrite']
+
+        return _nifti_roundtrip_moco(cmd, series)
+
+    return run
+
+
+def fsl_iofloor() -> Callable[..., Any]:
+    '''FSL ``fslmaths -mul 1`` -- the identity (read 4D + write 4D), the I/O
+    floor for ``fsl_mcflirt`` (same round-trip).'''
+    import os
+
+    fsldir = os.environ.get('NPERF_FSL_DIR', '/scratch/nperf/fsl')
+
+    def run(series: Any) -> Any:
+        env = {**os.environ, 'FSLDIR': fsldir, 'FSLOUTPUTTYPE': 'NIFTI_GZ'}
+
+        def cmd(inp: str, out: str, d: str) -> list:
+            return [os.path.join(fsldir, 'bin', 'fslmaths'), inp, '-mul', '1',
+                    out]
+
+        return _nifti_roundtrip_moco(cmd, series, env=env)
+
+    return run

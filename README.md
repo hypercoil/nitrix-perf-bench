@@ -164,3 +164,33 @@ signature half also runs in the suite). Tests:
 `JAX_PLATFORMS=cpu uv run pytest` (CPU-only; schema, fidelity, case build,
 worker round-trip, scheduler invariants, multi-platform, registries, store,
 gate, bundle, html).
+
+## Community neuro reference tools (AFNI / FSL) — spin-up
+
+The registration cases compare nitrix against the tools the community actually
+uses: **AFNI `3dvolreg`** and **FSL `mcflirt`** for motion realignment
+(`volreg`), and **FSL `flirt -bbr` / `epi_reg`** for BBR. These are command-line
+binaries (not Python packages), installed on `/scratch`. **`/scratch` is
+ephemeral** (it can vanish if the box is reprovisioned), so the durable,
+committed recipe is the install script — re-run it to recreate the tools:
+
+```bash
+bash tools/setup_neuro_refs.sh            # -> /scratch/nperf/{abin,fsl}
+# AFNI_ONLY=1 / FSL_ONLY=1 to do one; pass a DEST dir as $1.
+source /scratch/nperf/neuro_refs_env.sh   # sets NPERF_AFNI_DIR / NPERF_FSL_DIR
+```
+
+Validated 2026-06-11 on Ubuntu 24.04 / glibc 2.39 / x86_64: AFNI 26.1.04
+(`linux_ubuntu_24_64` binaries) + FSL via the installer's pinned `-V`. The
+`afni` / `fsl` **providers** (`requires='cpu'`, framework `numpy` — the base env
+has nibabel) shell out to the binaries at `NPERF_AFNI_DIR` / `NPERF_FSL_DIR`
+(absolute dirs, not `$PATH`); the wrappers round-trip the array through a temp
+NIfTI. Because they are CPU tools, the nitrix-GPU-vs-AFNI/FSL comparison is read
+cross-platform by `tools/economic_report.py`.
+
+**I/O floor.** A CLI tool's wall-clock includes a NIfTI write + subprocess
+launch + read that the in-memory nitrix op never pays. The `afni.iofloor`
+(`3dcalc -expr a`) and `fsl.iofloor` (`fslmaths -mul 1`) **no-op** baselines
+measure exactly that round-trip, and `economic_report.py` subtracts it
+(`compute = tool − iofloor`) so the GPU-vs-CPU verdict is on registration
+*compute*, not harness serialisation (~42% of the wall-clock at T=50/48³).

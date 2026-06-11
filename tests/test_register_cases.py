@@ -92,13 +92,21 @@ def test_syn_recovers_deformation():
 
 
 def test_volreg_contract():
-    '''volreg carries nitrix + the (available, provisional) ANTs moco ref --
-    no dipy / no shared oracle; the size tier varies T (the batch axis).'''
+    '''volreg carries nitrix + the community realignment tools (AFNI 3dvolreg /
+    FSL mcflirt) + the secondary ANTs moco ref -- no shared oracle; the size
+    tier varies T (the batch axis).'''
     from nperf.cases import volreg as volreg_mod
+    from nperf.providers import requires_of
     built = volreg_mod._build(volreg_mod.CASE.representative)
-    assert set(built.baselines) == {'nitrix-jax', 'ants.motion_correction'}
+    assert set(built.baselines) == {
+        'nitrix-jax', 'afni.3dvolreg', 'fsl.mcflirt', 'afni.iofloor',
+        'fsl.iofloor', 'ants.motion_correction'}
     assert built.ratio_reference == 'nitrix-jax'
     assert built.fp64_reference is None and built.fidelity_note
+    # every domain ref is a CPU-only binary/tool (the cross-platform bar).
+    for name, (prov, _) in built.baselines.items():
+        if name != 'nitrix-jax':
+            assert requires_of(prov) == 'cpu', name
     # ANTs moco is slow at large T (declared) -- skippable in dev cycles.
     assert 'ants.motion_correction' in {
         s.baseline for s in volreg_mod.CASE.slow_baselines}

@@ -10,19 +10,30 @@ oracle: nitrix vs the ref converge to different per-frame transforms), so
 ``fp64_reference`` is ``None``; the realignment is pinned in the tests (the
 realigned series' inter-frame variance drops vs the raw series).
 
-**Reference caveat (ecological validity).**  ANTsPy ``motion_correction`` is
-the **available** ITK-backed reference here, but ANTs is *seldom* used for
-realignment in practice -- the community standards are **AFNI ``3dvolreg``**
-and **FSL ``mcflirt``** (fast, hand-optimised C), neither currently installed.
-So the volreg economic verdict (``tools/economic_report.py``) is
-**provisional**: a fast community tool would *shrink* any GPU win, and crowning
-a multiplicative win against ANTs alone would inflate it.  ``3dvolreg`` /
-``mcflirt`` are a planned ``/scratch`` install (revisit with BBR).
+**References (ecological validity).**  The **community** realignment standards
+are **AFNI ``3dvolreg``** and **FSL ``mcflirt``** (fast, hand-optimised C) --
+now installed on ``/scratch`` (``tools/setup_neuro_refs.sh``) and wired as the
+``afni`` / ``fsl`` providers (binaries at ``NPERF_AFNI_DIR`` /
+``NPERF_FSL_DIR``; NIfTI round-trip; realign to the mean, matching
+``reference='mean'``).  ANTsPy ``motion_correction`` is kept as a secondary
+ITK-backed ref but is **seldom** used for moco in practice.  The economic
+verdict (``tools/economic_report.py``) picks the **fastest** CPU domain tool
+as the gold standard -- so 3dvolreg / mcflirt (not the slower ANTs) set the
+honest bar, which *shrinks* any GPU win vs the naive ANTs-only comparison (the
+no-inflated-win discipline).
 
-The economic *hypothesis* this case sets up: nitrix batches the whole series in
-one compile, while ANTs realigns **frame-by-frame on CPU** (measured ~57-68
-ms/frame, so ~30 s at T=500) -- so the gap should grow with ``T``.  ANTs is a
-``slow_baseline`` at large ``T``.  Ratio vs ``nitrix-jax``.
+**I/O floor (harness artifact).**  The CLI tools' wall-clock includes a NIfTI
+write + subprocess launch + read that nitrix (in-memory) does not pay -- pure
+harness overhead.  ``afni.iofloor`` (``3dcalc -expr a``) and ``fsl.iofloor``
+(``fslmaths -mul 1``) are **no-ops** with the *same* round-trip, so the
+economic report subtracts them (``compute = tool - iofloor``) to isolate the
+registration compute for a fair comparison vs nitrix (measured ~42% I/O at
+T=50/48^3).
+
+The economic *story*: nitrix batches the whole series in one compile, while the
+CPU tools realign **frame-by-frame** -- so the gap should grow with ``T``. ANTs
+(~57-68 ms/frame) is a ``slow_baseline`` at large ``T``; 3dvolreg / mcflirt are
+fast and stay in dev cycles. Ratio vs ``nitrix-jax``.
 """
 from __future__ import annotations
 
@@ -33,7 +44,14 @@ import jax.numpy as jnp
 from nitrix.register import RegistrationSpec, volreg
 
 from ._base import BuiltPoint, Case, SlowBaseline
-from ._register import ants_motion_correction, motion_series
+from ._register import (
+    afni_iofloor,
+    afni_volreg,
+    ants_motion_correction,
+    fsl_iofloor,
+    fsl_mcflirt,
+    motion_series,
+)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
@@ -52,8 +70,14 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         # return the per-frame params (the deliverable): forces the full
         # vmap-batched coarse-to-fine scan over all T frames to run.
         'nitrix-jax': ('jax', lambda s: volreg(s, spec=spec).params),
-        # AVAILABLE ITK-backed moco -- NOT the community standard (see module
-        # docstring: AFNI 3dvolreg / FSL mcflirt are, and are fast).
+        # the COMMUNITY realignment standards (fast C; the honest CPU bar).
+        'afni.3dvolreg': ('afni', afni_volreg()),
+        'fsl.mcflirt': ('fsl', fsl_mcflirt()),
+        # I/O-floor no-ops (3dcalc / fslmaths identity): the NIfTI round-trip
+        # the economic report subtracts to isolate the registration compute.
+        'afni.iofloor': ('afni', afni_iofloor()),
+        'fsl.iofloor': ('fsl', fsl_iofloor()),
+        # secondary ITK-backed moco -- seldom the realignment tool in practice.
         'ants.motion_correction': ('ants', ants_motion_correction('Rigid')),
     }
     return BuiltPoint(

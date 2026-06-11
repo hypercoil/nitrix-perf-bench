@@ -111,16 +111,32 @@ def _analyse(case: Any, rows: List[dict], bar: float) -> List[Dict[str, Any]]:
         gs, gc = _steady_min(gpu[0]), _compile(gpu[0])
         cpu_ok = [r for r in grp if r['platform'] == _CPU
                   and r['status'] == 'ok' and _steady_min(r) is not None]
-        domain = [r for r in cpu_ok if r['baseline'] != 'nitrix-jax']
-        if domain:  # the strongest CPU competitor (fastest domain tool)
-            best = min(domain, key=_steady_min)
+        # I/O floors by provider namespace (the name prefix before the dot):
+        # a CLI tool's wall-clock includes a NIfTI write+subprocess+read the
+        # in-memory nitrix op never pays -- subtract the same-namespace no-op
+        # (afni.iofloor / fsl.iofloor) to isolate the registration COMPUTE.
+        floors = {r['baseline'].split('.')[0]: _steady_min(r)
+                  for r in cpu_ok if r['baseline'].endswith('.iofloor')}
+
+        def _compute(r: dict) -> float:
+            f = floors.get(r['baseline'].split('.')[0], 0.0)
+            return max(_steady_min(r) - f, 1e-6)  # I/O-subtracted
+
+        domain = [r for r in cpu_ok if r['baseline'] != 'nitrix-jax'
+                  and not r['baseline'].endswith('.iofloor')]
+        if domain:  # strongest competitor = fastest tool AFTER I/O subtraction
+            best = min(domain, key=_compute)
             tool, fallback = best['baseline'], False
-        else:  # no domain tool (e.g. BBR) -> GPU-vs-own-CPU
+            cpu_raw = _steady_min(best)
+            iofloor = floors.get(tool.split('.')[0])
+            cpu = _compute(best)
+        else:  # no domain tool (e.g. BBR) -> GPU-vs-own-CPU (no I/O artifact)
             nc = [r for r in cpu_ok if r['baseline'] == 'nitrix-jax']
             if not nc:
                 continue
-            best, tool, fallback = nc[0], 'nitrix-CPU', True
-        cpu = _steady_min(best)
+            tool, fallback = 'nitrix-CPU', True
+            cpu_raw, iofloor = _steady_min(nc[0]), None
+            cpu = cpu_raw
         amort = cpu / gs if gs and gs > 0 else None
         single = (cpu / (gs + gc)) if (gc is not None and (gs + gc) > 0
                                        ) else None
@@ -128,6 +144,7 @@ def _analyse(case: Any, rows: List[dict], bar: float) -> List[Dict[str, Any]]:
         out.append({
             'label': _label(param), 'size': _size_elems(param),
             'gpu_steady': gs, 'gpu_compile': gc, 'cpu': cpu, 'tool': tool,
+            'cpu_raw': cpu_raw, 'iofloor': iofloor,
             'fallback': fallback, 'amort': amort, 'single': single,
             'verdict': _verdict(amort, single, bar),
         })
@@ -152,13 +169,25 @@ def _render(case: Any, rows: List[Dict[str, Any]], bar: float) -> List[str]:
                    'nitrix-CPU (GPU-vs-own-CPU: is the GPU worth the premium '
                    'for *this* op).')
         doc.append('')
-    doc += ['| size | GPU steady | GPU compile | CPU gold (tool) | '
+    if any(r.get('iofloor') is not None for r in rows):
+        doc.append('> CPU times for the CLI tools (AFNI/FSL) are **I/O-'
+                   'subtracted**: `compute = tool wall-clock - the matching '
+                   'no-op` (`3dcalc`/`fslmaths` identity = the NIfTI '
+                   'round-trip nitrix never pays). Raw and floor shown in the '
+                   'tool cell.')
+        doc.append('')
+    doc += ['| size | GPU steady | GPU compile | CPU compute (tool) | '
             'amortized | single-run | verdict |',
             '|---|---|---|---|---|---|---|']
     for r in rows:
+        if r.get('iofloor') is not None:
+            cell = (f'{_t(r["cpu"])} ({r["tool"]}; {_t(r["cpu_raw"])}'
+                    f'−{_t(r["iofloor"])} io)')
+        else:
+            cell = f'{_t(r["cpu"])} ({r["tool"]})'
         doc.append(
             f'| {r["label"]} | {_t(r["gpu_steady"])} | {_t(r["gpu_compile"])} '
-            f'| {_t(r["cpu"])} ({r["tool"]}) | {_x(r["amort"])} | '
+            f'| {cell} | {_x(r["amort"])} | '
             f'{_x(r["single"])} | {r["verdict"]} |')
     fav = [r for r in rows if r['verdict'].startswith('favorable')]
     best = max(rows, key=lambda r: r['amort'] or 0)

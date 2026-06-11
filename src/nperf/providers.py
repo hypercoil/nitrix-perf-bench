@@ -146,6 +146,23 @@ PROVIDERS: Dict[str, Provider] = {
         Provider('dipy', 'dipy', requires='cpu',
                  description='dipy registration ref (numpy/scipy/cython); '
                              'refs-dipy env (NPERF_PYTHON_DIPY); CPU-only'),
+        # AFNI / FSL -- the *community* registration tools (3dvolreg / mcflirt
+        # for motion realignment; flirt -bbr for BBR). Unlike ants/dipy these
+        # are command-line BINARIES, not Python packages, so they need no
+        # separate interpreter: framework 'numpy' (the base env -- which has
+        # nibabel for the NIfTI round-trip + nitrix for the lazy case import),
+        # and the wrapper shells out to the binary located via NPERF_AFNI_DIR /
+        # NPERF_FSL_DIR (absolute dir, not $PATH). requires='cpu' (like
+        # statsmodels/ants): a CPU tool -> runs on jax-cpu only; the
+        # nitrix-GPU-vs-AFNI/FSL economic comparison is read cross-platform.
+        # Spin-up: tools/setup_neuro_refs.sh (see README "Community neuro
+        # reference tools"); /scratch is ephemeral, that script is the recipe.
+        Provider('afni', 'numpy', requires='cpu',
+                 description='AFNI ref (3dvolreg realign; 3dcalc io-floor); '
+                             'binary at NPERF_AFNI_DIR; CPU-only'),
+        Provider('fsl', 'numpy', requires='cpu',
+                 description='FSL ref (mcflirt realign; fslmaths io-floor); '
+                             'binary at NPERF_FSL_DIR; CPU-only'),
     )
 }
 
