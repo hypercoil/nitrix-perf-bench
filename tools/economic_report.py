@@ -240,9 +240,12 @@ def main() -> None:
         'configs; nitrix runs a fixed-iteration scan while ANTs / dipy '
         'early-exit on convergence (a wall-clock economic read, not a '
         'per-iteration claim); **time only** (HBM excluded -- cold peak is '
-        'autotune-contaminated, see `SCALING.md`). volreg\'s ANTs ref is '
-        '**provisional** (not the community realignment standard -- AFNI '
-        '`3dvolreg` / FSL `mcflirt`, fast, are planned).', '',
+        'autotune-contaminated, see `SCALING.md`). For volreg the CPU bar is '
+        'the **community realignment standard** -- AFNI `3dvolreg` / FSL '
+        '`mcflirt` (fast, hand-optimised C), **I/O-floor-subtracted** '
+        '(`compute = tool - the matching 3dcalc/fslmaths no-op`); ANTs '
+        '`motion_correction` is kept only as a slow reference (timed out '
+        'at T=500).', '',
     ]
     n_fav = 0
     for case in sorted(CASES.values(), key=lambda c: c.name):

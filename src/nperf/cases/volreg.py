@@ -86,8 +86,8 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
                        'ANTs recover different per-frame transforms). Reads '
                        'steady + one-time compile; realignment (inter-frame '
                        'variance drops) pinned in the tests. The economic '
-                       'verdict is PROVISIONAL pending AFNI 3dvolreg / FSL '
-                       'mcflirt (the fast community standards).'),
+                       'verdict bars against AFNI 3dvolreg / FSL mcflirt (the '
+                       'fast community standards), I/O-floor-subtracted.'),
         ratio_reference='nitrix-jax',
     )
 
@@ -130,12 +130,12 @@ CASE = Case(
         'and the T frames are vmap-batched behind ONE compile -- so '
         'nitrix-GPU stays sublinear in T once the batch fills the device, '
         'while ANTs is T sequential CPU registrations (~T x 60 ms). The '
-        'GPU:CPU gap should GROW with T (the batching/amortisation story), '
-        'but the honest CPU bar is the FAST community tool (3dvolreg / '
-        'mcflirt), '
-        'not ANTs -- so the verdict is provisional. HBM ~ T*N (realigned '
-        'series + vmap working set) -- the binding constraint; OOM at the '
-        'top is reported as signal. Size tier varies T (headline) + volume.'),
+        'GPU:CPU gap should GROW with T (the batching/amortisation story); '
+        'the honest CPU bar is the FAST community tool (3dvolreg / mcflirt), '
+        'I/O-floor-subtracted, not the slower ANTs (timed out at T=500). '
+        'HBM ~ T*N (realigned series + vmap working set) -- the binding '
+        'constraint; OOM at the top is reported as signal. Size tier varies T '
+        '(headline) + volume.'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,

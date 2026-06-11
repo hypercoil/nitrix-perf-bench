@@ -60,6 +60,24 @@ is the Tier-A worklist.
 > but volreg T=500. **Caveats:** ANTs is *not* the community moco standard
 > (AFNI `3dvolreg` / FSL `mcflirt`) nor a BBR tool (FSL/FreeSurfer) — a planned
 > `/scratch` install will re-bench against the real community tools.
+>
+> **§1 v3 — registration-suite-v3 re-bench (2026-06-11).** ✅ Re-measured the whole
+> registration surface against nitrix v3 (`356c768`: Force-protocol SyN + perf
+> levers), the **installed community tools** (AFNI `3dvolreg` / FSL `mcflirt` on
+> `/scratch`, see README; `setup_neuro_refs.sh` is the reproducible recipe), and
+> **real anatomy** (MNI152 T1 planted-warp points in rigid/affine/demons/syn).
+> Full authoritative matrix (`coverage_mode=full`, both platforms). The numbers
+> **superseding the v2 note above** (`ECONOMIC.md` / `REGISTRATION_SCALING.md` §8):
+> **volreg** now bars against FSL `mcflirt` **I/O-floor-subtracted** (`3dcalc` /
+> `fslmaths` no-ops measure the NIfTI round-trip) → an **honest 7.8–12.5×
+> amortized**, *not* the 54→94× the slow-ANTs bar inflated; ANTs
+> `motion_correction` **timed out at T=500** (confirming it is not the moco bar).
+> The v3 perf levers lift **rigid 6/7** and **affine 5/7** favorable (was 1/6, 2/6);
+> **demons 6/6** (vs SimpleITK), **bbr** 29.7× @N=80 000. The cross-grid
+> (`WorldSpace`) points and **SyN 128³** land *not multiplicative enough* (the
+> honest scale finding); **single-run is favorable nowhere** (compile-bound). Three
+> honest CPU timeout rows (dipy demons, ANTs moco T=500, nitrix-CPU SyN 128³) —
+> none break a verdict. **Still open:** FreeSurfer `bbregister` for a BBR domain bar.
 
 | op | ref strategy | discipline notes |
 |---|---|---|

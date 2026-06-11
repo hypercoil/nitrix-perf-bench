@@ -4,8 +4,8 @@
 
 ## Host
 
-- nitrix: fbd2597242ee136b27625b179cd025d81183a95d | bench: 602caa71af2b7fd2eeb43cd242362f4d81ece0c3
-- Linux-6.1.170-213.321.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-06-11T00:35:23.278210+00:00
+- nitrix: c54bc81807fd0b81c371b5904a98e8e6f3d88a93 | bench: 7be151160d256117f2a68003be1befe98a76a202
+- Linux-6.1.170-213.321.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-06-11T16:59:00.384702+00:00
 
 ### Platforms
 
@@ -18,60 +18,66 @@
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
-| rigid_register | jax-cpu | shape=[128, 128, 128],levels=2,iters=20 | `ants.registration` | ok | 1.346 s / 1.395 s | 3.592 s | 857 MB (rss) | n/a (no oracle) | 0.24x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[128, 128, 128],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[128, 128, 128],levels=2,iters=20 | `nitrix-jax` | ok | 5.683 s / 5.689 s | 8.359 s | 1331 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | data=mni152,resolution=2,levels=2,iters=20 | `ants.registration` | ok | 252.80 ms / 257.14 ms | 3.549 s | 857 MB (rss) | n/a (no oracle) | 0.39x vs nitrix-jax |
+| rigid_register | jax-cpu | data=mni152,resolution=2,levels=2,iters=20 | `dipy.registration` | ok | 10.941 s / 10.942 s | 12.689 s | 857 MB (rss) | n/a (no oracle) | 16.84x vs nitrix-jax |
+| rigid_register | jax-cpu | data=mni152,resolution=2,levels=2,iters=20 | `nitrix-jax` | ok | 649.58 ms / 652.58 ms | 2.582 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | data=mni152,resolution=2,levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
+| rigid_register | jax-cuda12 | data=mni152,resolution=2,levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
+| rigid_register | jax-cuda12 | data=mni152,resolution=2,levels=2,iters=20 | `nitrix-jax` | ok | 29.22 ms / 29.27 ms | 7.189 s | 1605.97 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[128, 128, 128],levels=2,iters=20 | `ants.registration` | ok | 381.37 ms / 381.97 ms | 3.522 s | 857 MB (rss) | n/a (no oracle) | 0.29x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[128, 128, 128],levels=2,iters=20 | `dipy.registration` | ok | 35.034 s / 35.067 s | 35.892 s | 857 MB (rss) | n/a (no oracle) | 26.63x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[128, 128, 128],levels=2,iters=20 | `nitrix-jax` | ok | 1.315 s / 1.356 s | 3.057 s | 906 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[128, 128, 128],levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[128, 128, 128],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[128, 128, 128],levels=2,iters=20 | `nitrix-jax` | ok | 227.88 ms / 229.95 ms | 12.220 s | 8741.46 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `ants.registration` | ok | 500.88 ms / 504.27 ms | 5.287 s | 857 MB (rss) | n/a (no oracle) | 0.09x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 5.658 s / 5.723 s | 9.388 s | 1267 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[128, 128, 128],levels=2,iters=20 | `nitrix-jax` | ok | 61.33 ms / 61.35 ms | 7.812 s | 8733.60 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `ants.registration` | ok | 429.28 ms / 630.29 ms | 6.880 s | 857 MB (rss) | n/a (no oracle) | 0.07x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `dipy.registration` | ok | 21.274 s / 21.297 s | 22.250 s | 857 MB (rss) | n/a (no oracle) | 3.49x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 6.089 s / 6.319 s | 11.469 s | 1493 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 231.74 ms / 232.51 ms | 20.121 s | 8665.56 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[160, 160, 160],levels=2,iters=20 | `ants.registration` | ok | 777.03 ms / 825.89 ms | 6.411 s | 857 MB (rss) | n/a (no oracle) | 0.06x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[160, 160, 160],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[160, 160, 160],levels=2,iters=20 | `nitrix-jax` | ok | 12.004 s / 12.326 s | 14.281 s | 1958 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[128, 128, 128],moving_shape=[112, 128, 144],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 137.27 ms / 137.37 ms | 17.295 s | 8758.24 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[160, 160, 160],levels=2,iters=20 | `ants.registration` | ok | 731.80 ms / 745.28 ms | 6.683 s | 857 MB (rss) | n/a (no oracle) | 0.38x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[160, 160, 160],levels=2,iters=20 | `dipy.registration` | ok | 40.586 s / 40.628 s | 41.946 s | 857 MB (rss) | n/a (no oracle) | 20.87x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[160, 160, 160],levels=2,iters=20 | `nitrix-jax` | ok | 1.945 s / 1.947 s | 3.437 s | 1173 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[160, 160, 160],levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[160, 160, 160],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[160, 160, 160],levels=2,iters=20 | `nitrix-jax` | ok | 415.41 ms / 415.96 ms | 11.276 s | 13694.15 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[192, 192, 192],levels=2,iters=20 | `ants.registration` | ok | 1.016 s / 1.019 s | 5.239 s | 868 MB (rss) | n/a (no oracle) | 0.05x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[192, 192, 192],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[192, 192, 192],levels=2,iters=20 | `nitrix-jax` | ok | 20.578 s / 20.808 s | 23.433 s | 2914 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[160, 160, 160],levels=2,iters=20 | `nitrix-jax` | ok | 125.17 ms / 125.21 ms | 8.542 s | 13694.15 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[192, 192, 192],levels=2,iters=20 | `ants.registration` | ok | 965.37 ms / 971.30 ms | 4.773 s | 871 MB (rss) | n/a (no oracle) | 0.28x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[192, 192, 192],levels=2,iters=20 | `dipy.registration` | ok | 72.178 s / 72.391 s | 73.291 s | 1054 MB (rss) | n/a (no oracle) | 21.27x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[192, 192, 192],levels=2,iters=20 | `nitrix-jax` | ok | 3.394 s / 3.398 s | 5.171 s | 1519 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[192, 192, 192],levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[192, 192, 192],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[192, 192, 192],levels=2,iters=20 | `nitrix-jax` | ok | 808.46 ms / 809.96 ms | 21.258 s | 1832.91 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `ants.registration` | ok | 196.57 ms / 209.28 ms | 5.298 s | 857 MB (rss) | n/a (no oracle) | 0.89x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `nitrix-jax` | ok | 221.93 ms / 223.88 ms | 1.537 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[192, 192, 192],levels=2,iters=20 | `nitrix-jax` | ok | 225.81 ms / 227.15 ms | 26.615 s | 1366.63 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `ants.registration` | ok | 139.67 ms / 142.28 ms | 4.593 s | 857 MB (rss) | n/a (no oracle) | 7.47x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `dipy.registration` | ok | 546.70 ms / 557.76 ms | 1.524 s | 857 MB (rss) | n/a (no oracle) | 29.25x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=1,iters=10 | `nitrix-jax` | ok | 18.69 ms / 21.21 ms | 654.90 ms | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=1,iters=10 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=1,iters=10 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=1,iters=10 | `nitrix-jax` | ok | 5.02 ms / 5.02 ms | 3.701 s | 151.88 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `ants.registration` | ok | 247.38 ms / 249.97 ms | 3.559 s | 857 MB (rss) | n/a (no oracle) | 0.63x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `nitrix-jax` | ok | 392.03 ms / 445.87 ms | 4.211 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=1,iters=10 | `nitrix-jax` | ok | 1.39 ms / 1.41 ms | 2.618 s | 203.42 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `ants.registration` | ok | 137.33 ms / 144.13 ms | 3.216 s | 857 MB (rss) | n/a (no oracle) | 2.96x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `dipy.registration` | ok | 1.389 s / 1.400 s | 2.125 s | 857 MB (rss) | n/a (no oracle) | 29.95x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=2,iters=20 | `nitrix-jax` | ok | 46.37 ms / 47.81 ms | 1.887 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=2,iters=20 | `nitrix-jax` | ok | 14.95 ms / 14.98 ms | 10.169 s | 203.42 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `ants.registration` | ok | 257.39 ms / 284.11 ms | 5.060 s | 857 MB (rss) | n/a (no oracle) | 0.64x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `nitrix-jax` | ok | 402.35 ms / 618.32 ms | 6.225 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=2,iters=20 | `nitrix-jax` | ok | 3.58 ms / 3.84 ms | 5.700 s | 203.42 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `ants.registration` | ok | 749.39 ms / 768.43 ms | 5.245 s | 857 MB (rss) | n/a (no oracle) | 11.83x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `dipy.registration` | ok | 1.208 s / 1.213 s | 1.979 s | 857 MB (rss) | n/a (no oracle) | 19.07x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[48, 48, 48],levels=3,iters=30 | `nitrix-jax` | ok | 63.37 ms / 64.14 ms | 2.928 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=3,iters=30 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=3,iters=30 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=3,iters=30 | `nitrix-jax` | ok | 26.37 ms / 50.13 ms | 12.208 s | 203.42 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[96, 96, 96],levels=2,iters=20 | `ants.registration` | ok | 344.60 ms / 414.67 ms | 5.664 s | 857 MB (rss) | n/a (no oracle) | 0.13x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[96, 96, 96],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[96, 96, 96],levels=2,iters=20 | `nitrix-jax` | ok | 2.664 s / 2.704 s | 7.406 s | 1022 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[48, 48, 48],levels=3,iters=30 | `nitrix-jax` | ok | 5.47 ms / 5.88 ms | 10.469 s | 203.42 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[96, 96, 96],levels=2,iters=20 | `ants.registration` | ok | 330.65 ms / 391.88 ms | 4.761 s | 857 MB (rss) | n/a (no oracle) | 0.86x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[96, 96, 96],levels=2,iters=20 | `dipy.registration` | ok | 15.676 s / 15.679 s | 16.440 s | 857 MB (rss) | n/a (no oracle) | 40.59x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[96, 96, 96],levels=2,iters=20 | `nitrix-jax` | ok | 386.22 ms / 387.97 ms | 1.868 s | 857 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[96, 96, 96],levels=2,iters=20 | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[96, 96, 96],levels=2,iters=20 | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[96, 96, 96],levels=2,iters=20 | `nitrix-jax` | ok | 91.84 ms / 92.02 ms | 9.168 s | 1309.54 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `ants.registration` | ok | 305.09 ms / 357.24 ms | 4.874 s | 857 MB (rss) | n/a (no oracle) | 0.13x vs nitrix-jax |
-| rigid_register | jax-cpu | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cpu | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 2.411 s / 2.460 s | 6.764 s | 1026 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[96, 96, 96],levels=2,iters=20 | `nitrix-jax` | ok | 20.24 ms / 20.25 ms | 5.606 s | 1279.82 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `ants.registration` | ok | 260.37 ms / 498.29 ms | 5.656 s | 857 MB (rss) | n/a (no oracle) | 0.09x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `dipy.registration` | ok | 15.310 s / 15.326 s | 16.174 s | 857 MB (rss) | n/a (no oracle) | 5.51x vs nitrix-jax |
+| rigid_register | jax-cpu | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 2.779 s / 2.835 s | 8.443 s | 1042 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
 | rigid_register | jax-cuda12 | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `ants.registration` | skipped | — | — | — | — | — |
 | rigid_register | jax-cuda12 | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `dipy.registration` | skipped | — | — | — | — | — |
-| rigid_register | jax-cuda12 | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 101.31 ms / 158.66 ms | 12.210 s | 1514.57 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| rigid_register | jax-cuda12 | shape=[96, 96, 96],moving_shape=[80, 96, 112],levels=2,iters=20,space=world,fixed_spacing=[1, 1, 1],moving_spacing=[1.2, 1.0, 0.9] | `nitrix-jax` | ok | 49.24 ms / 49.46 ms | 13.308 s | 1514.57 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
 
 ## Notes
 

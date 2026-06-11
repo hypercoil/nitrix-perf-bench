@@ -4,8 +4,8 @@
 
 ## Host
 
-- nitrix: 6f669403bec6091b1db461932fd6a10dda3b6a87 | bench: 602caa71af2b7fd2eeb43cd242362f4d81ece0c3
-- Linux-6.1.170-213.321.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-06-10T23:35:49.759188+00:00
+- nitrix: c54bc81807fd0b81c371b5904a98e8e6f3d88a93 | bench: 7be151160d256117f2a68003be1befe98a76a202
+- Linux-6.1.170-213.321.amzn2023.x86_64-x86_64-with-glibc2.39 | python 3.13.13 | 2026-06-11T16:57:54.765205+00:00
 
 ### Platforms
 
@@ -18,16 +18,16 @@
 
 | case | platform | param | baseline | status | steady (min/med) | compile | mem | fidelity | ratio |
 |---|---|---|---|---|---|---|---|---|---|
-| bbr_register | jax-cpu | shape=[48, 48, 48],N=2000,iters=100 | `nitrix-jax` | ok | 3.66 ms / 3.72 ms | 3.424 s | 695 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cuda12 | shape=[48, 48, 48],N=2000,iters=100 | `nitrix-jax` | ok | 5.94 ms / 5.97 ms | 7.810 s | 336.04 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cpu | shape=[48, 48, 48],N=2000,iters=50 | `nitrix-jax` | ok | 3.62 ms / 3.70 ms | 3.189 s | 699 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cuda12 | shape=[48, 48, 48],N=2000,iters=50 | `nitrix-jax` | ok | 6.09 ms / 6.32 ms | 8.657 s | 336.04 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cpu | shape=[64, 64, 64],N=20000,iters=100 | `nitrix-jax` | ok | 45.65 ms / 47.76 ms | 3.044 s | 702 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cuda12 | shape=[64, 64, 64],N=20000,iters=100 | `nitrix-jax` | ok | 6.86 ms / 6.91 ms | 9.213 s | 337.08 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cpu | shape=[64, 64, 64],N=5000,iters=100 | `nitrix-jax` | ok | 22.58 ms / 23.39 ms | 3.631 s | 701 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cuda12 | shape=[64, 64, 64],N=5000,iters=100 | `nitrix-jax` | ok | 1.35 ms / 1.36 ms | 7.958 s | 336.72 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cpu | shape=[64, 64, 64],N=80000,iters=100 | `nitrix-jax` | ok | 172.04 ms / 183.30 ms | 3.728 s | 746 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
-| bbr_register | jax-cuda12 | shape=[64, 64, 64],N=80000,iters=100 | `nitrix-jax` | ok | 17.22 ms / 17.29 ms | 6.381 s | 338.61 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cpu | shape=[48, 48, 48],N=2000,iters=100 | `nitrix-jax` | ok | 3.72 ms / 3.75 ms | 3.232 s | 694 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cuda12 | shape=[48, 48, 48],N=2000,iters=100 | `nitrix-jax` | ok | 6.32 ms / 6.37 ms | 7.337 s | 336.04 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cpu | shape=[48, 48, 48],N=2000,iters=50 | `nitrix-jax` | ok | 3.65 ms / 3.75 ms | 3.715 s | 683 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cuda12 | shape=[48, 48, 48],N=2000,iters=50 | `nitrix-jax` | ok | 6.08 ms / 6.27 ms | 9.121 s | 336.04 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cpu | shape=[64, 64, 64],N=20000,iters=100 | `nitrix-jax` | ok | 43.77 ms / 44.65 ms | 3.129 s | 700 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cuda12 | shape=[64, 64, 64],N=20000,iters=100 | `nitrix-jax` | ok | 3.44 ms / 3.48 ms | 7.802 s | 337.08 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cpu | shape=[64, 64, 64],N=5000,iters=100 | `nitrix-jax` | ok | 22.96 ms / 24.32 ms | 3.110 s | 697 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cuda12 | shape=[64, 64, 64],N=5000,iters=100 | `nitrix-jax` | ok | 9.63 ms / 9.66 ms | 7.638 s | 336.72 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cpu | shape=[64, 64, 64],N=80000,iters=100 | `nitrix-jax` | ok | 174.33 ms / 176.75 ms | 3.265 s | 731 MB (rss) | n/a (no oracle) | 1.00x vs nitrix-jax |
+| bbr_register | jax-cuda12 | shape=[64, 64, 64],N=80000,iters=100 | `nitrix-jax` | ok | 5.86 ms / 5.96 ms | 6.155 s | 338.61 MB (hbm) | n/a (no oracle) | 1.00x vs nitrix-jax |
 
 ## Notes
 
