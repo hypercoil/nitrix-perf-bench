@@ -19,15 +19,18 @@
 #         AFNI_ONLY=1 bash tools/setup_neuro_refs.sh   # or FSL_ONLY=1
 #
 # Validated 2026-06-11 on Ubuntu 24.04 / glibc 2.39 / x86_64 with:
-#   AFNI  26.1.04  (linux_ubuntu_24_64 -- the tarball is rolling "latest"; the
-#                   version is recorded for provenance, not pinned in the URL)
-#   FSL   ${FSL_VERSION}  (pinned via the installer's -V flag below)
+#   AFNI  26.1.04   (linux_ubuntu_24_64 -- the tarball is rolling "latest"; the
+#                    version is recorded for provenance, not pinned in the URL)
+#   FSL   6.0.7.22  (pinned via the installer's -V flag below). mcflirt lands
+#                    at $FSLDIR/bin; measured I/O floor (fslmaths) ~67% of the
+#                    mcflirt wall-clock at T=50/48^3 -> the economic report
+#                    subtracts it (compute = tool - iofloor).
 set -euo pipefail
 
 DEST="${1:-/scratch/nperf}"
 AFNI_URL="https://afni.nimh.nih.gov/pub/dist/tgz/linux_ubuntu_24_64.tgz"
 FSL_INSTALLER="https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/releases/fslinstaller.py"
-FSL_VERSION="${FSL_VERSION:-6.0.7.17}"   # pin for reproducibility (see header)
+FSL_VERSION="${FSL_VERSION:-6.0.7.22}"   # pin for reproducibility (see header)
 PYTHON="${NPERF_PYTHON:-/scratch/nperf/venv/bin/python}"
 
 mkdir -p "$DEST" "$DEST/tmp"
