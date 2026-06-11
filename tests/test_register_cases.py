@@ -28,10 +28,25 @@ from nperf.cases._register import ncc, syn_pair, warp_pair
 
 _MODS = [rigid_mod, affine_mod, demons_mod, syn_mod]
 # (recipe fn, spec) per case -- coarse-to-fine, few iters (recovery test).
+# affine is xfail(strict): registration-suite-v3 (nitrix 356c768) regressed the
+# multi-level GN/LM affine path -- it DIVERGES at this 28^3 size (the coarse
+# pyramid level falls to <=14^3; params explode). It recovers fine at >=32^3
+# (so the affine *bench* at 96^3+ is unaffected). Filed on nitrix main
+# (FR register-affine-small-grid-divergence, 869ca78); strict so the xfail
+# flips to a failure -- prompting removal -- once nitrix fixes it.
 _RECOVER = [
-    (rigid_register, RegistrationSpec(levels=2, iterations=15)),
-    (affine_register, RegistrationSpec(levels=2, iterations=15)),
-    (diffeomorphic_demons_register, DemonsSpec(levels=2, iterations=20)),
+    pytest.param(rigid_register, RegistrationSpec(levels=2, iterations=15),
+                 id='rigid'),
+    pytest.param(
+        affine_register, RegistrationSpec(levels=2, iterations=15),
+        id='affine',
+        marks=pytest.mark.xfail(
+            reason='v3 affine multi-level GN/LM diverges at 28^3 (coarse '
+                   '<=14^3); fine >=32^3 -- nitrix FR '
+                   'register-affine-small-grid-divergence (869ca78)',
+            strict=True)),
+    pytest.param(diffeomorphic_demons_register,
+                 DemonsSpec(levels=2, iterations=20), id='demons'),
 ]
 
 
@@ -65,8 +80,7 @@ def test_case_contract(mod):
         mod.CASE.representative)
 
 
-@pytest.mark.parametrize('recipe,spec', _RECOVER,
-                         ids=['rigid', 'affine', 'demons'])
+@pytest.mark.parametrize('recipe,spec', _RECOVER)
 def test_recipe_recovers_planted_warp(recipe, spec):
     # The accuracy pin: registering moving onto fixed must improve the
     # alignment (each benched recipe does *working* registration, not a
