@@ -61,6 +61,11 @@ def _size_elems(param: Dict[str, Any]) -> int:
     # bbr: N boundary points -- the cost axis (volume-independent).
     if 'shape' in param and 'N' in param:
         return int(param['N'])
+    # Real-anatomy points (a fixed-size real image, no 'shape'): the MNI152
+    # template's voxel count at the given mm resolution (a stable constant).
+    if 'data' in param:
+        return {1: 197 * 233 * 189, 2: 99 * 117 * 95}.get(
+            int(param.get('resolution', 2)), 99 * 117 * 95)
     if 'shape' in param:
         return _prod(param['shape']) * int(param.get('batch', 1) or 1)
     # PCA family (n samples, d features, k components): the (n,d)@(d,k)-class
@@ -122,6 +127,9 @@ def _label(param: Dict[str, Any]) -> str:
         return f'b={param["b"]}'
     if 'shape' not in param and 'c' in param:
         return f'c={param["c"]}'
+    # Real-anatomy points (no 'shape'): the dataset + mm resolution.
+    if 'data' in param:
+        return f'{param["data"]} {param.get("resolution", 2)}mm'
     # volreg: a (T, *spatial) series -- tag the batch (the scale axis).
     if 'shape' in param and 'T' in param:
         return f'T{param["T"]} {"x".join(str(s) for s in param["shape"])}'

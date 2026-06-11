@@ -36,6 +36,7 @@ import jax.numpy as jnp
 from nitrix.register import DemonsSpec, diffeomorphic_demons_register
 
 from ._base import BuiltPoint, Case, SlowBaseline
+from ._real_anatomy import real_syn_pair
 from ._register import (
     _affine,
     aniso_pair,
@@ -47,12 +48,20 @@ from ._register import (
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    shape = tuple(param['shape'])
     levels, iters = int(param['levels']), int(param['iters'])
     spacing = param.get('spacing')  # None -> isotropic (voxel space)
     seed = param.get('seed', 0)
-    if spacing is not None:
-        moving, fixed, sp = aniso_pair(shape, spacing, seed)
+    if param.get('data') == 'mni152':
+        # REAL anatomy: the MNI152 T1 under a smooth non-rigid warp (a small
+        # background noise floor breaks the demons-ESM 0/0 on the uniform
+        # template background -- FR register-demons-force-divide-by-zero).
+        moving, fixed = real_syn_pair(int(param.get('resolution', 2)), seed)
+        spec = DemonsSpec(levels=levels, iterations=iters)
+        ants_ref = ants_register('SyNOnly')
+        dipy_ref = dipy_register('syn', levels, iters)
+        sitk_ref = sitk_demons_register(iters)
+    elif spacing is not None:
+        moving, fixed, sp = aniso_pair(tuple(param['shape']), spacing, seed)
         spec = DemonsSpec(levels=levels, iterations=iters, spacing=sp)
         aff = _affine(spacing)
         ants_ref = ants_register('SyNOnly', spacing=list(spacing))
@@ -61,7 +70,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     else:
         # isotropic path unchanged (preserves the existing representative /
         # drift seed): warp_pair's small known warp registered in voxel space.
-        moving, fixed = warp_pair(shape, seed)
+        moving, fixed = warp_pair(tuple(param['shape']), seed)
         spec = DemonsSpec(levels=levels, iterations=iters)
         ants_ref = ants_register('SyNOnly')
         dipy_ref = dipy_register('syn', levels, iters)
@@ -110,6 +119,9 @@ _LARGE = [[96, 96, 96], [128, 128, 128], [160, 160, 160]]
 _LARGE_ANISO = [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0,
                  'spacing': [1, 1, 3]}
                 for s in ([96, 96, 96], [128, 128, 128])]
+# Real-anatomy point: MNI152 T1 (~99^3 @2mm) under a smooth non-rigid warp.
+_LARGE_REAL = [{'data': 'mni152', 'resolution': 2, 'levels': 2, 'iters': 20,
+                'seed': 0}]
 
 CASE = Case(
     name='diffeomorphic_demons',
@@ -122,7 +134,7 @@ CASE = Case(
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 20, 'seed': 0},
     large_param_points=tuple(
         [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE]
-        + _LARGE_ANISO),
+        + _LARGE_ANISO + _LARGE_REAL),
     # dipy SyN is pathologically slow at scale (128^3 ~126 s on CPU, vs ITK
     # demons ~few s) -- declare it slow so --skip-slow drops it for dev cycles
     # (the full matrix still runs it, each attempt capped by --worker-timeout).

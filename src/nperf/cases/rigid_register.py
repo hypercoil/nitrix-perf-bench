@@ -39,6 +39,7 @@ from nitrix.register import (
 )
 
 from ._base import BuiltPoint, Case, SlowBaseline
+from ._real_anatomy import real_warp_pair
 from ._register import (
     ants_register,
     dipy_register,
@@ -48,14 +49,20 @@ from ._register import (
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    shape = tuple(param['shape'])
     levels, iters = int(param['levels']), int(param['iters'])
     spec = RegistrationSpec(levels=levels, iterations=iters)
     seed = param.get('seed', 0)
-    if param.get('space') == 'world':
+    if param.get('data') == 'mni152':
+        # REAL anatomy: the MNI152 T1 under a planted rigid warp (same grid).
+        moving, fixed = real_warp_pair(int(param.get('resolution', 2)), seed)
+        space = IndexSpace()
+        ants_ref = ants_register('Rigid')
+        dipy_ref = dipy_register('rigid', levels, iters)
+    elif param.get('space') == 'world':
         # cross-grid: fixed and moving on DIFFERENT grids (shape + anisotropic
         # spacing), recovered in physical space via WorldSpace; the refs get
         # the matching spacing/affines (their native physical-space regime).
+        shape = tuple(param['shape'])
         f_sp = tuple(param.get('fixed_spacing', (1.0, 1.0, 1.0)))
         m_sp = tuple(param.get('moving_spacing', (1.2, 1.0, 0.9)))
         moving, fixed, a_m, a_f = warp_pair_cross_grid(
@@ -66,7 +73,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         ants_ref = ants_register('Rigid', spacing=(f_sp, m_sp))
         dipy_ref = dipy_register('rigid', levels, iters, affines=(a_f, a_m))
     else:
-        moving, fixed = warp_pair(shape, seed)
+        moving, fixed = warp_pair(tuple(param['shape']), seed)
         space = IndexSpace()  # the default (shared-grid) path, unchanged
         ants_ref = ants_register('Rigid')
         dipy_ref = dipy_register('rigid', levels, iters)
@@ -119,6 +126,10 @@ _LARGE_WORLD = [
      'levels': 2, 'iters': 20, 'seed': 0, 'space': 'world',
      'fixed_spacing': [1, 1, 1], 'moving_spacing': [1.2, 1.0, 0.9]},
 ]
+# Real-anatomy point: the MNI152 T1 (~99x117x95 @2mm) under a planted rigid
+# warp -- real edges/intensity (realistic difficulty), exact ground-truth warp.
+_LARGE_REAL = [{'data': 'mni152', 'resolution': 2, 'levels': 2, 'iters': 20,
+                'seed': 0}]
 
 CASE = Case(
     name='rigid_register',
@@ -131,7 +142,7 @@ CASE = Case(
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 10, 'seed': 0},
     large_param_points=tuple(
         [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE]
-        + _LARGE_WORLD),
+        + _LARGE_WORLD + _LARGE_REAL),
     # dipy MI is slow at scale (128^3 ~35 s on CPU); skippable for dev cycles.
     slow_baselines=(SlowBaseline(
         'dipy.registration',

@@ -76,8 +76,13 @@ def test_case_contract(mod):
 
     def _vox(p):
         return p['shape'][0] * p['shape'][1] * p['shape'][2]
-    assert max(_vox(p) for p in mod.CASE.large_param_points) > _vox(
-        mod.CASE.representative)
+    # the synthetic size tier sweeps the volume past the representative; the
+    # real-anatomy points (no 'shape', a fixed real image) are a separate kind.
+    shaped = [p for p in mod.CASE.large_param_points if 'shape' in p]
+    assert max(_vox(p) for p in shaped) > _vox(mod.CASE.representative)
+    # every recipe carries a real-anatomy (MNI152) point alongside synthetic.
+    assert any(p.get('data') == 'mni152'
+               for p in mod.CASE.large_param_points)
 
 
 @pytest.mark.parametrize('recipe,spec', _RECOVER)
@@ -192,6 +197,26 @@ def test_cross_grid_recovers_via_worldspace(recipe):
                                   moving_affine=jnp.asarray(a_m)))
     after = ncc(np.asarray(res.warped), fixed)
     assert after > 0.6, f'cross-grid registration weak (ncc {after:.3f})'
+
+
+@pytest.mark.parametrize('recipe,spec', [
+    (rigid_register, RegistrationSpec(levels=2, iterations=15)),
+    (diffeomorphic_demons_register, DemonsSpec(levels=2, iterations=15)),
+], ids=['rigid', 'demons'])
+def test_real_anatomy_recovery(recipe, spec):
+    '''On REAL anatomy (the MNI152 T1 + a planted warp): the recipe recovers
+    (ncc improves) AND the warp is finite. The latter pins the background
+    noise floor that breaks the demons-ESM 0/0 NaN on the template's uniform
+    background (nitrix FR register-demons-force-divide-by-zero).'''
+    pytest.importorskip('nilearn')
+    from nperf.cases._real_anatomy import real_syn_pair, real_warp_pair
+    moving, fixed = (real_warp_pair(2, 0) if recipe is rigid_register
+                     else real_syn_pair(2, 0))
+    res = recipe(jnp.asarray(moving), jnp.asarray(fixed), spec=spec)
+    warped = np.asarray(res.warped)
+    assert np.isfinite(warped).all(), 'NaN warp on real anatomy'
+    before, after = ncc(moving, fixed), ncc(warped, fixed)
+    assert after > before + 0.02, f'no improvement {before:.3f}->{after:.3f}'
 
 
 def test_aniso_demons_recovers_warp():
