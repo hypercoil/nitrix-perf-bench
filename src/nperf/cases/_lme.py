@@ -21,7 +21,7 @@ ratio are over the same quantity.
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, Callable, Tuple
 
 import numpy as np
 
@@ -122,3 +122,184 @@ def statsmodels_reml(Y: Any, X: Any, groups: Any) -> np.ndarray:
             out[v] = (m.fe_params[0],
                       float(np.asarray(m.cov_re)[0, 0]), m.scale)
     return out
+
+
+# -- FLAME two-level external baselines (flame_two_level case) ---------------
+# The fair competitor for nitrix's known-within-variance two-level REML is the
+# upstream tool FSL **FLAME** (`flameo`), which the case docstring long flagged
+# as "to be revisited in the external-tool workstream".  It is file-coupled
+# (NIfTI + VEST design), like the AFNI/FSL registration refs, so the wrapper
+# pays a NIfTI round-trip the in-memory nitrix op never does -- subtracted via
+# the `flameo_iofloor` no-op (economic_report).  Spin-up: tools/
+# setup_neuro_refs.sh (/scratch is ephemeral); see README.  Both flameo and the
+# statsmodels meta-analysis LOOP one fit per voxel, so they are slow_baselines
+# whose batched-vs-looped gap GROWS with the voxel batch V.
+
+
+def _flame_box(v: int) -> Tuple[int, int, int]:
+    '''A cube-ish `(nx, ny, nz)` with `nx*ny*nz >= v` and every dim < 32767
+    (the NIfTI-1 int16 `dim[]` limit): V voxels are laid row-major into the
+    first `v` cells (the rest masked out).  ~cube keeps each axis tiny
+    (V=262144 -> 64^3), so no axis ever approaches the limit.'''
+    import math
+
+    a = max(1, int(round(v ** (1.0 / 3.0))))
+    while a * a * math.ceil(v / (a * a)) < v:  # guard the rounding
+        a += 1
+    return a, a, int(math.ceil(v / (a * a)))
+
+
+def _write_vest(path: str, mat: np.ndarray, kind: str) -> None:
+    '''Write an FSL VEST design file (`design.mat` / `.con` / `.grp`).  `kind`
+    == 'con' uses a `/NumContrasts` header; otherwise `/NumPoints`.'''
+    mat = np.atleast_2d(np.asarray(mat, np.float64))
+    nrow, ncol = mat.shape
+    with open(path, 'w') as f:
+        head = 'NumContrasts' if kind == 'con' else 'NumPoints'
+        f.write(f'/NumWaves {ncol}\n/{head} {nrow}\n/Matrix\n')
+        for row in mat:
+            f.write(' '.join(f'{x:.8f}' for x in row) + '\n')
+
+
+def _flame_write_inputs(d: str, beta: np.ndarray, varw: np.ndarray,
+                        x_group: np.ndarray) -> None:
+    '''Write the flameo inputs into dir `d`: cope/varcope (V voxels laid into a
+    cube-ish (nx,ny,nz) box -- see `_flame_box`; NIfTI-1 `dim[]` is int16, so a
+    flat (V,1,1) column overflows at V>32767), N subjects in the 4th dim, with
+    a mask selecting the first V cells; and the VEST design (group matrix),
+    contrast (the 1st EV -> matches `gamma_hat[:,0]`), and covariance-split
+    (single variance group).'''
+    import nibabel as nib
+
+    beta = np.asarray(beta, np.float32)
+    varw = np.asarray(varw, np.float32)
+    v, big_n = beta.shape
+    p = x_group.shape[1]
+    nx, ny, nz = _flame_box(v)
+    tot = nx * ny * nz
+    eye = np.eye(4)
+
+    def _box4(flat: np.ndarray) -> np.ndarray:  # (V,N) -> (nx,ny,nz,N), padded
+        full = np.zeros((tot, big_n), np.float32)
+        full[:v] = flat
+        return full.reshape(nx, ny, nz, big_n)
+
+    mask = np.zeros(tot, np.float32)
+    mask[:v] = 1.0
+    nib.save(nib.Nifti1Image(_box4(beta), eye), f'{d}/cope.nii.gz')
+    nib.save(nib.Nifti1Image(_box4(varw), eye), f'{d}/varcope.nii.gz')
+    nib.save(nib.Nifti1Image(mask.reshape(nx, ny, nz), eye),
+             f'{d}/mask.nii.gz')
+    _write_vest(f'{d}/design.mat', np.asarray(x_group, np.float64), 'mat')
+    con = np.zeros((1, p))
+    con[0, 0] = 1.0                                  # the 1st EV (gamma)
+    _write_vest(f'{d}/design.con', con, 'con')
+    _write_vest(f'{d}/design.grp', np.ones((big_n, 1)), 'grp')  # one var group
+
+
+def flameo_flame1() -> Callable[..., Any]:
+    '''FSL **FLAME** (`flameo --runmode=flame1`) -- THE upstream tool for the
+    two-level mixed-effects group model, and the fair competitor for
+    `flame_two_level`.  flame1 is the fast mixed-effects estimate (the stage-1
+    EM that nitrix's single-parameter REML matches; flame12 adds a slow stage-2
+    MCMC, not benched).  flameo iterates **voxel-by-voxel** on CPU -> the
+    batched-vs-looped story.  Reads `stats/pe1` (the group effect gamma) and
+    `stats/mean_random_effects_var1` (sigma_b^2); returns `(V, 2)` =
+    `[gamma, sigma_b^2]` to match nitrix.  Binary at `$NPERF_FSL_DIR/bin`
+    (default `/scratch/nperf/fsl`); not jit (full wall-clock).'''
+    import os
+
+    fsldir = os.environ.get('NPERF_FSL_DIR', '/scratch/nperf/fsl')
+
+    def run(beta: Any, varw: Any, x_group: Any) -> Any:
+        import subprocess
+        import tempfile
+
+        import nibabel as nib
+
+        env = {**os.environ, 'FSLDIR': fsldir, 'FSLOUTPUTTYPE': 'NIFTI_GZ'}
+        v = np.asarray(beta).shape[0]
+        with tempfile.TemporaryDirectory(
+                dir=os.environ.get('TMPDIR')) as d:
+            _flame_write_inputs(d, beta, varw, x_group)
+            subprocess.run(
+                [os.path.join(fsldir, 'bin', 'flameo'),
+                 '--cope=cope.nii.gz', '--varcope=varcope.nii.gz',
+                 '--mask=mask.nii.gz', '--ld=stats', '--dm=design.mat',
+                 '--tc=design.con', '--cs=design.grp', '--runmode=flame1'],
+                cwd=d, check=True, env=env,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            s = f'{d}/stats'
+            # the box is masked to the first v cells -> flatten row-major +
+            # slice (matches how _flame_write_inputs laid the V voxels in).
+            gamma = np.asarray(
+                nib.load(f'{s}/pe1.nii.gz').get_fdata(),
+                np.float64).reshape(-1)[:v]
+            sigb2 = np.asarray(
+                nib.load(f'{s}/mean_random_effects_var1.nii.gz').get_fdata(),
+                np.float64).reshape(-1)[:v]
+        return np.stack([gamma, sigb2], -1)
+
+    return run
+
+
+def flameo_iofloor() -> Callable[..., Any]:
+    '''I/O floor for `flameo_flame1`: the same NIfTI writes (cope + varcope) +
+    a subprocess (`fslmaths -mul 1`, read 4D + write 4D) + read-back, but NO
+    FLAME fit -- so its wall-clock is the file-coupling artifact nitrix never
+    pays.  economic_report subtracts the same-namespace `fsl.iofloor`
+    (`compute = flameo - floor`).  Approximate (flameo also writes ~13 small
+    output volumes), but captures the dominant V*N input write + subprocess +
+    read.'''
+    import os
+
+    fsldir = os.environ.get('NPERF_FSL_DIR', '/scratch/nperf/fsl')
+
+    def run(beta: Any, varw: Any, x_group: Any) -> Any:
+        import subprocess
+        import tempfile
+
+        import nibabel as nib
+
+        env = {**os.environ, 'FSLDIR': fsldir, 'FSLOUTPUTTYPE': 'NIFTI_GZ'}
+        v = np.asarray(beta).shape[0]
+        with tempfile.TemporaryDirectory(
+                dir=os.environ.get('TMPDIR')) as d:
+            _flame_write_inputs(d, beta, varw, x_group)  # cope+varcope+design
+            subprocess.run(
+                [os.path.join(fsldir, 'bin', 'fslmaths'), 'cope.nii.gz',
+                 '-mul', '1', 'floorout.nii.gz'],
+                cwd=d, check=True, env=env,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            _ = np.asarray(nib.load(f'{d}/floorout.nii.gz').get_fdata())
+        return np.zeros((v, 2), np.float64)  # floor: timing only, not scored
+
+    return run
+
+
+def statsmodels_flame() -> Callable[..., Any]:
+    '''Looped `statsmodels.stats.meta_analysis.combine_effects` -- the
+    known-within-variance two-level model IS a random-effects meta-analysis
+    (combine N per-subject effects with known variances -> pooled effect +
+    between-subject heterogeneity tau^2 = sigma_b^2), fit **one voxel at a
+    time** (the looped-CPU competitor).  NOTE: combine_effects' tau^2 is
+    Paule-Mandel (`method_re='iterated'`), NOT REML, so it **diverges** from
+    the REML oracle at the variance-component boundary (tau^2 -> 0) -- a
+    documented finding (cf. statsmodels MixedLM in `reml_fit`), surfaced via
+    fidelity, not a bug.  Intercept design only (p=1: the pooled mean).'''
+    def run(beta: Any, varw: Any, x_group: Any) -> Any:
+        import warnings
+
+        from statsmodels.stats.meta_analysis import combine_effects
+
+        b = np.asarray(beta, np.float64)
+        w = np.asarray(varw, np.float64)
+        out = np.empty((b.shape[0], 2), np.float64)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            for i in range(b.shape[0]):
+                res = combine_effects(b[i], w[i], method_re='iterated')
+                out[i] = (res.mean_effect_re, res.tau2)
+        return out
+
+    return run
