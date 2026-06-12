@@ -207,13 +207,15 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 ## flame_two_level  (nitrix.stats.lme.flame_two_level)  [jax-cuda12]
 
-**Cost law.** batched single-param REML for the between-subject variance over V voxels (FSL FLAME equiv): O(V * iters * N) -- linear in the voxel batch V. MEASURED (L4): scales cleanly on the GPU through the dev tier to V=65536, but V>=131072 fails the GPU SOLVER (gpusolverDnCreate -- a cuSOLVER-class blocker on this box), a hard GPU scale CEILING; the batched FLAME still runs on CPU at brain-volume V. No fair external perf competitor (statsmodels cannot consume known per-subject variances; FSL FLAME is file-coupled). HBM ~ V.
+**Cost law.** batched single-param REML for the between-subject variance over V voxels: O(V * iters * N) -- linear in the voxel batch V. nitrix fits all V in ONE call; FSL FLAME (flameo) and statsmodels meta-analysis LOOP one fit per voxel, so the batched-vs-looped speedup GROWS with V (the headline, and why both are slow_baselines). MEASURED (L4): the GPU solver path hits the cuSOLVER gpusolverDnCreate blocker at ALL V (gpu_solver_unavailable -- a graceful skip, seen in every stored run), so nitrix runs CPU-only here; even so the batched CPU fit beats the looped CPU tools (~4x flameo at V=1024). HBM ~ V.
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
 | V=1024 | — | — | skipped | — | — | — |
 | V=8192 | — | — | skipped | — | — | — |
 | V=65536 | — | — | skipped | — | — | — |
+| V=131072 | — | — | skipped | — | — | — |
+| V=262144 | — | — | skipped | — | — | — |
 
 
 ## greedy_syn_register  (nitrix.register.greedy_syn_register)  [jax-cuda12]
@@ -405,9 +407,9 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| V=64 | 11.33ms | — | ok | 151.1MB | — | — |
-| V=256 | 17.09ms | — | ok | 151.2MB | — | — |
-| V=1024 | 11.36ms | — | ok | 135.0MB | — | — |
+| V=64 | 11.30ms | — | ok | 151.1MB | — | — |
+| V=256 | 11.35ms | — | ok | 151.2MB | — | — |
+| V=1024 | 11.29ms | — | ok | 135.0MB | — | — |
 
 - **Projected OOM (≈24GB):** nitrix ~0.2 Melem.
 

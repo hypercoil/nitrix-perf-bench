@@ -8,15 +8,20 @@ batched-vs-looped comparison.  Scored against a **closed-form** balanced
 one-way REML oracle (see ``cases/_lme.py``); the output is ``(V, 3)`` columns
 ``[beta, sigma_b^2, sigma_e^2]``.
 
-nitrix runs **CPU-only on this L4** at present: the per-voxel ``vmap`` calls
-``jnp.linalg.cholesky`` on the tiny ``(p, p)`` fixed-effect system, which
-lowers to cuSOLVER ``potrf`` (``gpusolverDnCreate``) and **skips on GPU** --
-the SAME blocker as ``flame_two_level`` (filed: nitrix FR
-``lme-family-tiny-linalg-gpu-block-and-perf``; a Cholesky-free p=1 path
-unblocks the GPU + is 3-6x faster on CPU).  NOTE: older store rows show ``ok``
-on GPU --
-they are **stale** (the cuSOLVER path regressed silently into a skip).  The
-one-time ``ZZ^T`` eigh additionally goes through ``safe_eigh`` -> CPU.
+nitrix **runs on GPU here** (the ``ok`` GPU store rows are correct, NOT
+stale) -- unlike its sibling ``flame_two_level``, which skips with a cuSOLVER
+handle-creation error despite the *same* ``(p, p)`` Cholesky.  Observed on this
+L4 (cause not established): the cuSOLVER ``gpusolverDnCreate`` fails for a
+``potrf``/``syevd``-first program but not after a ``getrf``/matmul.
+``reml_fit`` incidentally runs a ``2x2`` ``jnp.linalg.solve`` (``getrf``) in
+its Newton step, which appears to be why it runs while ``flame`` skips.
+That opaque GPU issue + its provisional warmup are filed in nitrix FR
+``gpu-cusolver-first-call-handle-failure`` (treat as observational; needs
+robust repeated-trial verification).  The shared CPU/compile perf win
+(Cholesky-free p=1 path, closed-form AI-REML, SVD-not-eigh) is filed in FR
+``lme-family-tiny-linalg-gpu-block-and-perf``, which flags the fix-risk that
+dropping this ``getrf`` while leaving the eigh could re-block ``reml`` on GPU.
+The one-time ``ZZ^T`` eigh goes through ``safe_eigh`` -> CPU.
 statsmodels is CPU-only (``requires='cpu'``) and a **slow baseline** (per-voxel
 iterative fits) -- skip in dev cycles (``--skip-slow``), run it in the
 sprint-end full matrix.  No GPU reference library exists for LME.  Tolerance is
