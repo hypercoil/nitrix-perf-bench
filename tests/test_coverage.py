@@ -8,7 +8,10 @@ its strong on-target ref, ranked worst-first), the under-covered priorities,
 the provisional (fast-run) flag, and that host-side constructors are excluded
 from the runtime denominator.
 """
+from types import SimpleNamespace
+
 from nperf.report import coverage as cov
+from nperf.report import economic as econ
 
 _REP = {'n': 1}
 _CATALOGUE = [
@@ -20,12 +23,21 @@ _CATALOGUE = [
     {'qualname': 'pkg.unmeasured', 'jit': 'pass'},
     {'qualname': 'pkg.constructor', 'jit': 'n/a'},
 ]
+
+
+def _c(name, large=()):
+    '''A minimal Case stand-in (build_coverage reads .name / .representative /
+    .large_param_points).'''
+    return SimpleNamespace(name=name, representative=_REP,
+                           large_param_points=tuple(large))
+
+
 _OP2CASE = {
-    'pkg.winner': ('winner', _REP),
-    'pkg.laggard': ('laggard', _REP),
-    'pkg.floor_only': ('floor_only', _REP),
-    'pkg.cpu_only': ('cpu_only', _REP),
-    'pkg.gpu_blocked': ('blk', _REP),
+    'pkg.winner': _c('winner'),
+    'pkg.laggard': _c('laggard'),
+    'pkg.floor_only': _c('floor_only'),
+    'pkg.cpu_only': _c('cpu_only'),
+    'pkg.gpu_blocked': _c('blk'),
     # pkg.unmeasured + pkg.constructor: no case
 }
 
@@ -158,3 +170,94 @@ def test_markdown_renders():
     assert 'Lagging on the deployment target' in md
     assert 'pkg.laggard' in md
     assert 'GPU blocked' in md and 'pkg.gpu_blocked' in md
+
+
+# ====================== COVERAGE v2 axes ===================================
+def _vrow(baseline, platform, status, param, *, framework='jax',
+          steady=None, compile=None, case='op'):
+    metrics = {}
+    if steady is not None:
+        metrics['steady_time'] = {'min': steady}
+    if compile is not None:
+        metrics['compile_time'] = {'value': compile}
+    return {'case': case, 'baseline': baseline, 'platform': platform,
+            'status': status, 'param_point': param, 'framework': framework,
+            'metrics': metrics}
+
+
+# -- the ref-class fix: community gold standards are 'domain', not floor -----
+def test_ref_class_domain_vs_floor_vs_strong():
+    assert cov._ref_class('fsl.flameo', 'numpy') == 'domain'
+    assert cov._ref_class('ants.registration', 'ants') == 'domain'
+    assert cov._ref_class('statsmodels.MixedLM', 'statsmodels') == 'domain'
+    # an I/O no-op in a domain namespace is a floor, NOT a reference
+    assert cov._ref_class('fsl.iofloor', 'numpy') == 'floor'
+    assert cov._ref_class('scipy', 'numpy') == 'floor'
+    assert cov._ref_class('cupy.eigh', 'cupy') == 'strong'
+    assert cov._ref_class('nitrix-jax', 'jax') == 'nitrix'
+
+
+def test_realism_rungs():
+    assert econ.realism_rung({'V': 100}) == 'synthetic'
+    assert econ.realism_rung({'data': 'mni152'}) == 'real_planted'
+    assert econ.realism_rung({'regime': 'real_full'}) == 'real_full'
+    assert (econ.rung_index('real_full') > econ.rung_index('real_planted')
+            > econ.rung_index('synthetic'))
+
+
+def test_scale_no_tier_and_scaled():
+    assert cov._scale_status(_c('op'), []) == (cov.NO_TIER, None, None)
+    case = _c('op', large=[{'V': 1000}, {'V': 2000}])
+    rows = [_vrow('nitrix-jax', 'jax-cpu', 'ok', {'V': 1000}),
+            _vrow('nitrix-jax', 'jax-cpu', 'ok', {'V': 2000})]
+    assert cov._scale_status(case, rows) == (cov.SCALED, 2000, None)
+
+
+def test_scale_capped_like_flame():
+    case = _c('op', large=[{'V': 1000}, {'V': 2000}])
+    rows = [_vrow('nitrix-jax', 'jax-cpu', 'ok', {'V': 1000}),
+            _vrow('nitrix-jax', 'jax-cpu', 'timeout', {'V': 2000})]
+    assert cov._scale_status(case, rows) == (cov.SCALE_CAPPED, 1000, 'timeout')
+
+
+def test_scale_declared_unmeasured():
+    assert cov._scale_status(_c('op', large=[{'V': 1}]), [])[0] \
+        == cov.SCALE_DECLARED
+
+
+def test_input_realism_and_domain_ref():
+    assert cov._input_realism(
+        [_vrow('nitrix-jax', 'jax-cpu', 'ok', {'data': 'mni152'})]) \
+        == 'real_planted'
+    assert cov._input_realism(
+        [_vrow('nitrix-jax', 'jax-cpu', 'ok', {'V': 1})]) == 'synthetic'
+    rows = [_vrow('ants.registration', 'jax-cpu', 'ok', {'V': 1},
+                  framework='ants'),
+            _vrow('ants.registration', 'jax-cpu', 'ok', {'data': 'mni152'},
+                  framework='ants')]
+    assert cov._domain_ref(rows) == ('ants.registration', 'real_planted')
+    assert cov._domain_ref(
+        [_vrow('scipy', 'jax-cpu', 'ok', {'V': 1}, framework='numpy')]) \
+        == (None, 'synthetic')
+
+
+def test_economic_na_and_fallback_and_authoritative():
+    # not on GPU -> n/a
+    assert cov._economic(_c('op'), [], cov.CPU_ONLY, 4.0) \
+        == ('n/a', None, True)
+    # no large tier -> representative fallback (non-authoritative)
+    case = _c('op', large=())
+    rows = [_vrow('nitrix-jax', 'jax-cuda12', 'ok', {'n': 1},
+                  steady=0.001, compile=0.5),
+            _vrow('nitrix-jax', 'jax-cpu', 'ok', {'n': 1}, steady=0.010)]
+    ov = econ.op_verdict(case, rows, bar=4.0)
+    assert ov.verdict == 'favorable (amortized only)'
+    assert ov.authoritative is False
+    # measured at a large point vs a domain tool -> authoritative favorable
+    case2 = _c('op', large=[{'V': 1000}])
+    rows2 = [_vrow('nitrix-jax', 'jax-cuda12', 'ok', {'V': 1000},
+                   steady=0.001, compile=0.01),
+             _vrow('ants.registration', 'jax-cpu', 'ok', {'V': 1000},
+                   framework='ants', steady=1.0)]
+    ov2 = econ.op_verdict(case2, rows2, bar=4.0)
+    assert ov2.verdict == 'favorable' and ov2.authoritative is True

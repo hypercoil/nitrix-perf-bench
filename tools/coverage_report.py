@@ -18,7 +18,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
@@ -34,17 +34,19 @@ _DEFAULT_OP_MATRIX = str(
 )
 
 
-def _op_to_case() -> Dict[str, Tuple[str, Dict[str, Any]]]:
-    '''op qualname -> (case name, representative point); the single home for
-    the case->op mapping is ``Case.op_qualname`` (shared with the feed).
+def _op_to_case() -> Dict[str, Any]:
+    '''op qualname -> its ``Case``; the single home for the case->op mapping is
+    ``Case.op_qualname`` (shared with the feed).  The full Case is carried (not
+    just name + representative) so the coverage builder can read its declared
+    ``large_param_points`` (scale axis) etc.
 
     Several cases can target one op via different branches (e.g.
     ``distance_transform`` euclidean vs ``distance_transform_chamfer``).  When
     they do, prefer the **canonical** case -- the one whose name matches the
-    op's leaf (``distance_transform``) -- so the op's coverage (its strong-GPU
-    ref, its representative) reflects the default branch users hit, not a
-    secondary variant.  Deterministic fallback: first by registration order.'''
-    out: Dict[str, Tuple[str, Dict[str, Any]]] = {}
+    op's leaf (``distance_transform``) -- so the op's coverage reflects the
+    default branch users hit, not a secondary variant.  Deterministic fallback:
+    first by registration order.'''
+    out: Dict[str, Any] = {}
     for c in CASES.values():
         if not c.op_qualname:
             continue
@@ -52,7 +54,7 @@ def _op_to_case() -> Dict[str, Tuple[str, Dict[str, Any]]]:
         # take the first case for an op, but let the canonical (leaf-named)
         # case override a previously-seen variant.
         if c.op_qualname not in out or c.name == leaf:
-            out[c.op_qualname] = (c.name, c.representative)
+            out[c.op_qualname] = c
     return out
 
 

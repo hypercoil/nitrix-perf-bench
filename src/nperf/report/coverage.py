@@ -29,6 +29,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import economic
+from .sizing import size_elems
+
 # coverage status (which platforms have an ok nitrix row).
 UNMEASURED, CPU_ONLY, GPU_ONLY, MULTIPLATFORM = (
     'unmeasured', 'cpu_only', 'gpu_only', 'multiplatform',
@@ -43,13 +46,28 @@ _GPU = 'jax-cuda12'
 _CPU = 'jax-cpu'
 _NITRIX = 'nitrix-jax'  # the system under test / ratio reference
 
+# Community gold-standard domains (the real baselines for marquee functions):
+# keyed on the baseline-NAME namespace, NOT framework -- the CLI tools (AFNI /
+# FSL / FreeSurfer) are subprocess binaries declared ``framework='numpy'``, so
+# a framework check would misclassify them as a host floor.  This is the fix
+# for the latent deficit: these gold standards were invisible to ref_strength.
+_DOMAIN_NS = frozenset({
+    'ants', 'fsl', 'afni', 'freesurfer', 'dipy', 'simpleitk', 'statsmodels',
+})
+
 
 def _ref_class(baseline: str, framework: str) -> str:
-    '''Classify a baseline by its row's ``framework``: the system under test,
-    a same-framework internal alternative, a CPU floor (numpy/scipy), or a
-    strong on-target external reference (cupy / torch / pyg).'''
+    '''Classify a baseline: the system under test (nitrix), a community-gold
+    DOMAIN reference (ANTs/FSL/...), a CPU floor (numpy/scipy or an I/O no-op),
+    a strong on-target GPU reference (cupy/torch/pyg), or an internal jax
+    alternative.  Domain is keyed on the name namespace (the CLI tools are
+    ``framework='numpy'``); the ``*.iofloor`` no-ops are floors, not refs.'''
     if baseline.startswith('nitrix'):
         return 'nitrix'
+    if baseline.endswith('.iofloor'):
+        return 'floor'             # an I/O-timing no-op, not a reference
+    if baseline.split('.')[0] in _DOMAIN_NS:
+        return 'domain'            # community gold standard (ANTs/FSL/...)
     if framework == 'numpy':       # the numpy + scipy providers (host floor)
         return 'floor'
     if framework in ('cupy', 'torch'):
@@ -77,6 +95,27 @@ class OpCoverage:
     # slower (a deficit).  None when no strong GPU ref was measured.
     gpu_ref: Optional[str] = None
     gpu_ref_ratio: Optional[float] = None
+    # --- COVERAGE v2 axes (COVERAGE_V2_PLAN.md) ----------------------------
+    # scale: did the op's declared brain-scale tier (large_param_points) run?
+    # no_tier (none declared) / declared (declared, not measured on GPU) /
+    # scaled (nitrix ok at the largest) / scale_capped (oom/timeout at a large
+    # point while a smaller one ran -- the fragile-at-scale signal).
+    scale_status: str = 'no_tier'
+    largest_ok_size: Optional[int] = None
+    scale_cap_reason: Optional[str] = None      # 'oom' | 'timeout'
+    # economic: GPU as a multiple of the CPU gold standard (decision 4: the
+    # largest real/large point, else the representative + authoritative=False).
+    economic_verdict: str = 'n/a'               # see report/economic.verdict
+    economic_amortized: Optional[float] = None
+    economic_authoritative: bool = True
+    # input realism (the achieved rung, max over ok nitrix rows): synthetic /
+    # real_planted (real data, planted/known truth) / real_full (the actual
+    # problem).
+    input_realism: str = 'synthetic'
+    # community gold-standard ref (ANTs/FSL/...) + the realism rung it ran
+    # at (was it run on real data?).  None when no domain ref was measured.
+    domain_ref: Optional[str] = None
+    domain_ref_realism: str = 'synthetic'
 
     @property
     def nitrix_slower_on_gpu(self) -> bool:
@@ -176,17 +215,94 @@ def _gpu_bar(
     return None, None
 
 
+# scale: statuses (COVERAGE_V2_PLAN) + cap reasons marking a fragile tier.
+NO_TIER, SCALE_DECLARED, SCALED, SCALE_CAPPED = (
+    'no_tier', 'declared', 'scaled', 'scale_capped')
+_CAP_STATUSES = frozenset({'oom', 'timeout'})
+
+
+def _scale_status(
+    case: Any, crows: List[Dict[str, Any]]
+) -> Tuple[str, Optional[int], Optional[str]]:
+    '''Did the op's declared brain-scale tier actually run?  Platform-agnostic
+    (a GPU-blocked op like flame still has a CPU scale story): scaled if a
+    nitrix ok row reaches the largest declared size; scale_capped if nitrix
+    oom/timeouts at a large point beyond the largest size that ran (the
+    fragile-at-scale signal); declared if the tier exists but isn't measured;
+    no_tier if none declared.'''
+    large = list(case.large_param_points)
+    if not large:
+        return NO_TIER, None, None
+    keys = {economic._pkey(p) for p in large}
+    nrows = [r for r in crows if r.get('baseline') == _NITRIX
+             and economic._pkey(r['param_point']) in keys]
+    ok = [r for r in nrows if r.get('status') == 'ok']
+    capped = [r for r in nrows if r.get('status') in _CAP_STATUSES]
+    if not ok and not capped:
+        return SCALE_DECLARED, None, None
+    largest_ok = max((size_elems(r['param_point']) for r in ok), default=None)
+    above = [r for r in capped if largest_ok is None
+             or size_elems(r['param_point']) > largest_ok]
+    if above:
+        worst = max(above, key=lambda r: size_elems(r['param_point']))
+        return SCALE_CAPPED, largest_ok, worst['status']
+    largest_declared = max(size_elems(p) for p in large)
+    if largest_ok is not None and largest_ok >= largest_declared:
+        return SCALED, largest_ok, None
+    return SCALE_DECLARED, largest_ok, None
+
+
+def _input_realism(crows: List[Dict[str, Any]]) -> str:
+    '''The highest realism rung reached by an ok nitrix row (synthetic <
+    real_planted < real_full).'''
+    rung = 'synthetic'
+    for r in crows:
+        if r.get('baseline') == _NITRIX and r.get('status') == 'ok':
+            rr = economic.realism_rung(r['param_point'])
+            if economic.rung_index(rr) > economic.rung_index(rung):
+                rung = rr
+    return rung
+
+
+def _domain_ref(crows: List[Dict[str, Any]]) -> Tuple[Optional[str], str]:
+    '''The community gold-standard reference that ran ok, preferring the one
+    measured on the most-real data; returns (baseline, its realism rung).'''
+    best: Optional[str] = None
+    rung = 'synthetic'
+    for r in crows:
+        cls = _ref_class(r.get('baseline', ''), r.get('framework', ''))
+        if r.get('status') != 'ok' or cls != 'domain':
+            continue
+        rr = economic.realism_rung(r['param_point'])
+        if best is None or economic.rung_index(rr) > economic.rung_index(rung):
+            best, rung = r['baseline'], rr
+    return best, rung
+
+
+def _economic(case: Any, crows: List[Dict[str, Any]], coverage: str,
+              bar: float) -> Tuple[str, Optional[float], bool]:
+    '''The economic verdict for the op (decision 4).  ``n/a`` when nitrix does
+    not run on GPU at all (blocked / cpu-only) -- there is no GPU win to weigh;
+    else reduce the shared economic join to one verdict.'''
+    if coverage in (UNMEASURED, CPU_ONLY):
+        return 'n/a', None, True
+    ov = economic.op_verdict(case, crows, bar)
+    return ov.verdict, ov.amortized, ov.authoritative
+
+
 def build_coverage(
     rows: List[Dict[str, Any]],
     catalogue: List[Dict[str, Any]],
-    op_to_case: Dict[str, Tuple[str, Dict[str, Any]]],
+    op_to_case: Dict[str, Any],
+    bar: float = economic.COST_MULTIPLE,
 ) -> List[OpCoverage]:
     '''One ``OpCoverage`` per catalogue op, joining the store ``rows`` by case.
 
     ``catalogue`` is ``op_matrix.json``'s ``ops`` list (the authoritative op
-    list); ``op_to_case`` maps an op qualname to its ``(case_name,
-    representative)`` (from the case registry).  An op with no case -- or a
-    case with no rows -- is ``unmeasured``.'''
+    list); ``op_to_case`` maps an op qualname to its ``Case`` (from the case
+    registry).  An op with no case -- or a case with no rows -- is
+    ``unmeasured``.  ``bar`` is the GPU:CPU cost-multiple for the economic
+    axis.'''
     by_case: Dict[Optional[str], List[Dict[str, Any]]] = {}
     for r in rows:
         by_case.setdefault(r.get('case'), []).append(r)
@@ -194,19 +310,23 @@ def build_coverage(
     for op in catalogue:
         q = op.get('qualname')
         runtime = op.get('jit') != 'n/a'
-        cc = op_to_case.get(q)
-        crows = by_case.get(cc[0], []) if cc else []
-        if not cc or not crows:
+        case = op_to_case.get(q)
+        crows = by_case.get(case.name, []) if case else []
+        if not case or not crows:
             out.append(OpCoverage(
-                qualname=q, runtime=runtime, has_case=bool(cc),
+                qualname=q, runtime=runtime, has_case=bool(case),
                 coverage=UNMEASURED, ref_strength=NO_REF,
                 precision='unmeasured', provisional=False))
             continue
-        gpu_ref, gpu_ratio = _gpu_bar(crows, cc[1])
+        coverage = _coverage_status(crows)
+        gpu_ref, gpu_ratio = _gpu_bar(crows, case.representative)
         block_reason = _gpu_block_reason(crows)
+        scale, largest_ok, cap_reason = _scale_status(case, crows)
+        econ_v, econ_amort, econ_auth = _economic(case, crows, coverage, bar)
+        dref, dref_rung = _domain_ref(crows)
         out.append(OpCoverage(
             qualname=q, runtime=runtime, has_case=True,
-            coverage=_coverage_status(crows),
+            coverage=coverage,
             ref_strength=_ref_strength(crows),
             precision=_precision(crows),
             provisional=any(
@@ -214,7 +334,13 @@ def build_coverage(
                 for r in crows),
             gpu_blocked=block_reason is not None,
             gpu_block_reason=block_reason,
-            gpu_ref=gpu_ref, gpu_ref_ratio=gpu_ratio))
+            gpu_ref=gpu_ref, gpu_ref_ratio=gpu_ratio,
+            scale_status=scale, largest_ok_size=largest_ok,
+            scale_cap_reason=cap_reason,
+            economic_verdict=econ_v, economic_amortized=econ_amort,
+            economic_authoritative=econ_auth,
+            input_realism=_input_realism(crows),
+            domain_ref=dref, domain_ref_realism=dref_rung))
     return out
 
 
@@ -242,6 +368,13 @@ def _op_json(r: OpCoverage) -> Dict[str, Any]:
         'gpu_blocked': r.gpu_blocked, 'gpu_block_reason': r.gpu_block_reason,
         'gpu_ref': r.gpu_ref, 'gpu_ref_ratio': r.gpu_ref_ratio,
         'nitrix_slower_on_gpu': r.nitrix_slower_on_gpu,
+        'scale_status': r.scale_status, 'largest_ok_size': r.largest_ok_size,
+        'scale_cap_reason': r.scale_cap_reason,
+        'economic_verdict': r.economic_verdict,
+        'economic_amortized': r.economic_amortized,
+        'economic_authoritative': r.economic_authoritative,
+        'input_realism': r.input_realism,
+        'domain_ref': r.domain_ref, 'domain_ref_realism': r.domain_ref_realism,
     }
 
 
@@ -256,6 +389,28 @@ def _under(records: List[OpCoverage]) -> List[Tuple[OpCoverage, str]]:
         {'high': 0, 'medium': 1}[rp[1]], rp[0].qualname))
 
 
+# --- COVERAGE v2 per-axis deficit selectors -------------------------------
+def _scale_fragile(records: List[OpCoverage]) -> List[OpCoverage]:
+    '''Declared a brain-scale tier but nitrix oom/timeouts before the top.'''
+    return sorted((r for r in records if r.scale_status == SCALE_CAPPED),
+                  key=lambda r: r.largest_ok_size or 0)
+
+
+def _no_econ_win(records: List[OpCoverage]) -> List[OpCoverage]:
+    '''A real GPU op whose win is below the cost-multiple bar.'''
+    return sorted(
+        (r for r in records
+         if r.economic_verdict == 'not multiplicative enough'),
+        key=lambda r: r.economic_amortized or 0.0)
+
+
+def _real_data(records: List[OpCoverage]) -> List[OpCoverage]:
+    '''Ops measured on real data (planted or full), most-real first.'''
+    return sorted(
+        (r for r in records if r.input_realism != 'synthetic'),
+        key=lambda r: -economic.rung_index(r.input_realism))
+
+
 def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
     '''Machine-readable artifact for the nitrix agent (the ranked deficits).'''
     runtime = [r for r in records if r.runtime]
@@ -265,6 +420,8 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
 
     lagging, under = _lagging(records), _under(records)
     blocked = [r for r in records if r.gpu_blocked]
+    fragile, no_win = _scale_fragile(records), _no_econ_win(records)
+    real = _real_data(records)
     return {
         'source': 'nitrix-perf-bench coverage-&-deficit report',
         'convention': 'gpu_ref_ratio = strong_ref.min / nitrix.min '
@@ -274,13 +431,27 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
             'measured': _n(lambda r: r.coverage != UNMEASURED),
             'multiplatform': _n(lambda r: r.coverage == MULTIPLATFORM),
             'with_strong_gpu_ref': _n(lambda r: r.ref_strength == STRONG_REF),
+            'with_domain_ref': _n(lambda r: r.domain_ref is not None),
             'lagging_on_gpu': len(lagging),
             'gpu_blocked_upstream': len(blocked),
             'constructors': sum(1 for r in records if not r.runtime),
+            # COVERAGE v2 axes
+            'scaled': _n(lambda r: r.scale_status == SCALED),
+            'scale_capped': len(fragile),
+            'economic_favorable': _n(
+                lambda r: r.economic_verdict.startswith('favorable')),
+            'economic_not_multiplicative': len(no_win),
+            'on_real_data': len(real),
+            'on_real_full': _n(lambda r: r.input_realism == 'real_full'),
         },
         'lagging': [_op_json(r) for r in lagging],
         'gpu_blocked': [_op_json(r) for r in blocked],
         'under_covered': [{**_op_json(r), 'priority': p} for r, p in under],
+        'by_axis': {
+            'scale_fragile': [_op_json(r) for r in fragile],
+            'no_economic_win': [_op_json(r) for r in no_win],
+            'on_real_data': [_op_json(r) for r in real],
+        },
         'ops': [_op_json(r) for r in records],
     }
 
@@ -301,8 +472,15 @@ def render_markdown(records: List[OpCoverage]) -> str:
     meas = sum(1 for r in runtime if r.coverage != UNMEASURED)
     multi = sum(1 for r in runtime if r.coverage == MULTIPLATFORM)
     strong = sum(1 for r in runtime if r.ref_strength == STRONG_REF)
+    domain = sum(1 for r in runtime if r.domain_ref is not None)
+    scaled = sum(1 for r in runtime if r.scale_status == SCALED)
+    econ_fav = sum(1 for r in runtime
+                   if r.economic_verdict.startswith('favorable'))
+    on_real = sum(1 for r in runtime if r.input_realism != 'synthetic')
     lagging, under = _lagging(records), _under(records)
     blocked = [r for r in records if r.gpu_blocked]
+    fragile, no_win, real = (
+        _scale_fragile(records), _no_econ_win(records), _real_data(records))
     won = sorted(
         (r for r in records if r.ref_strength == STRONG_REF
          and r.gpu_ref_ratio is not None and not r.nitrix_slower_on_gpu),
@@ -322,6 +500,13 @@ def render_markdown(records: List[OpCoverage]) -> str:
         f'- **measured** (≥1 platform): {meas} / {len(runtime)}',
         f'- **multiplatform** (CPU + GPU): {multi} / {len(runtime)}',
         f'- **with a strong on-target GPU ref**: {strong} / {len(runtime)}',
+        f'- **with a community-gold ref** (ANTs/FSL/…): {domain} '
+        f'/ {len(runtime)}',
+        f'- **scaled** (ran at the declared brain-scale tier): {scaled} '
+        f'/ {len(runtime)} — **{len(fragile)}** fragile (oom/timeout)',
+        f'- **economically favorable** (GPU beats CPU gold by ≥ the bar): '
+        f'{econ_fav} / {len(runtime)} — **{len(no_win)}** not multiplicative',
+        f'- **on real data** (planted or full): {on_real} / {len(runtime)}',
         f'- **lagging on the GPU**: {len(lagging)}',
         f'- **GPU blocked upstream** (jaxlib cuSOLVER): {len(blocked)}',
         '',
@@ -393,6 +578,71 @@ def render_markdown(records: List[OpCoverage]) -> str:
             f'{_slower(r.gpu_ref_ratio)} |'
             for r in won
         ]
+    # --- COVERAGE v2 axis sections ----------------------------------------
+    lines += [
+        '',
+        '## Scale — brain-scale tier (COVERAGE v2)',
+        '',
+        'Ops declaring a `large_param_points` tier: did nitrix run at the '
+        'largest realistic size, or break (oom/timeout) before it? '
+        '`scale_capped` = **fragility at scale** (the win at a small '
+        'size may not hold where practitioners run).',
+        '',
+    ]
+    if fragile:
+        lines += ['| op | scaled to | capped by |', '|---|---|---|']
+        lines += [
+            f'| `{r.qualname}` | {r.largest_ok_size or "—"} elem | '
+            f'**{r.scale_cap_reason}** |' for r in fragile]
+    else:
+        lines.append('_No op is fragile at its declared scale tier._')
+    lines += [
+        '',
+        '## Economic — GPU as a multiple of CPU (COVERAGE v2)',
+        '',
+        'The deployment-economics bar: a nitrix-GPU win counts only if it is '
+        '**multiplicative** over the CPU gold standard (the GPU hardware '
+        'premium; see `ECONOMIC.md`). Verdict at largest real/large point, '
+        'else representative (`~` = not authoritative). `not multiplicative '
+        'enough` is a real GPU win that still fails the cost test.',
+        '',
+        '| op | verdict | amortized | domain ref |',
+        '|---|---|---:|---|',
+    ]
+    _na = ('n/a', 'unmeasured')
+    econ_rows = sorted(
+        (r for r in runtime if r.economic_verdict not in _na),
+        key=lambda r: (r.economic_verdict != 'not multiplicative enough',
+                       -(r.economic_amortized or 0.0)))
+    if econ_rows:
+        for r in econ_rows:
+            amort = (f'{r.economic_amortized:.1f}x'
+                     if r.economic_amortized is not None else '—')
+            mark = '' if r.economic_authoritative else ' ~'
+            lines.append(
+                f'| `{r.qualname}` | {r.economic_verdict}{mark} | {amort} | '
+                f'{r.domain_ref or "—"} |')
+    else:
+        lines.append('| _no GPU-vs-CPU-gold join yet_ | | | |')
+    lines += [
+        '',
+        '## Real-data coverage (COVERAGE v2)',
+        '',
+        'Marquee functions should be tested on real brain data against real '
+        'community baselines. Realism ladder: `synthetic` < `real_planted` '
+        '(real image, planted/known truth) < `real_full` (actual problem). '
+        '(Tier-gating of which ops are *required* to reach `real` lands in '
+        'Phase 2.)',
+        '',
+    ]
+    if real:
+        lines += ['| op | realism | domain ref (on) |', '|---|---|---|']
+        lines += [
+            f'| `{r.qualname}` | {r.input_realism} | '
+            f'{(r.domain_ref or "—")} ({r.domain_ref_realism}) |'
+            for r in real]
+    else:
+        lines.append('_No op is yet measured on real data._')
     lines += [
         '',
         '## Caveats',

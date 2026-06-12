@@ -10,12 +10,9 @@ cost-multiple bar (``--cost-multiple``, default ~4x; the rendered header
 states the cloud-pricing rationale).
 
 This is a pure **store read** -- a deliberate *cross-platform* join the scaling
-report (single-platform by charter) does not do: for each ``(case,
-param_point)`` it pairs the ``nitrix-jax`` row on ``jax-cuda12`` (GPU steady +
-the one-time GPU compile) with the fastest CPU **domain** baseline on
-``jax-cpu`` (the strongest competitor; ANTs / dipy / numpy ...), falling back
-to ``nitrix-jax`` on ``jax-cpu`` (GPU-vs-own-CPU) when the op has no domain
-tool (e.g. BBR).  No new measurement, no schema change.
+report (single-platform by charter) does not do.  The join itself lives in
+``nperf.report.economic`` (shared with the coverage matrix's economic axis);
+this tool is the ECONOMIC.md renderer over it.
 
 Two reads per point (the user's operationalisation):
 
@@ -33,123 +30,19 @@ Reads the store only (no GPU / measurement)::
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from scaling_report import _label, _size_elems  # noqa: E402
 
 from nperf import store  # noqa: E402
 from nperf.core import read_jsonl  # noqa: E402
 from nperf.measure import CASES  # noqa: E402
-
-# GPU:CPU cost multiple -- an L4 GPU-hour costs ~4x an equivalent CPU-hour on
-# the major clouds (an L4 instance, e.g. AWS g6.xlarge, ~$0.80/hr on-demand vs
-# a comparable general-purpose vCPU instance ~$0.18/hr, 2026). A nitrix-GPU
-# result is only "economically favorable" if it beats the CPU gold standard by
-# MORE than this -- an incremental GPU win is not a win once the user pays the
-# GPU premium. Tunable via --cost-multiple.
-_GPU_CPU_COST_MULTIPLE = 4.0
-_GPU = 'jax-cuda12'
-_CPU = 'jax-cpu'
-
-
-def _steady_min(row: Dict[str, Any]) -> Optional[float]:
-    return ((row.get('metrics') or {}).get('steady_time') or {}).get('min')
-
-
-def _compile(row: Dict[str, Any]) -> Optional[float]:
-    return ((row.get('metrics') or {}).get('compile_time') or {}).get('value')
-
-
-def _pkey(param: Dict[str, Any]) -> str:
-    return json.dumps(param, sort_keys=True)
-
-
-def _verdict(amortized: Optional[float], single: Optional[float],
-             bar: float) -> str:
-    '''The economic label for one point at the cost-multiple ``bar``.'''
-    if amortized is None:
-        return 'n/a'
-    if amortized < bar:
-        # a real GPU win can still be NOT a win once the hardware premium is
-        # paid -- the user's central point.
-        return 'not multiplicative enough'
-    if single is not None and single >= bar:
-        return 'favorable'
-    return 'favorable (amortized only)'  # the compile is the gate
-
-
-def _analyse(case: Any, rows: List[dict], bar: float) -> List[Dict[str, Any]]:
-    '''Join GPU-nitrix x CPU-gold per param point for one case.
-
-    Restricted to the **size tier** (``large_param_points``): that is where the
-    scale-relevant comparison lives, and -- crucially -- the CPU domain tools
-    (ANTs/dipy) run a FIXED schedule that ignores the dev ``(levels, iters)``
-    configs, so a verdict on those would be meaningless.'''
-    large_keys = {_pkey(p) for p in case.large_param_points}
-    if not large_keys:
-        return []
-    by_key: Dict[str, List[dict]] = {}
-    for r in rows:
-        if r.get('case') != case.name:
-            continue
-        k = _pkey(r['param_point'])
-        if k in large_keys:
-            by_key.setdefault(k, []).append(r)
-
-    out: List[Dict[str, Any]] = []
-    for grp in by_key.values():
-        gpu = [r for r in grp if r['baseline'] == 'nitrix-jax'
-               and r['platform'] == _GPU and r['status'] == 'ok']
-        if not gpu or _steady_min(gpu[0]) is None:
-            continue
-        gs, gc = _steady_min(gpu[0]), _compile(gpu[0])
-        cpu_ok = [r for r in grp if r['platform'] == _CPU
-                  and r['status'] == 'ok' and _steady_min(r) is not None]
-        # I/O floors by provider namespace (the name prefix before the dot):
-        # a CLI tool's wall-clock includes a NIfTI write+subprocess+read the
-        # in-memory nitrix op never pays -- subtract the same-namespace no-op
-        # (afni.iofloor / fsl.iofloor) to isolate the registration COMPUTE.
-        floors = {r['baseline'].split('.')[0]: _steady_min(r)
-                  for r in cpu_ok if r['baseline'].endswith('.iofloor')}
-
-        def _compute(r: dict) -> float:
-            f = floors.get(r['baseline'].split('.')[0], 0.0)
-            return max(_steady_min(r) - f, 1e-6)  # I/O-subtracted
-
-        domain = [r for r in cpu_ok if r['baseline'] != 'nitrix-jax'
-                  and not r['baseline'].endswith('.iofloor')]
-        if domain:  # strongest competitor = fastest tool AFTER I/O subtraction
-            best = min(domain, key=_compute)
-            tool, fallback = best['baseline'], False
-            cpu_raw = _steady_min(best)
-            iofloor = floors.get(tool.split('.')[0])
-            cpu = _compute(best)
-        else:  # no domain tool (e.g. BBR) -> GPU-vs-own-CPU (no I/O artifact)
-            nc = [r for r in cpu_ok if r['baseline'] == 'nitrix-jax']
-            if not nc:
-                continue
-            tool, fallback = 'nitrix-CPU', True
-            cpu_raw, iofloor = _steady_min(nc[0]), None
-            cpu = cpu_raw
-        amort = cpu / gs if gs and gs > 0 else None
-        single = (cpu / (gs + gc)) if (gc is not None and (gs + gc) > 0
-                                       ) else None
-        param = gpu[0]['param_point']
-        out.append({
-            'label': _label(param), 'size': _size_elems(param),
-            'gpu_steady': gs, 'gpu_compile': gc, 'cpu': cpu, 'tool': tool,
-            'cpu_raw': cpu_raw, 'iofloor': iofloor,
-            'fallback': fallback, 'amort': amort, 'single': single,
-            'verdict': _verdict(amort, single, bar),
-        })
-    out.sort(key=lambda d: d['size'])
-    return out
+from nperf.report.economic import (  # noqa: E402
+    COST_MULTIPLE as _GPU_CPU_COST_MULTIPLE,
+)
+from nperf.report.economic import analyse as _analyse
 
 
 def _t(s: Optional[float]) -> str:
