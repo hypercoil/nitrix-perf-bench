@@ -14,8 +14,8 @@
     "scale_capped": 1,
     "economic_favorable": 65,
     "economic_not_multiplicative": 10,
-    "on_real_data": 5,
-    "on_real_full": 1,
+    "on_real_data": 6,
+    "on_real_full": 2,
     "marquee": 8,
     "marquee_unmet": 3,
     "orphan_cases": 3
@@ -194,12 +194,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 70.11255803492865,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_full",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        3,
         4
       ]
     },
@@ -4836,6 +4836,34 @@
     ],
     "on_real_data": [
       {
+        "qualname": "nitrix.numerics.intensity_normalize",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "strong_ref",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": "cupy.intensity_normalize",
+        "gpu_ref_ratio": 0.6366977136809086,
+        "nitrix_slower_on_gpu": true,
+        "scale_status": "no_tier",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 70.11255803492865,
+        "economic_authoritative": false,
+        "input_realism": "real_full",
+        "domain_ref": null,
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          3,
+          4
+        ]
+      },
+      {
         "qualname": "nitrix.smoothing.bilateral_gaussian",
         "runtime": true,
         "has_case": true,
@@ -5052,12 +5080,12 @@
         "economic_verdict": "favorable (amortized only)",
         "economic_amortized": 70.11255803492865,
         "economic_authoritative": false,
-        "input_realism": "synthetic",
+        "input_realism": "real_full",
         "domain_ref": null,
         "domain_ref_realism": "synthetic",
         "tier": "marquee",
         "coverage_score": [
-          2,
+          3,
           4
         ]
       }
@@ -5867,12 +5895,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 70.11255803492865,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_full",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        3,
         4
       ]
     },

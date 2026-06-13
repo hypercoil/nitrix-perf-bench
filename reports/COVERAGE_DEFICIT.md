@@ -11,7 +11,7 @@
 - **with a community-gold ref** (ANTs/FSL/…): 17 / 209
 - **scaled** (ran at the declared brain-scale tier): 18 / 209 — **1** fragile (oom/timeout)
 - **economically favorable** (GPU beats CPU gold by ≥ the bar): 65 / 209 — **10** not multiplicative
-- **on real data** (planted or full): 5 / 209
+- **on real data** (planted or full): 6 / 209
 - **marquee** ops (held to the real-data + community-baseline bar): 8 — **3** not yet meeting it
 - **lagging on the GPU**: 12
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
@@ -349,6 +349,7 @@ Marquee functions should be tested on real brain data against real community bas
 
 | op | realism | domain ref (on) |
 |---|---|---|
+| `nitrix.numerics.intensity_normalize` | real_full | — (synthetic) |
 | `nitrix.smoothing.bilateral_gaussian` | real_full | simpleitk.Bilateral (real_full) |
 | `nitrix.bias.n4_bias_field_correction` | real_planted | simpleitk.N4 (real_planted) |
 | `nitrix.register.rigid_register` | real_planted | ants.registration (real_planted) |
@@ -363,7 +364,7 @@ The headline functions used on real images, scored against their tier bar (`scor
 |---|---|---|---|---|---|---|---|
 | `nitrix.stats.lme.flame_two_level` | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
 | `nitrix.stats.lme.reml_fit` | 2/5 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
-| `nitrix.numerics.intensity_normalize` | 2/4 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.numerics.intensity_normalize` | 3/4 | ✓ | · | ✓~ | ● full | ✓ | ✗ none |
 | `nitrix.bias.n4_bias_field_correction` | 4/4 | ✓ | · | ✓~ | ◐ planted | · | ● simpleitk.N4 |
 | `nitrix.register.affine_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.register.diffeomorphic_demons_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
@@ -380,7 +381,6 @@ All 99 ops with a case, scored against their tier (`★` = marquee, which adds t
 |---|---|---|---|---|---|---|---|---|
 | `nitrix.stats.lme.flame_two_level` | ★ | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
 | `nitrix.stats.lme.reml_fit` | ★ | 2/5 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
-| `nitrix.numerics.intensity_normalize` | ★ | 2/4 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.affine_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.compose_velocity` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.invert_displacement` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
@@ -396,6 +396,7 @@ All 99 ops with a case, scored against their tier (`★` = marquee, which adds t
 | `nitrix.register.bending_energy` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.register.gradient_smoothness` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.register.jacobian_folding_penalty` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.numerics.intensity_normalize` | ★ | 3/4 | ✓ | · | ✓~ | ● full | ✓ | ✗ none |
 | `nitrix.linalg.tangent_project_spd` |  | 1/2 | ✓ | · | ✓~ | ✗ synth | · | ✗ none |
 | `nitrix.metrics.correlation_ratio` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.metrics.lncc` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ◐ simpleitk.ANTSNeighborhoodCorrelation |

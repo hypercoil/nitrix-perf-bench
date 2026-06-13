@@ -18,6 +18,7 @@ from nperf.cases import (
 )
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
+from nperf.report import economic as ec
 
 _MODS = [zscore_normalize, psc_normalize, robust_zscore_normalize,
          intensity_normalize]
@@ -52,6 +53,27 @@ def test_host_baselines_match_oracle(mod):
         assert fid['status'] == 'pass', (
             f'{mod.CASE.name}/{name}: rel_to_tol={fid["rel_to_tol"]:.3g}'
         )
+
+
+def test_intensity_real_anatomy():
+    '''The marquee real-data input: intensity_normalize clips+rescales the real
+    MNI152 T1 (real_full) and the host baselines still match the fp64 oracle on
+    real anatomy (the percentile method is exact, data-independent).  No domain
+    ref is asserted -- there is no parity-grade community CLI (the documented
+    gap; the CuPy GPU ref + numpy oracle are the bar).'''
+    p = {'data': 'mni152', 'resolution': 2, 'realism': 'real_full'}
+    assert ec.realism_rung(p) == 'real_full'
+    built = intensity_normalize._build(p)
+    assert set(built.baselines) == {
+        'nitrix-jax', 'numpy.intensity', 'cupy.intensity_normalize'}
+    for name, (provider_id, fn) in built.baselines.items():
+        if requires_of(provider_id) == 'gpu':
+            continue  # cupy ref: needs a device + the refs env
+        out = np.asarray(fn(*built.inputs_for(framework_of(provider_id))))
+        fid = compare(out, built.fp64_reference,
+                      rtol=intensity_normalize.CASE.rtol,
+                      atol=intensity_normalize.CASE.atol)
+        assert fid['status'] == 'pass', f'{name}: {fid["rel_to_tol"]:.3g}'
 
 
 def test_op_qualnames():
