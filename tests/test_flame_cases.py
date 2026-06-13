@@ -10,14 +10,23 @@ Paule-Mandel tau^2 diverges from REML at the boundary by design).
 import os
 
 import numpy as np
+import pytest
 
 from nperf.cases import flame_two_level
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
+from nperf.report import economic as ec
 
 _P = {'V': 64, 'N': 60, 'seed': 0}
 _FLAMEO = os.path.join(
     os.environ.get('NPERF_FSL_DIR', '/scratch/nperf/fsl'), 'bin', 'flameo')
+# the marquee real-data point + its assembled-arrays cache (skip if absent so
+# the suite never triggers the one-time nilearn download).
+_REAL_P = {'data': 'localizer', 'V': 8192, 'N': 40, 'realism': 'real_full',
+           'seed': 0}
+_LOC_CACHE = os.path.join(
+    os.environ.get('NPERF_REAL_DATA', '/scratch/nperf/real_anatomy'),
+    'localizer_flame_40s_8192v.npz')
 
 
 def _run(built, name):
@@ -86,6 +95,40 @@ def test_oracle_is_gamma_and_nonneg_varb():
     ref = built.fp64_reference  # (V, 2) = [gamma, sigma_b^2]
     assert ref.shape == (_P['V'], 2)
     assert (ref[:, 1] >= 0).all()  # variance component non-negative
+
+
+def test_real_localizer_build():
+    '''The marquee real-data point: a real localizer group analysis (real_full,
+    no oracle) builds with the same baselines + a fidelity note, and nitrix
+    runs to a finite gamma / non-negative variance on real COPE/VARCOPE.
+    Skipped if the assembled-arrays cache is absent (no network in CI).'''
+    assert ec.realism_rung(_REAL_P) == 'real_full'
+    if not os.path.exists(_LOC_CACHE):
+        pytest.skip('localizer cache absent (pre-warm real_flame_localizer)')
+    built = flame_two_level._build(_REAL_P)
+    assert set(built.baselines) == {
+        'nitrix-jax', 'fsl.flameo', 'fsl.iofloor', 'statsmodels.meta_analysis'}
+    assert built.fp64_reference is None and built.fidelity_note  # no oracle
+    out = _run(built, 'nitrix-jax')
+    assert out.shape == (_REAL_P['V'], 2)
+    assert np.all(np.isfinite(out))
+    assert (out[:, 1] >= 0).all()  # sigma_b^2 non-negative
+
+
+def test_real_localizer_flameo_agreement():
+    '''The marquee correctness gate on REAL data: nitrix agrees with FSL FLAME
+    (flameo) -- gamma essentially exact (corr > 0.9999), sigma_b^2 strongly
+    (corr > 0.99) with a high-variance tail where flameo's fast flame1 REML
+    diverges (the documented ApproxBaseline relationship, not a nitrix error).
+    Skipped without the localizer cache or the flameo binary.'''
+    if not (os.path.exists(_LOC_CACHE) and os.path.exists(_FLAMEO)):
+        pytest.skip('localizer cache or flameo binary absent')
+    built = flame_two_level._build(_REAL_P)
+    nit, flm = _run(built, 'nitrix-jax'), _run(built, 'fsl.flameo')
+    assert np.corrcoef(nit[:, 0], flm[:, 0])[0, 1] > 0.9999     # gamma
+    assert np.median(np.abs(nit[:, 0] - flm[:, 0])) < 1e-3
+    assert np.corrcoef(nit[:, 1], flm[:, 1])[0, 1] > 0.99       # sigma_b^2
+    assert np.median(np.abs(nit[:, 1] - flm[:, 1])) < 1e-2
 
 
 def test_op_qualname_matches_nitrix():

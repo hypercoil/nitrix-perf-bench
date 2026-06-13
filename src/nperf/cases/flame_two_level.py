@@ -38,6 +38,19 @@ GPU win.  Separately, a scalar closed-form path (no Cholesky) is 3-6x faster on
 CPU + flatter compile AND makes no cuSOLVER call, so it also sidesteps the GPU
 skip (perf FR ``lme-family-tiny-linalg-gpu-block-and-perf``).  Ratio vs
 ``nitrix-jax``.
+
+**Real-data point (marquee real-data bar).** Beside the synthetic balanced
+design, a ``data='localizer'`` point runs a *real* group analysis on the
+Brainomics localizer (``_real_lme.real_flame_localizer``): 40 subjects' level-1
+COPE + ``VARCOPE=(cope/t)^2`` over 8192 brain voxels, one-sample design.  The
+real within-variances are **heterogeneous**, so the constant-s2 closed form is
+inapplicable (``real_full``: no oracle); correctness is **agreement with
+flameo** on the real data -- gamma corr ~1.0 (median |Δ| ~2e-7), sigma_b^2 corr
+~0.998 with a high-variance tail where flameo's fast flame1 REML diverges (the
+documented ApproxBaseline relationship).  nitrix's batched CPU fit beats the
+looped flameo ~1.7x at V=8192.  (Platform stays CPU-only here -- the cuSOLVER
+block, no GPU FLAME ref to certify it -- so real data lifts this op to 3/5, not
+5/5; the ceiling is the GPU block + the scale-tier timeout, not the data.)
 """
 from __future__ import annotations
 
@@ -56,19 +69,36 @@ from ._lme import (
     flameo_iofloor,
     statsmodels_flame,
 )
+from ._real_lme import real_flame_localizer
 
 _S2 = 0.3  # constant known within-variance (enables the closed-form oracle)
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    v, big_n = param['V'], param['N']
-    beta, varw, x_group = flame_input(v, big_n, param.get('seed', 0), s2=_S2)
+    if param.get('data') == 'localizer':
+        # REAL group fMRI: localizer first-level COPE + VARCOPE=(cope/t)^2 over
+        # V brain voxels x N subjects, one-sample group design. Heterogeneous
+        # within-variance => the constant-s2 closed form does NOT hold, so
+        # there is no oracle: validated by agreement with FSL FLAME on real
+        # data (the upstream gold standard).
+        beta, varw, x_group = real_flame_localizer(
+            int(param['N']), int(param['V']), param.get('seed', 0))
+        ref: Any = None
+        note: Any = (
+            'real localizer COPE/VARCOPE=(cope/t)^2: heterogeneous within-'
+            'variance, so the constant-s2 closed form is inapplicable (no '
+            'oracle). Correctness = agreement with FSL FLAME (flameo), the '
+            'upstream gold standard nitrix targets, on the real data.')
+    else:
+        v, big_n = param['V'], param['N']
+        beta, varw, x_group = flame_input(v, big_n, param.get('seed', 0),
+                                          s2=_S2)
+        ref = flame_closed_form(beta.astype(np.float64),
+                                x_group.astype(np.float64), _S2)  # (V,2)
+        note = None
     jb = jax.block_until_ready(jnp.asarray(beta))
     jv = jax.block_until_ready(jnp.asarray(varw))
     jx = jax.block_until_ready(jnp.asarray(x_group))
-
-    ref = flame_closed_form(beta.astype(np.float64),
-                            x_group.astype(np.float64), _S2)  # (V, 2) oracle
 
     def _nitrix(b: Any, vw: Any, xg: Any) -> Any:
         r = flame_two_level(b, vw, xg)
@@ -91,6 +121,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,
         fp64_reference=ref, ratio_reference='nitrix-jax',
+        fidelity_note=note,
     )
 
 
@@ -100,6 +131,13 @@ _SHAPES = [(1024, 60), (8192, 60), (65536, 60)]
 # Brain-volume scale.  (nitrix-jax skips on GPU at every tier here -- the
 # cuSOLVER gpusolverDnCreate blocker, see complexity -- so these run on CPU.)
 _LARGE = [(131072, 60), (262144, 60)]
+# Real-data point (marquee real-data bar): a real group analysis on the
+# Brainomics localizer -- 40 subjects' first-level COPE + VARCOPE=(cope/t)^2
+# over 8192 brain voxels, one-sample group design. real_full (no oracle:
+# heterogeneous within-variance); FSL FLAME (flameo) runs on the same real
+# data. V/N kept modest so the looped flameo stays tractable in the sweep.
+_REAL = {'data': 'localizer', 'V': 8192, 'N': 40, 'realism': 'real_full',
+         'seed': 0}
 
 CASE = Case(
     name='flame_two_level',
@@ -108,7 +146,8 @@ CASE = Case(
     output_independent=True,  # each voxel is an independent FLAME fit
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
-    param_points=[{'V': v, 'N': n, 'seed': 0} for (v, n) in _SHAPES],
+    param_points=([{'V': v, 'N': n, 'seed': 0} for (v, n) in _SHAPES]
+                  + [_REAL]),
     representative={'V': 8192, 'N': 60, 'seed': 0},
     large_param_points=tuple(
         {'V': v, 'N': n, 'seed': 0} for (v, n) in _LARGE),

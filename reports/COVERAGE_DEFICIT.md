@@ -11,8 +11,8 @@
 - **with a community-gold ref** (ANTs/FSL/…): 17 / 209
 - **scaled** (ran at the declared brain-scale tier): 18 / 209 — **1** fragile (oom/timeout)
 - **economically favorable** (GPU beats CPU gold by ≥ the bar): 65 / 209 — **10** not multiplicative
-- **on real data** (planted or full): 6 / 209
-- **marquee** ops (held to the real-data + community-baseline bar): 8 — **3** not yet meeting it
+- **on real data** (planted or full): 7 / 209
+- **marquee** ops (held to the real-data + community-baseline bar): 8 — **2** not yet meeting it
 - **lagging on the GPU**: 12
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
 - ⚠️ **3 benchmarked case(s) absent from the catalogue** (`op_matrix.json` is stale -- invisible to the join until regenerated in nitrix): `bbr_register`, `greedy_syn_register`, `volreg`. Includes **MARQUEE** ops: `bbr_register`, `greedy_syn_register`, `volreg`.
@@ -349,6 +349,7 @@ Marquee functions should be tested on real brain data against real community bas
 
 | op | realism | domain ref (on) |
 |---|---|---|
+| `nitrix.stats.lme.flame_two_level` | real_full | fsl.flameo (real_full) |
 | `nitrix.numerics.intensity_normalize` | real_full | — (synthetic) |
 | `nitrix.smoothing.bilateral_gaussian` | real_full | simpleitk.Bilateral (real_full) |
 | `nitrix.bias.n4_bias_field_correction` | real_planted | simpleitk.N4 (real_planted) |
@@ -362,8 +363,8 @@ The headline functions used on real images, scored against their tier bar (`scor
 
 | op | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|
-| `nitrix.stats.lme.flame_two_level` | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
 | `nitrix.stats.lme.reml_fit` | 2/5 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
+| `nitrix.stats.lme.flame_two_level` | 3/5 | ✗ cpu_only | ⚠ timeout | · | ● full | · | ● fsl.flameo |
 | `nitrix.numerics.intensity_normalize` | 3/4 | ✓ | · | ✓~ | ● full | ✓ | ✗ none |
 | `nitrix.bias.n4_bias_field_correction` | 4/4 | ✓ | · | ✓~ | ◐ planted | · | ● simpleitk.N4 |
 | `nitrix.register.affine_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
@@ -371,7 +372,7 @@ The headline functions used on real images, scored against their tier bar (`scor
 | `nitrix.register.rigid_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.smoothing.bilateral_gaussian` | 4/4 | ✓ | · | ✓~ | ● full | · | ● simpleitk.Bilateral |
 
-**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `flame_two_level`, `reml_fit`, `intensity_normalize`.
+**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `reml_fit`, `intensity_normalize`.
 
 ## Full coverage matrix — every op with a case (COVERAGE v2)
 
@@ -379,8 +380,8 @@ All 99 ops with a case, scored against their tier (`★` = marquee, which adds t
 
 | op | ★ | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|---|
-| `nitrix.stats.lme.flame_two_level` | ★ | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
 | `nitrix.stats.lme.reml_fit` | ★ | 2/5 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
+| `nitrix.stats.lme.flame_two_level` | ★ | 3/5 | ✗ cpu_only | ⚠ timeout | · | ● full | · | ● fsl.flameo |
 | `nitrix.geometry.affine_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.compose_velocity` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.invert_displacement` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
