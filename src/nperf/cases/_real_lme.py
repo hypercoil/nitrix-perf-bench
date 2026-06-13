@@ -38,6 +38,9 @@ _CACHE = os.environ.get('NPERF_REAL_DATA', '/scratch/nperf/real_anatomy')
 # A robust motor contrast present for every localizer subject.
 _CONTRAST = 'left vs right button press'
 _TFLOOR = 1e-3  # |t| floor: a voxel needs a well-defined VARCOPE = (cope/t)^2
+# reml's random-effect grouping: acquisition SITE -- the canonical neuroimaging
+# random factor (multi-site studies model site as a random intercept).
+_REML_GROUP = 'site'
 
 
 def _materialise(n_subjects: int, n_vox: int, seed: int
@@ -90,3 +93,43 @@ def real_flame_localizer(n_subjects: int = 40, n_vox: int = 8192, seed: int = 0
         np.savez(path, beta=beta, varw=varw)
     x_group = np.ones((beta.shape[1], 1), np.float32)
     return beta, varw, x_group
+
+
+def _site_groups(n_subjects: int) -> np.ndarray:
+    '''Integer acquisition-site label per subject (the reml random factor),
+    in the same subject order as the maps.  nilearn imported here only.'''
+    from nilearn import datasets as ds
+
+    ev = ds.fetch_localizer_contrasts(
+        [_CONTRAST], n_subjects=n_subjects, get_tmaps=True, data_dir=_CACHE
+    )['ext_vars']
+    sites = np.asarray(ev[_REML_GROUP].astype(str).values)
+    return np.unique(sites, return_inverse=True)[1].astype(np.int64)
+
+
+def real_reml_localizer(n_subjects: int = 40, n_vox: int = 2048, seed: int = 0
+                        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray,
+                                   np.ndarray]:
+    '''Real one-way random-intercept input from the localizer: per-subject
+    level-1 effects as ``Y (V, N)`` grouped by acquisition **site** (the
+    canonical neuroimaging random-effect factor) -> the intercept ``X (N, 1)``,
+    site indicators ``Z (N, k)``, and integer ``groups (N,)`` (statsmodels).
+
+    ``real_full`` (no oracle): real + unbalanced, so the balanced closed form
+    is inapplicable; correctness is **agreement with statsmodels MixedLM** on
+    the real data.  NB the localizer has **k=2** sites -- a thin between-group
+    df (a caveat); the cross-tool agreement benchmark is still valid.
+    Matches the ``balanced_oneway`` return contract so the case branches
+    cleanly.  Cached as ``.npz`` (ref workers read numpy, not nilearn).'''
+    path = os.path.join(_CACHE, f'localizer_reml_{n_subjects}s_{n_vox}v.npz')
+    if os.path.exists(path):
+        z = np.load(path)
+        y, groups = z['y'], z['groups']
+    else:
+        y, _varw = _materialise(n_subjects, n_vox, seed)  # COPEs as Y (V, N)
+        groups = _site_groups(n_subjects)
+        np.savez(path, y=y, groups=groups)
+    k = int(groups.max()) + 1
+    x = np.ones((y.shape[1], 1), np.float32)
+    z_design = np.eye(k, dtype=np.float32)[groups]
+    return y, x, z_design, groups

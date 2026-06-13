@@ -14,10 +14,10 @@
     "scale_capped": 1,
     "economic_favorable": 65,
     "economic_not_multiplicative": 10,
-    "on_real_data": 7,
-    "on_real_full": 3,
+    "on_real_data": 8,
+    "on_real_full": 4,
     "marquee": 8,
-    "marquee_unmet": 2,
+    "marquee_unmet": 1,
     "orphan_cases": 3
   },
   "orphan_cases": [
@@ -4510,12 +4510,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 257.138200097798,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_full",
       "domain_ref": "statsmodels.MixedLM",
-      "domain_ref_realism": "synthetic",
+      "domain_ref_realism": "real_full",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        4,
         5
       ],
       "priority": "medium"
@@ -4836,6 +4836,34 @@
     ],
     "on_real_data": [
       {
+        "qualname": "nitrix.stats.lme.reml_fit",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "none",
+        "precision": "f32_only",
+        "provisional": true,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "declared",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 257.138200097798,
+        "economic_authoritative": false,
+        "input_realism": "real_full",
+        "domain_ref": "statsmodels.MixedLM",
+        "domain_ref_realism": "real_full",
+        "tier": "marquee",
+        "coverage_score": [
+          4,
+          5
+        ]
+      },
+      {
         "qualname": "nitrix.stats.lme.flame_two_level",
         "runtime": true,
         "has_case": true,
@@ -5033,34 +5061,6 @@
       }
     ],
     "marquee_unmet": [
-      {
-        "qualname": "nitrix.stats.lme.reml_fit",
-        "runtime": true,
-        "has_case": true,
-        "coverage": "multiplatform",
-        "ref_strength": "none",
-        "precision": "f32_only",
-        "provisional": true,
-        "gpu_blocked": false,
-        "gpu_block_reason": null,
-        "gpu_ref": null,
-        "gpu_ref_ratio": null,
-        "nitrix_slower_on_gpu": false,
-        "scale_status": "declared",
-        "largest_ok_size": null,
-        "scale_cap_reason": null,
-        "economic_verdict": "favorable (amortized only)",
-        "economic_amortized": 257.138200097798,
-        "economic_authoritative": false,
-        "input_realism": "synthetic",
-        "domain_ref": "statsmodels.MixedLM",
-        "domain_ref_realism": "synthetic",
-        "tier": "marquee",
-        "coverage_score": [
-          2,
-          5
-        ]
-      },
       {
         "qualname": "nitrix.numerics.intensity_normalize",
         "runtime": true,
@@ -5671,12 +5671,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 257.138200097798,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_full",
       "domain_ref": "statsmodels.MixedLM",
-      "domain_ref_realism": "synthetic",
+      "domain_ref_realism": "real_full",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        4,
         5
       ]
     },

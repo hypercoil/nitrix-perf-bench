@@ -27,6 +27,17 @@ iterative fits) -- skip in dev cycles (``--skip-slow``), run it in the
 sprint-end full matrix.  No GPU reference library exists for LME.  Tolerance is
 loose (``5e-3``) -- the convergence floor of the iterative solvers (lme design
 doc).  Ratio vs nitrix-jax.
+
+**Real-data point (marquee real-data bar).** Beside the synthetic balanced
+design, a ``data='localizer'`` point fits a *real* one-way random-intercept on
+the Brainomics localizer (``_real_lme.real_reml_localizer``): 40 subjects'
+level-1 effects over 512 brain voxels as ``Y``, grouped by acquisition
+**site** (the canonical neuroimaging random factor).  Real + unbalanced => no
+balanced closed form (``real_full``, no oracle); correctness = agreement with
+statsmodels MixedLM on real data -- beta + within-site variance ~exact (corr
+~1.0), the between-site variance to corr ~0.99 (k=2 sites is a thin
+boundary-prone df, a caveat).  reml runs on the GPU here, so real data lifts
+this op without the cuSOLVER ceiling ``flame`` hits.
 """
 from __future__ import annotations
 
@@ -39,16 +50,31 @@ from nitrix.stats.lme import reml_fit
 
 from ._base import BuiltPoint, Case, SlowBaseline
 from ._lme import balanced_oneway, closed_form_reml, statsmodels_reml
+from ._real_lme import real_reml_localizer
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    v, k, n = param['V'], param['k'], param['n']
-    Y, X, Z, groups = balanced_oneway(v, k, n, param.get('seed', 0))
+    if param.get('data') == 'localizer':
+        # REAL fMRI: localizer level-1 effects as Y, grouped by acquisition
+        # site (the canonical random-effect factor). real + unbalanced => no
+        # balanced closed form (no oracle); correctness = agreement with
+        # statsmodels MixedLM on the real data.
+        Y, X, Z, groups = real_reml_localizer(
+            int(param['N']), int(param['V']), param.get('seed', 0))
+        ref: Any = None
+        note: Any = (
+            'real localizer COPEs grouped by acquisition site (k=2 -- a thin '
+            'between-group df, a documented caveat): real + unbalanced, so '
+            'the balanced closed form is inapplicable (no oracle). '
+            'Correctness = agreement with statsmodels MixedLM on real data.')
+    else:
+        v, k, n = param['V'], param['k'], param['n']
+        Y, X, Z, groups = balanced_oneway(v, k, n, param.get('seed', 0))
+        ref = closed_form_reml(Y.astype(np.float64), k, n)  # (V,3) oracle
+        note = None
     jY = jax.block_until_ready(jnp.asarray(Y))
     jX = jax.block_until_ready(jnp.asarray(X))
     jZ = jax.block_until_ready(jnp.asarray(Z))
-
-    ref = closed_form_reml(Y.astype(np.float64), k, n)  # (V, 3) fp64 oracle
 
     def _nitrix(y: Any) -> Any:
         r = reml_fit(y, jX, jZ)
@@ -65,6 +91,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,
         fp64_reference=ref, ratio_reference='nitrix-jax',
+        fidelity_note=note,
     )
 
 
@@ -74,6 +101,12 @@ _SHAPES = [(64, 8, 24), (256, 8, 24), (1024, 8, 24)]
 # Brain-voxel scale: V up to 65536 voxels in the batch (statsmodels would loop
 # ~15 min/fit here -> it is a slow_baseline, dropped by --skip-slow).
 _LARGE = [(16384, 8, 24), (65536, 8, 24)]
+# Real-data point (marquee real-data bar): real localizer level-1 effects over
+# V=512 brain voxels x N=40 subjects, grouped by acquisition site. real_full
+# (no oracle); statsmodels MixedLM runs on the same real data. V kept small so
+# the per-voxel-looped statsmodels (~14 ms/voxel) stays tractable each sweep.
+_REAL = {'data': 'localizer', 'V': 512, 'N': 40, 'realism': 'real_full',
+         'seed': 0}
 
 CASE = Case(
     name='reml_fit',
@@ -82,8 +115,8 @@ CASE = Case(
     output_independent=True,  # each voxel is an independent LME fit
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
-    param_points=[{'V': v, 'k': k, 'n': n, 'seed': 0}
-                  for (v, k, n) in _SHAPES],
+    param_points=([{'V': v, 'k': k, 'n': n, 'seed': 0}
+                   for (v, k, n) in _SHAPES] + [_REAL]),
     representative={'V': 256, 'k': 8, 'n': 24, 'seed': 0},
     large_param_points=tuple(
         {'V': v, 'k': k, 'n': n, 'seed': 0} for (v, k, n) in _LARGE),
