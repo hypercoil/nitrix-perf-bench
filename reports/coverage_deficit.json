@@ -14,10 +14,10 @@
     "scale_capped": 1,
     "economic_favorable": 65,
     "economic_not_multiplicative": 10,
-    "on_real_data": 3,
-    "on_real_full": 0,
+    "on_real_data": 5,
+    "on_real_full": 1,
     "marquee": 8,
-    "marquee_unmet": 5,
+    "marquee_unmet": 3,
     "orphan_cases": 3
   },
   "orphan_cases": [
@@ -4278,12 +4278,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 190.13208353071857,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_planted",
       "domain_ref": "simpleitk.N4",
-      "domain_ref_realism": "synthetic",
+      "domain_ref_realism": "real_planted",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        4,
         4
       ],
       "priority": "medium"
@@ -4481,12 +4481,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 10.760849311044987,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_full",
       "domain_ref": "simpleitk.Bilateral",
-      "domain_ref_realism": "synthetic",
+      "domain_ref_realism": "real_full",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        4,
         4
       ],
       "priority": "medium"
@@ -4836,6 +4836,62 @@
     ],
     "on_real_data": [
       {
+        "qualname": "nitrix.smoothing.bilateral_gaussian",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "none",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "no_tier",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 10.760849311044987,
+        "economic_authoritative": false,
+        "input_realism": "real_full",
+        "domain_ref": "simpleitk.Bilateral",
+        "domain_ref_realism": "real_full",
+        "tier": "marquee",
+        "coverage_score": [
+          4,
+          4
+        ]
+      },
+      {
+        "qualname": "nitrix.bias.n4_bias_field_correction",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "none",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "no_tier",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 190.13208353071857,
+        "economic_authoritative": false,
+        "input_realism": "real_planted",
+        "domain_ref": "simpleitk.N4",
+        "domain_ref_realism": "real_planted",
+        "tier": "marquee",
+        "coverage_score": [
+          4,
+          4
+        ]
+      },
+      {
         "qualname": "nitrix.register.rigid_register",
         "runtime": true,
         "has_case": true,
@@ -4998,62 +5054,6 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic",
-        "tier": "marquee",
-        "coverage_score": [
-          2,
-          4
-        ]
-      },
-      {
-        "qualname": "nitrix.smoothing.bilateral_gaussian",
-        "runtime": true,
-        "has_case": true,
-        "coverage": "multiplatform",
-        "ref_strength": "none",
-        "precision": "f32_only",
-        "provisional": false,
-        "gpu_blocked": false,
-        "gpu_block_reason": null,
-        "gpu_ref": null,
-        "gpu_ref_ratio": null,
-        "nitrix_slower_on_gpu": false,
-        "scale_status": "no_tier",
-        "largest_ok_size": null,
-        "scale_cap_reason": null,
-        "economic_verdict": "favorable (amortized only)",
-        "economic_amortized": 10.760849311044987,
-        "economic_authoritative": false,
-        "input_realism": "synthetic",
-        "domain_ref": "simpleitk.Bilateral",
-        "domain_ref_realism": "synthetic",
-        "tier": "marquee",
-        "coverage_score": [
-          2,
-          4
-        ]
-      },
-      {
-        "qualname": "nitrix.bias.n4_bias_field_correction",
-        "runtime": true,
-        "has_case": true,
-        "coverage": "multiplatform",
-        "ref_strength": "none",
-        "precision": "f32_only",
-        "provisional": false,
-        "gpu_blocked": false,
-        "gpu_block_reason": null,
-        "gpu_ref": null,
-        "gpu_ref_ratio": null,
-        "nitrix_slower_on_gpu": false,
-        "scale_status": "no_tier",
-        "largest_ok_size": null,
-        "scale_cap_reason": null,
-        "economic_verdict": "favorable (amortized only)",
-        "economic_amortized": 190.13208353071857,
-        "economic_authoritative": false,
-        "input_realism": "synthetic",
-        "domain_ref": "simpleitk.N4",
         "domain_ref_realism": "synthetic",
         "tier": "marquee",
         "coverage_score": [
@@ -6399,12 +6399,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 10.760849311044987,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_full",
       "domain_ref": "simpleitk.Bilateral",
-      "domain_ref_realism": "synthetic",
+      "domain_ref_realism": "real_full",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        4,
         4
       ]
     },
@@ -9031,12 +9031,12 @@
       "economic_verdict": "favorable (amortized only)",
       "economic_amortized": 190.13208353071857,
       "economic_authoritative": false,
-      "input_realism": "synthetic",
+      "input_realism": "real_planted",
       "domain_ref": "simpleitk.N4",
-      "domain_ref_realism": "synthetic",
+      "domain_ref_realism": "real_planted",
       "tier": "marquee",
       "coverage_score": [
-        2,
+        4,
         4
       ]
     },

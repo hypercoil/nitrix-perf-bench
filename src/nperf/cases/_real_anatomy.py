@@ -110,3 +110,69 @@ def mni152_shape(resolution: int = 2) -> Sequence[int]:
     '''The MNI152 template's spatial shape at ``resolution`` mm (for sizing /
     labelling without loading the full array when the cache exists).'''
     return tuple(int(s) for s in load_mni152(resolution).shape)
+
+
+# --- raw-intensity anatomy for the bias / intensity ops --------------------
+# ``load_mni152`` z-scores (signed, ~N(0,1)); but N4 works in *log* space and
+# intensity_normalize clips *raw* percentiles, so they need the positive
+# acquisition intensity scale.  Cached separately (``..._raw.npy``).
+
+def load_mni152_raw(resolution: int = 2) -> np.ndarray:
+    '''The MNI152 T1 template at **raw** (positive) intensities -- the
+    acquisition scale the bias / intensity ops operate on, unlike the z-scored
+    ``load_mni152`` (signed).  Same ``.npy`` cache discipline (nilearn imported
+    only on a miss).'''
+    path = os.path.join(_CACHE, f'mni152_{resolution}mm_raw.npy')
+    if os.path.exists(path):
+        return np.load(path)
+    from nilearn import datasets as ds  # cache-miss only
+
+    arr = np.asarray(
+        ds.load_mni152_template(resolution=resolution).get_fdata(), np.float32)
+    os.makedirs(_CACHE, exist_ok=True)
+    np.save(path, arr)
+    return arr
+
+
+def _smooth_bias(shape: Sequence[int], rng: np.random.Generator,
+                 smooth: float = 6.0, lo: float = 0.6, hi: float = 1.7
+                 ) -> np.ndarray:
+    '''A smooth low-frequency multiplicative bias field in ``[lo, hi]`` (a
+    gaussian-smoothed random field) -- the planted intensity inhomogeneity that
+    is N4's *known recoverable truth*.'''
+    import scipy.ndimage as spnd
+
+    f = spnd.gaussian_filter(rng.standard_normal(tuple(shape)), smooth)
+    f = (f - f.min()) / (f.max() - f.min() + 1e-6)  # -> [0, 1]
+    return (lo + (hi - lo) * f).astype(np.float32)
+
+
+def real_bias_phantom(resolution: int = 2, seed: int = 0
+                      ) -> Tuple[np.ndarray, np.ndarray]:
+    '''Real MNI152 T1 (raw positive intensities) under a **known** smooth
+    multiplicative bias field -- the real-anatomy analog of the synthetic N4
+    ``phantom`` (``cases/_itk.py``).  The anatomy/edges are real (the INU
+    difficulty N4 actually faces) but the bias is *planted* (recoverable truth
+    -> ``real_planted``).  Returns ``(observed, mask)`` with the same contract
+    as ``phantom`` (mask = the brain region; obs is positive within it, so the
+    N4 log-domain fit is well-posed).'''
+    brain = load_mni152_raw(resolution)
+    rng = np.random.default_rng(seed)
+    mask = (brain > 0.05 * float(brain.max())).astype(np.float32)
+    bias = _smooth_bias(brain.shape, rng)
+    obs = brain * bias
+    obs = obs + (rng.normal(0, 0.01 * float(brain.max()), brain.shape)
+                 .astype(np.float32) * mask)
+    return obs.astype(np.float32), mask
+
+
+def real_brain_slice(resolution: int = 1) -> np.ndarray:
+    '''A real 2-D brain slice in ``[0, 1]`` -- the central axial slice of the
+    MNI152 T1, min-max rescaled (the ``[0, 1]`` contract ``bilateral_image``
+    provides).  Real anatomy/edges = the *actual* edge-preserving-smoothing
+    problem (``real_full``: no planted truth -- the filtered image is the
+    deliverable, parity vs ITK is the bar).'''
+    vol = load_mni152_raw(resolution)
+    sl = np.asarray(vol[:, :, vol.shape[2] // 2], np.float32)
+    lo, hi = float(sl.min()), float(sl.max())
+    return ((sl - lo) / (hi - lo + 1e-6)).astype(np.float32)

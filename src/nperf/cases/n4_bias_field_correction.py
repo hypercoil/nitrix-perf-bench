@@ -15,6 +15,15 @@ elementwise -- hence `fp64_reference=None`, with SimpleITK parity (corr >
 SimpleITK's N4 is the slow side (~1.3-4 s/call vs nitrix's ~0.05-0.15 s run
 after compile), so it is a `slow_baseline` (skipped under `--skip-slow`).
 Ratio vs SimpleITK. (No GPU ref: cupy has no N4 primitive.)
+
+**Real-anatomy point (marquee real-data bar).** Beside the synthetic
+concentric-shell phantom, a `data='mni152'` point runs the *real* MNI152 T1
+(raw positive intensities) under a **planted** smooth bias field
+(`_real_anatomy.real_bias_phantom`): real edges/intensity statistics = the INU
+difficulty N4 actually faces, but the bias is known truth (`real_planted`), so
+the same SimpleITK parity criterion holds. nitrix and SimpleITK N4 both run on
+the same real image -- the domain ref measured on real data the marquee tier
+requires.
 """
 from __future__ import annotations
 
@@ -26,11 +35,17 @@ from nitrix.bias import n4_bias_field_correction
 
 from ._base import BuiltPoint, Case, SlowBaseline
 from ._itk import phantom, sitk_n4
+from ._real_anatomy import real_bias_phantom
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    s = param['s']
-    obs, mask = phantom(s, param.get('seed', 7))
+    if param.get('data') == 'mni152':
+        # REAL anatomy: the MNI152 T1 under a planted smooth bias field.
+        obs, mask = real_bias_phantom(int(param.get('resolution', 2)),
+                                      param.get('seed', 7))
+    else:
+        s = param['s']
+        obs, mask = phantom(s, param.get('seed', 7))
     jo = jax.block_until_ready(jnp.asarray(obs))
     jm = jax.block_until_ready(jnp.asarray(mask))
 
@@ -54,6 +69,10 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
 # cubic phantom s^3; iterative (4 fitting levels x 50 iterations).
 _SIZES = [32, 48, 64]
+# Real-anatomy point: the MNI152 T1 (~99x117x95 @2mm) under a planted bias --
+# the marquee real-data bar (real edges + the SimpleITK domain ref on real
+# data). Realism = real_planted (the bias is known truth, recovered to parity).
+_REAL = {'data': 'mni152', 'resolution': 2, 'seed': 7}
 
 CASE = Case(
     name='n4_bias_field_correction',
@@ -62,7 +81,7 @@ CASE = Case(
     output_independent=False,  # iterative B-spline fit couples the volume
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
-    param_points=[{'s': s, 'seed': 7} for s in _SIZES],
+    param_points=[{'s': s, 'seed': 7} for s in _SIZES] + [_REAL],
     representative={'s': 48, 'seed': 7},
     build=_build,
     # SimpleITK's N4 is ~1.3-4 s/call (vs nitrix's ~0.05-0.15 s run); skip it

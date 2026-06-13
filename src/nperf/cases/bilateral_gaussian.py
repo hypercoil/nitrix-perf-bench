@@ -15,6 +15,13 @@ No fp64 oracle (``fp64_reference=None``): the **interior** matches sitk to
 interior parity is asserted in ``tests/test_bilateral_cases.py`` instead.
 Runs on the GPU (semiring gather+reduce, no solver). Ratio vs SimpleITK. (No
 GPU ref: cupy has no bilateral primitive.)
+
+**Real-anatomy point (marquee real-data bar).** Beside the synthetic uniform
+images, a `data='mni152'` point filters a *real* MNI152 T1 axial slice
+(`_real_anatomy.real_brain_slice`, rescaled to [0,1]): real edges = the actual
+edge-preserving-smoothing problem (`real_full` -- no planted truth, the
+filtered image is the deliverable). nitrix and SimpleITK Bilateral both run on
+the same real slice -- the domain ref on real data the marquee tier requires.
 """
 from __future__ import annotations
 
@@ -26,14 +33,19 @@ from nitrix.smoothing import bilateral_gaussian
 
 from ._base import BuiltPoint, Case
 from ._bilateral import bilateral_image, grid_bilateral_setup, sitk_bilateral
+from ._real_anatomy import real_brain_slice
 
 _SIGMA_D, _SIGMA_R = 2.0, 0.2
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    h, w = param['shape']
     sd, sr = param.get('sigma_d', _SIGMA_D), param.get('sigma_r', _SIGMA_R)
-    img = bilateral_image(h, w, param.get('seed', 0))
+    if param.get('data') == 'mni152':
+        # REAL anatomy: a central axial slice of the MNI152 T1 in [0, 1].
+        img = real_brain_slice(int(param.get('resolution', 1)))
+    else:
+        h, w = param['shape']
+        img = bilateral_image(h, w, param.get('seed', 0))
     vals, feats, ell, metric, _ = grid_bilateral_setup(img, sd, sr)
     jv = jax.block_until_ready(jnp.asarray(vals))
     jf = jax.block_until_ready(jnp.asarray(feats))
@@ -62,6 +74,11 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
 # (height, width): cost ~ h*w * (2r+1)^2 (box-window gather + weighted reduce).
 _SHAPES = [(64, 64), (128, 128), (256, 256)]
+# Real-anatomy point: a real MNI152 T1 axial slice (~197x233 @1mm) -- the
+# marquee real-data bar (real edges + the SimpleITK domain ref on real data).
+# Realism = real_full (no planted truth: the filter output is the deliverable).
+_REAL = {'data': 'mni152', 'resolution': 1, 'realism': 'real_full',
+         'sigma_d': _SIGMA_D, 'sigma_r': _SIGMA_R}
 
 CASE = Case(
     name='bilateral_gaussian',
@@ -71,7 +88,7 @@ CASE = Case(
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],
     param_points=[{'shape': s, 'sigma_d': _SIGMA_D, 'sigma_r': _SIGMA_R,
-                   'seed': 0} for s in _SHAPES],
+                   'seed': 0} for s in _SHAPES] + [_REAL],
     representative={'shape': [128, 128], 'sigma_d': _SIGMA_D,
                     'sigma_r': _SIGMA_R, 'seed': 0},
     build=_build,

@@ -7,6 +7,8 @@ nitrix's own criteria (it is the no-oracle analogue of the splice-through gate
 on `lomb_scargle_interpolate`). Small sizes so the parity tests (which run
 SimpleITK's iterative N4) stay quick.
 """
+import os
+
 import numpy as np
 import pytest
 
@@ -16,6 +18,7 @@ from nperf.cases import n4_bias_field_correction as n4
 from nperf.cases._itk import bias_parity
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
+from nperf.report import economic as ec
 
 
 def test_histogram_match_baselines():
@@ -58,6 +61,47 @@ def test_n4_sitk_parity():
     (corr > 0.999, scale-invariant rel-RMSE < 5e-3 over the mask).'''
     pytest.importorskip('SimpleITK')
     built = n4._build({'s': 32, 'seed': 7})
+    obs, mask = built.inputs_for('numpy')
+    mask = np.asarray(mask)
+    nit = np.asarray(built.baselines['nitrix-jax'][1](
+        *built.inputs_for('jax')))
+    itk = np.asarray(built.baselines['simpleitk.N4'][1](obs, mask))
+    corr, rel_rmse = bias_parity(nit, itk, mask)
+    assert corr > 0.999, f'corr={corr:.5f}'
+    assert rel_rmse < 5e-3, f'rel_rmse={rel_rmse:.4g}'
+
+
+def test_n4_real_anatomy_build():
+    '''The marquee real-data point builds on real MNI152 anatomy with a planted
+    bias: same baselines, realism = real_planted, a non-trivial brain mask, and
+    nitrix returns a finite, non-negative in-mask correction.  This catches the
+    real-input-specific failure modes (empty mask, log-of-nonpositive NaNs)
+    cheaply; full ITK parity is the opt-in test below + the authoritative
+    sweep.'''
+    p = {'data': 'mni152', 'resolution': 2, 'seed': 7}
+    assert ec.realism_rung(p) == 'real_planted'
+    built = n4._build(p)
+    assert set(built.baselines) == {'nitrix-jax', 'simpleitk.N4'}
+    obs, mask = built.inputs_for('numpy')
+    mask = np.asarray(mask)
+    assert 0.05 < float(mask.mean()) < 0.9  # a non-trivial brain mask
+    nit = np.asarray(built.baselines['nitrix-jax'][1](
+        *built.inputs_for('jax')))
+    assert np.all(np.isfinite(nit))
+    assert float(nit[mask > 0].min()) >= 0.0  # positive corrected intensities
+
+
+@pytest.mark.skipif(not os.environ.get('NPERF_REAL_TESTS'),
+                    reason='full real-anatomy N4 parity (~23s: ITK N4 on '
+                           '~1.1M real voxels); set NPERF_REAL_TESTS=1. Also '
+                           'validated each authoritative sweep.')
+def test_n4_real_anatomy_sitk_parity():
+    '''The marquee correctness gate on REAL data: nitrix's corrected MNI152 T1
+    (under a planted bias) matches ITK N4 globally (corr > 0.999, scale-
+    invariant rel-RMSE < 5e-3 over the mask) -- the same criterion as the
+    synthetic phantom, now on real anatomy.'''
+    pytest.importorskip('SimpleITK')
+    built = n4._build({'data': 'mni152', 'resolution': 2, 'seed': 7})
     obs, mask = built.inputs_for('numpy')
     mask = np.asarray(mask)
     nit = np.asarray(built.baselines['nitrix-jax'][1](

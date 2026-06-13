@@ -14,6 +14,7 @@ import pytest
 
 from nperf.cases import bilateral_gaussian as bg
 from nperf.providers import framework_of, requires_of
+from nperf.report import economic as ec
 
 
 def test_baselines_and_no_oracle():
@@ -41,6 +42,27 @@ def test_interior_parity_with_itk():
     r = math.ceil(2.5 * sd)
     interior_err = np.max(np.abs((nit - itk)[r:-r, r:-r]))
     assert interior_err < 1e-3, f'interior parity {interior_err:.2e}'
+
+
+def test_real_anatomy_interior_parity():
+    '''The marquee real-data gate: nitrix's grid bilateral matches
+    sitk.Bilateral in the interior on a REAL MNI152 T1 slice (real_full --
+    real edges, no planted truth).  Cheap (a single 2-D slice), so always
+    run.'''
+    pytest.importorskip('SimpleITK')
+    p = {'data': 'mni152', 'resolution': 1, 'realism': 'real_full',
+         'sigma_d': 2.0, 'sigma_r': 0.2}
+    assert ec.realism_rung(p) == 'real_full'
+    built = bg._build(p)
+    assert set(built.baselines) == {'nitrix-jax', 'simpleitk.Bilateral'}
+    (img,) = built.inputs_for('numpy')
+    h, w = np.asarray(img).shape
+    nit = np.asarray(built.baselines['nitrix-jax'][1](
+        *built.inputs_for('jax'))).reshape(h, w)
+    itk = np.asarray(built.baselines['simpleitk.Bilateral'][1](img))
+    r = math.ceil(2.5 * 2.0)
+    interior_err = float(np.max(np.abs((nit - itk)[r:-r, r:-r])))
+    assert interior_err < 1e-3, f'real interior parity {interior_err:.2e}'
 
 
 def test_op_qualname():
