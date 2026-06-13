@@ -103,6 +103,36 @@ multiplatform, 9 with a strong GPU ref, **5 lagging on the L4** — ranked
 `distance_transform` (~105×) ▸ `median_filter` (~5×) ▸ `spatial_transform`
 (~1.8×) ▸ `erode`/`dilate` (~1.2–1.3×).
 
+**Extended 2026-06-13 (COVERAGE v2; `COVERAGE_V2_PLAN.md`):** the per-op record
+became a **tier-gated coverage matrix** — coverage is no longer one axis.
+Beyond status / ref-strength / precision, each op now carries (all from stored
+rows, no arithmetic):
+
+- **scale** — did its declared brain-scale tier (`large_param_points`) run?
+  `scaled | scale_capped (oom/timeout before the top) | declared | no_tier`.
+- **economic** — GPU as a multiple of the CPU gold standard (the `ECONOMIC.md`
+  join, shared via `report/economic.py`): `favorable | amortized_only |
+  not_multiplicative | n/a`, at the largest real/large point else the
+  representative (marked non-authoritative).
+- **input realism** — `synthetic < real_planted` (real image, planted/known
+  truth) `< real_full` (the actual problem), inferred from a point's
+  `data`/`regime` tag.
+- **community-gold (`domain`) reference** — ANTs / FSL / AFNI / FreeSurfer /
+  dipy / SimpleITK / statsmodels, keyed on the baseline *namespace* (they are
+  `framework='numpy'` CLI binaries) — previously misclassified as floors and
+  **invisible**; now a first-class axis, with the realism rung the ref ran at.
+- **tier** (`Case.tier`, policy on the Case) — `marquee` ops (the headline
+  functions used on real images) are **required** to reach real data + a domain
+  ref on real data; `standard` ops are not. A **completeness score**
+  (satisfied / applicable required axes) and the **marquee coverage matrix**
+  rank the worst-covered first; *marquee-unmet* is a ranked deficit.
+
+The report also surfaces **orphan cases** — ops with a perf-bench case
+(benchmarked) but absent from the catalogue (a stale `op_matrix.json`), so the
+join cannot see them until it is regenerated. The "deficit" is now multi-axis:
+not just *is it measured* but *does it hold at scale, win economically, and —
+for marquee ops — run on real data against a community gold standard*.
+
 ### 2.3 References must include a strong on-target bar
 Keep the numpy / scipy / sklearn CPU references — they are the honest "what
 you'd write without nitrix" **floor** that feeds the op-matrix — but every

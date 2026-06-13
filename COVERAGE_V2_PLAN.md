@@ -1,11 +1,15 @@
 # COVERAGE v2 — multi-axis coverage plan
 
-Status: **Phases 1–2 landed.** Phase 1 = scale / economic / real-data axes +
+Status: **Phases 1–3 landed.** Phase 1 = scale / economic / real-data axes +
 the community-gold ref-class fix (pure store inference). Phase 2 = `Case.tier`,
 the tier-gated **marquee coverage matrix** + completeness score + the
 *marquee-unmet* deficit, plus **orphan-case surfacing** (benchmarked cases
-absent from a stale `op_matrix.json`). Phase 3 (full-matrix polish +
-COVERAGE_MANDATE §2.2 update) + Phase 4 (optional coverage gate) remain.
+absent from a stale `op_matrix.json`). Phase 3 = the **full coverage matrix**
+(every op with a case, worst-vs-tier first) + the COVERAGE_MANDATE §2.2 update;
+and a score refinement — the **economic verdict is an indicator/result, a
+matrix column + its own deficit, but NOT in the completeness score** (a
+not-multiplicative op is a finding, not a coverage gap). Phase 4 (optional
+coverage gate) remains.
 
 Extends the coverage-&-deficit report
 (`report/coverage.py`, `tools/coverage_report.py`; COVERAGE_MANDATE §2.2) from a

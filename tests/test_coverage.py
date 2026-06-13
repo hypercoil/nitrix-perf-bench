@@ -292,6 +292,16 @@ def test_score_marquee_full_vs_unmet():
     assert app == 4 and sat == 2          # platform + reference only
 
 
+def test_economic_is_not_in_the_completeness_score():
+    # economic is an indicator/result, NOT a scored coverage requirement:
+    # a not-multiplicative op must not lose a point for it.
+    oc = _oc(coverage=cov.MULTIPLATFORM, ref_strength=cov.STRONG_REF,
+             economic_verdict='not multiplicative enough',
+             economic_authoritative=True)
+    assert 'economic' not in [n for n, _ in cov.axes_status(oc)]
+    assert cov.score(oc) == (2, 2)          # platform + reference only
+
+
 def test_marquee_unmet_selector():
     full = _oc(qualname='a', tier='marquee', domain_ref='ants.x',
                domain_ref_realism='real_planted', input_realism='real_planted')

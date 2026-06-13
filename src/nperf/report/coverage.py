@@ -420,10 +420,11 @@ def _real_data(records: List[OpCoverage]) -> List[OpCoverage]:
 
 # --- COVERAGE v2 tier-gated score (Phase 2) -------------------------------
 def axes_status(oc: OpCoverage) -> List[Tuple[str, bool]]:
-    '''The applicable required axes for ``oc``'s tier, each (name, satisfied?).
-    Marquee ops additionally require real-data input + a domain ref measured on
-    real data (the headline-functions bar); the general axes (platform / ref /
-    scale-if-tiered / economic-if-on-GPU) apply to every measured op.'''
+    '''The applicable required-*coverage* axes for ``oc``'s tier, each
+    (name, satisfied?).  General axes (platform / reference / scale-if-tiered)
+    apply to every measured op; marquee ops also require real-data input + a
+    domain ref measured on real data (the headline bar).  The economic verdict
+    is a result/indicator, not scored here (see below).'''
     rp = economic.rung_index('real_planted')
     axes: List[Tuple[str, bool]] = [
         ('platform', oc.coverage == MULTIPLATFORM or oc.gpu_blocked),
@@ -432,9 +433,10 @@ def axes_status(oc: OpCoverage) -> List[Tuple[str, bool]]:
     ]
     if oc.scale_status != NO_TIER:
         axes.append(('scale', oc.scale_status == SCALED))
-    if oc.economic_verdict != 'n/a':
-        axes.append(('economic', oc.economic_authoritative
-                     and oc.economic_verdict != 'unmeasured'))
+    # NB: the economic verdict is an *indicator/result* (is the op a GPU win),
+    # not a coverage requirement -- it is a first-class matrix column + its own
+    # deficit section, but is deliberately NOT in the completeness score (a
+    # not-multiplicative op is a finding, not a coverage gap).
     if oc.tier == 'marquee':
         axes.append(
             ('real_input', economic.rung_index(oc.input_realism) >= rp))
@@ -530,6 +532,36 @@ def _slower(ratio: Optional[float]) -> str:
     if ratio < 1:
         return f'~{1.0 / ratio:.1f}x slower'
     return f'~{ratio:.1f}x faster'
+
+
+_MATRIX_HEAD = ('platform', 'scale', 'economic', 'input', 'gpu-ref',
+                'domain-ref')
+
+
+def _matrix_cells(r: OpCoverage) -> List[str]:
+    '''The glyph cells for one op's coverage-matrix row: ``[op, score,
+    platform, scale, economic, input, gpu-ref, domain-ref]``.  Shared by the
+    marquee matrix and the full matrix.'''
+    sat, app = score(r)
+    plat = ('✓' if r.coverage == MULTIPLATFORM
+            else '⊘blk' if r.gpu_blocked else f'✗ {r.coverage}')
+    scl = {NO_TIER: '·', SCALED: '✓', SCALE_DECLARED: '○',
+           SCALE_CAPPED: f'⚠ {r.scale_cap_reason}'}[r.scale_status]
+    if r.economic_verdict == 'n/a':
+        eco = '·'
+    else:
+        g = '✓' if r.economic_verdict.startswith('favorable') else '✗'
+        eco = f'{g}{"" if r.economic_authoritative else "~"}'
+    inp = {'synthetic': '✗ synth', 'real_planted': '◐ planted',
+           'real_full': '● full'}[r.input_realism]
+    gref = '✓' if r.ref_strength == STRONG_REF else '·'
+    if r.domain_ref is None:
+        dref = '✗ none'
+    else:
+        on = (economic.rung_index(r.domain_ref_realism)
+              >= economic.rung_index('real_planted'))
+        dref = f'{"●" if on else "◐"} {r.domain_ref}'
+    return [f'`{r.qualname}`', f'{sat}/{app}', plat, scl, eco, inp, gref, dref]
 
 
 def render_markdown(records: List[OpCoverage],
@@ -744,34 +776,33 @@ def render_markdown(records: List[OpCoverage],
         '|---|---|---|---|---|---|---|---|',
     ]
     for r in marquee:
-        sat, app = score(r)
-        plat = ('✓' if r.coverage == MULTIPLATFORM
-                else '⊘blk' if r.gpu_blocked else f'✗ {r.coverage}')
-        scl = {NO_TIER: '·', SCALED: '✓', SCALE_DECLARED: '○',
-               SCALE_CAPPED: f'⚠ {r.scale_cap_reason}'}[r.scale_status]
-        if r.economic_verdict == 'n/a':
-            eco = '·'
-        else:
-            g = '✓' if r.economic_verdict.startswith('favorable') else '✗'
-            eco = f'{g}{"" if r.economic_authoritative else "~"}'
-        inp = {'synthetic': '✗ synth', 'real_planted': '◐ planted',
-               'real_full': '● full'}[r.input_realism]
-        gref = '✓' if r.ref_strength == STRONG_REF else '·'
-        if r.domain_ref is None:
-            dref = '✗ none'
-        else:
-            on = economic.rung_index(r.domain_ref_realism) >= economic\
-                .rung_index('real_planted')
-            dref = f'{"●" if on else "◐"} {r.domain_ref}'
-        lines.append(
-            f'| `{r.qualname}` | {sat}/{app} | {plat} | {scl} | {eco} '
-            f'| {inp} | {gref} | {dref} |')
+        lines.append('| ' + ' | '.join(_matrix_cells(r)) + ' |')
     if unmet:
         lines += [
             '',
             '**Marquee unmet** (no real-data input, or no domain ref on real '
             'data) — the next-round targets: '
             + ', '.join(f'`{r.qualname.split(".")[-1]}`' for r in unmet) + '.']
+    # --- the full coverage matrix: every measured op, worst-vs-tier first ---
+    measured = sorted(
+        (r for r in records if r.has_case and r.runtime),
+        key=lambda r: (score(r)[0] - score(r)[1], r.tier != 'marquee',
+                       r.qualname))
+    lines += [
+        '',
+        '## Full coverage matrix — every op with a case (COVERAGE v2)',
+        '',
+        f'All {len(measured)} ops with a case, scored against their tier '
+        '(`★` = marquee, which adds the real-data + domain-on-real bar). '
+        'Worst-covered (and marquee) first; same glyphs as above.',
+        '',
+        '| op | ★ | score | ' + ' | '.join(_MATRIX_HEAD) + ' |',
+        '|---|---|---|' + '---|' * len(_MATRIX_HEAD),
+    ]
+    for r in measured:
+        c = _matrix_cells(r)
+        star = '★' if r.tier == 'marquee' else ''
+        lines.append(f'| {c[0]} | {star} | ' + ' | '.join(c[1:]) + ' |')
     lines += [
         '',
         '## Caveats',

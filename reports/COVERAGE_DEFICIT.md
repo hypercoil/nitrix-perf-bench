@@ -360,15 +360,121 @@ The headline functions used on real images, scored against their tier bar (`scor
 | op | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|
 | `nitrix.stats.lme.flame_two_level` | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
-| `nitrix.stats.lme.reml_fit` | 2/6 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
-| `nitrix.bias.n4_bias_field_correction` | 2/5 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.N4 |
-| `nitrix.numerics.intensity_normalize` | 2/5 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
-| `nitrix.smoothing.bilateral_gaussian` | 2/5 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.Bilateral |
-| `nitrix.register.affine_register` | 6/6 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
-| `nitrix.register.diffeomorphic_demons_register` | 6/6 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
-| `nitrix.register.rigid_register` | 6/6 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.stats.lme.reml_fit` | 2/5 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
+| `nitrix.bias.n4_bias_field_correction` | 2/4 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.N4 |
+| `nitrix.numerics.intensity_normalize` | 2/4 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.smoothing.bilateral_gaussian` | 2/4 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.Bilateral |
+| `nitrix.register.affine_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.diffeomorphic_demons_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.rigid_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 
-**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `reml_fit`, `flame_two_level`, `intensity_normalize`, `bilateral_gaussian`, `n4_bias_field_correction`.
+**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `flame_two_level`, `reml_fit`, `intensity_normalize`, `bilateral_gaussian`, `n4_bias_field_correction`.
+
+## Full coverage matrix — every op with a case (COVERAGE v2)
+
+All 99 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
+
+| op | ★ | score | platform | scale | economic | input | gpu-ref | domain-ref |
+|---|---|---|---|---|---|---|---|---|
+| `nitrix.stats.lme.flame_two_level` | ★ | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
+| `nitrix.stats.lme.reml_fit` | ★ | 2/5 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
+| `nitrix.bias.n4_bias_field_correction` | ★ | 2/4 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.N4 |
+| `nitrix.numerics.intensity_normalize` | ★ | 2/4 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.smoothing.bilateral_gaussian` | ★ | 2/4 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.Bilateral |
+| `nitrix.geometry.affine_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.geometry.compose_velocity` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.geometry.invert_displacement` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.geometry.rigid_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.geometry.rigid_log` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.geometry.spatial_gradient` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.linalg.matrix_exp` |  | 1/3 | ✗ gpu_only | ✓ | ✗~ | ✗ synth | · | ✗ none |
+| `nitrix.morphology.connected_components` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.morphology.distance_transform_edt` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.morphology.largest_connected_component` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.morphology.max_pool_with_indices_nd` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.morphology.max_unpool_nd` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.register.bending_energy` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.register.gradient_smoothness` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.register.jacobian_folding_penalty` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.linalg.tangent_project_spd` |  | 1/2 | ✓ | · | ✓~ | ✗ synth | · | ✗ none |
+| `nitrix.metrics.correlation_ratio` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.metrics.lncc` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ◐ simpleitk.ANTSNeighborhoodCorrelation |
+| `nitrix.metrics.mutual_information` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ◐ simpleitk.MattesMI |
+| `nitrix.metrics.ncc` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ◐ simpleitk.Correlation |
+| `nitrix.metrics.ssd` |  | 1/2 | ✗ gpu_only | · | ✗~ | ✗ synth | ✓ | ◐ simpleitk.MeanSquares |
+| `nitrix.semiring.semiring_ell_edge_aggregate` |  | 1/2 | ✓ | · | ✓~ | ✗ synth | · | ✗ none |
+| `nitrix.semiring.semiring_matmul` |  | 1/2 | ✓ | · | ✓~ | ✗ synth | · | ✗ none |
+| `nitrix.stats.corr` |  | 2/3 | ✓ | ○ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.cov` |  | 2/3 | ✓ | ○ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.partialcorr` |  | 2/3 | ✓ | ○ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.partialcov` |  | 2/3 | ✓ | ○ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.precision` |  | 2/3 | ✓ | ○ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.register.affine_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.diffeomorphic_demons_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.rigid_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.bias.histogram_match` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.HistogramMatching |
+| `nitrix.geometry.cartesian_to_latlong` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.center_of_mass_grid` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.center_of_mass_points` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.compactness_penalty` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.displacement_from_reference_grid` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.displacement_from_reference_points` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.integrate_velocity_field` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.jacobian_det_displacement` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.jacobian_displacement` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.latlong_to_cartesian` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.resample` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ◐ ants.resample_image |
+| `nitrix.geometry.spatial_transform` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.sphere_grid_pad_2d` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.sphere_grid_unpad_2d` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.spherical_conv` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.geometry.spherical_geodesic_distance` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.coaffiliation` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.degree_vector` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.diffusion_embedding` |  | 3/3 | ✓ | ✓ | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.girvan_newman_null` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.laplacian` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.laplacian_eigenmap` |  | 3/3 | ✓ | ✓ | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.modularity_matrix` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.graph.relaxed_modularity` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.cosine_kernel` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.gaussian_kernel` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.linear_distance` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.linear_kernel` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.polynomial_kernel` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.rbf_kernel` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.residualise` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.sigmoid_kernel` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.symexp` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.symlog` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.sympower` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.linalg.symsqrt` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.morphology.close` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.morphology.dilate` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ◐ simpleitk.GrayscaleDilate |
+| `nitrix.morphology.distance_transform` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ◐ simpleitk.DanielssonDistanceMap |
+| `nitrix.morphology.erode` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ◐ simpleitk.GrayscaleErode |
+| `nitrix.morphology.median_filter` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ◐ simpleitk.Median |
+| `nitrix.morphology.open` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.numerics.psc_normalize` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.numerics.robust_zscore_normalize` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.numerics.zscore_normalize` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.lomb_scargle_interpolate` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.lomb_scargle_periodogram` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.polynomial_detrend` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.sosfilt` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.sosfiltfilt` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.tsconv` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.smoothing.gaussian` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.analytic_signal` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.conditionalcorr` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.conditionalcov` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.envelope` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.hilbert_transform` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.pairedcorr` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.pairedcov` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.pca_fit` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.pca_inverse_transform` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.stats.pca_transform` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 
 ## Caveats
 
