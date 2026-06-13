@@ -66,6 +66,7 @@ _SHAPES = [(64, 64), (128, 128), (256, 256)]
 CASE = Case(
     name='bilateral_gaussian',
     op_qualname='nitrix.smoothing.bilateral_gaussian',
+    tier='marquee',
     output_independent=False,  # each output is a window-weighted average
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

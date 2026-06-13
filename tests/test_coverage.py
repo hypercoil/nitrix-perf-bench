@@ -25,11 +25,11 @@ _CATALOGUE = [
 ]
 
 
-def _c(name, large=()):
+def _c(name, large=(), tier='standard'):
     '''A minimal Case stand-in (build_coverage reads .name / .representative /
-    .large_param_points).'''
+    .large_param_points / .tier).'''
     return SimpleNamespace(name=name, representative=_REP,
-                           large_param_points=tuple(large))
+                           large_param_points=tuple(large), tier=tier)
 
 
 _OP2CASE = {
@@ -261,3 +261,56 @@ def test_economic_na_and_fallback_and_authoritative():
                    framework='ants', steady=1.0)]
     ov2 = econ.op_verdict(case2, rows2, bar=4.0)
     assert ov2.verdict == 'favorable' and ov2.authoritative is True
+
+
+# -- tier + score + marquee (Phase 2) ---------------------------------------
+def _oc(**kw):
+    base = dict(qualname='q', runtime=True, has_case=True,
+                coverage=cov.MULTIPLATFORM, ref_strength=cov.NO_REF,
+                precision='f32_only', provisional=False)
+    base.update(kw)
+    return cov.OpCoverage(**base)
+
+
+def test_score_standard_op():
+    # standard op, multiplatform + a domain ref, no large tier, econ n/a
+    oc = _oc(domain_ref='ants.x', economic_verdict='n/a')
+    # axes: platform(ok) + reference(ok) -> 2/2
+    assert cov.score(oc) == (2, 2)
+
+
+def test_score_marquee_full_vs_unmet():
+    full = _oc(tier='marquee', domain_ref='ants.registration',
+               domain_ref_realism='real_planted', input_realism='real_planted',
+               economic_verdict='n/a')
+    # platform, reference, real_input, domain_on_real -> 4/4
+    assert cov.score(full) == (4, 4)
+    unmet = _oc(tier='marquee', domain_ref='fsl.flameo',
+                domain_ref_realism='synthetic', input_realism='synthetic',
+                economic_verdict='n/a')
+    sat, app = cov.score(unmet)
+    assert app == 4 and sat == 2          # platform + reference only
+
+
+def test_marquee_unmet_selector():
+    full = _oc(qualname='a', tier='marquee', domain_ref='ants.x',
+               domain_ref_realism='real_planted', input_realism='real_planted')
+    unmet = _oc(qualname='b', tier='marquee', input_realism='synthetic')
+    std = _oc(qualname='c', tier='standard', input_realism='synthetic')
+    got = {r.qualname for r in cov._marquee_unmet([full, unmet, std])}
+    assert got == {'b'}                   # full met; std not marquee
+
+
+def test_build_carries_tier_and_orphans_json():
+    cat = [{'qualname': 'pkg.winner', 'jit': 'pass'}]
+    o2c = {'pkg.winner': _c('winner', tier='marquee')}
+    rows = [_vrow('nitrix-jax', 'jax-cpu', 'ok', _REP, case='winner'),
+            _vrow('nitrix-jax', 'jax-cuda12', 'ok', _REP, case='winner')]
+    recs = cov.build_coverage(rows, cat, o2c)
+    assert recs[0].tier == 'marquee'
+    doc = cov.render_json(recs, orphans=[('pkg.ghost', 'marquee')])
+    assert doc['summary']['orphan_cases'] == 1
+    assert doc['orphan_cases'] == [
+        {'qualname': 'pkg.ghost', 'tier': 'marquee'}]
+    md = cov.render_markdown(recs, orphans=[('pkg.ghost', 'marquee')])
+    assert 'absent from the catalogue' in md and 'MARQUEE' in md

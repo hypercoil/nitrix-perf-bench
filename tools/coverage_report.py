@@ -75,17 +75,26 @@ def main() -> None:
     for f in store.expand_inputs(args.inputs):
         rows.extend(read_jsonl(f))
     rows = store.latest(rows)
-    records = cov.build_coverage(rows, catalogue, _op_to_case())
+    op2case = _op_to_case()
+    records = cov.build_coverage(rows, catalogue, op2case)
+
+    # orphans: ops with a perf-bench case (benchmarked) but absent from the
+    # nitrix catalogue -- invisible to the join until op_matrix.json is
+    # regenerated.  Carry the tier so a MARQUEE orphan is flagged.
+    cat_q = {op.get('qualname') for op in catalogue}
+    orphans = sorted((q, getattr(c, 'tier', 'standard'))
+                     for q, c in op2case.items() if q not in cat_q)
 
     Path(args.out_md).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out_md).write_text(cov.render_markdown(records))
-    doc = cov.render_json(records)
+    Path(args.out_md).write_text(cov.render_markdown(records, orphans))
+    doc = cov.render_json(records, orphans)
     Path(args.out_json).write_text(json.dumps(doc, indent=2) + '\n')
 
     s = doc['summary']
+    orph = f", {s['orphan_cases']} orphan case(s) (stale catalogue)" \
+        if s['orphan_cases'] else ''
     print(f"coverage: {s['multiplatform']}/{s['runtime_ops']} multiplatform, "
-          f"{s['with_strong_gpu_ref']} with a strong GPU ref, "
-          f"{s['lagging_on_gpu']} lagging on GPU. "
+          f"{s['marquee_unmet']}/{s['marquee']} marquee unmet{orph}. "
           f"Wrote {args.out_md} + {args.out_json}.", file=sys.stderr)
 
 

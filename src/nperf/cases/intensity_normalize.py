@@ -48,6 +48,7 @@ _SIZES = [512, 2048, 4096]
 CASE = Case(
     name='intensity_normalize',
     op_qualname='nitrix.numerics.intensity_normalize',
+    tier='marquee',
     output_independent=False,  # global percentiles couple every element
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

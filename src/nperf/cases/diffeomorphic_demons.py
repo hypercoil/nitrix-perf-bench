@@ -126,6 +126,7 @@ _LARGE_REAL = [{'data': 'mni152', 'resolution': 2, 'levels': 2, 'iters': 20,
 CASE = Case(
     name='diffeomorphic_demons',
     op_qualname='nitrix.register.diffeomorphic_demons_register',
+    tier='marquee',
     output_independent=False,  # a global iterative fit over the whole image
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

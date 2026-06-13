@@ -77,6 +77,7 @@ _LARGE = [{'shape': [64, 64, 64], 'N': n, 'iters': 100, 'seed': 0}
 CASE = Case(
     name='bbr_register',
     op_qualname='nitrix.register.bbr_register',
+    tier='marquee',
     output_independent=False,  # a global BFGS fit over the rigid params
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

@@ -78,6 +78,7 @@ _LARGE = [(16384, 8, 24), (65536, 8, 24)]
 CASE = Case(
     name='reml_fit',
     op_qualname='nitrix.stats.lme.reml_fit',
+    tier='marquee',
     output_independent=True,  # each voxel is an independent LME fit
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

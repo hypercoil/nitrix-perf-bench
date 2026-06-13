@@ -124,6 +124,13 @@ class Case:
     # single home for the case -> op mapping the op_matrix feed and the
     # decision-input bundle both read.  None for the throwaway smoke case.
     op_qualname: Optional[str] = None
+    # benchmarking-policy tier (COVERAGE_V2_PLAN): ``'marquee'`` ops are the
+    # headline functions used on real images -- the coverage matrix *requires*
+    # them to be tested on real brain data against a community gold standard
+    # (real_planted+ realism + a domain ref on real data); ``'standard'`` ops
+    # are not held to that bar.  Lives here (policy), not in op_matrix.json
+    # (capability).
+    tier: str = 'standard'
     # **brain-scale** param points (the size tier): the realistic large /
     # batched sizes a perf win must still hold at -- the defence against
     # *scale-gaming* (notching a win at a small benched size while a worse

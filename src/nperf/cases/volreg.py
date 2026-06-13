@@ -108,6 +108,7 @@ _LARGE += [{'shape': s, 'T': 100, 'levels': 2, 'iters': 20, 'seed': 0}
 CASE = Case(
     name='volreg',
     op_qualname='nitrix.register.volreg',
+    tier='marquee',
     output_independent=False,  # frames couple via the shared mean reference
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

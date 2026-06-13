@@ -113,6 +113,7 @@ _LARGE += [{'data': 'mni152', 'resolution': 2, 'levels': 2, 'iters': 80,
 CASE = Case(
     name='greedy_syn_register',
     op_qualname='nitrix.register.greedy_syn_register',
+    tier='marquee',
     output_independent=False,  # a global iterative deformable fit
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

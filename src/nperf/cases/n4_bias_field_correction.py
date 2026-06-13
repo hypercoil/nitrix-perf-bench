@@ -58,6 +58,7 @@ _SIZES = [32, 48, 64]
 CASE = Case(
     name='n4_bias_field_correction',
     op_qualname='nitrix.bias.n4_bias_field_correction',
+    tier='marquee',
     output_independent=False,  # iterative B-spline fit couples the volume
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

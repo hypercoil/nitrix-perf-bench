@@ -15,8 +15,25 @@
     "economic_favorable": 65,
     "economic_not_multiplicative": 10,
     "on_real_data": 3,
-    "on_real_full": 0
+    "on_real_full": 0,
+    "marquee": 8,
+    "marquee_unmet": 5,
+    "orphan_cases": 3
   },
+  "orphan_cases": [
+    {
+      "qualname": "nitrix.register.bbr_register",
+      "tier": "marquee"
+    },
+    {
+      "qualname": "nitrix.register.greedy_syn_register",
+      "tier": "marquee"
+    },
+    {
+      "qualname": "nitrix.register.volreg",
+      "tier": "marquee"
+    }
+  ],
   "lagging": [
     {
       "qualname": "nitrix.geometry.sphere_grid_unpad_2d",
@@ -39,7 +56,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.degree_vector",
@@ -62,7 +84,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.morphology.median_filter",
@@ -85,7 +112,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.Median",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.linear_kernel",
@@ -108,7 +140,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.spatial_transform",
@@ -131,7 +168,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.numerics.intensity_normalize",
@@ -154,7 +196,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        5
+      ]
     },
     {
       "qualname": "nitrix.metrics.ssd",
@@ -177,7 +224,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.MeanSquares",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.center_of_mass_points",
@@ -200,7 +252,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.laplacian",
@@ -223,7 +280,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.stats.pca_transform",
@@ -246,7 +308,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.pca_fit",
@@ -269,7 +336,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.distance_transform",
@@ -292,7 +364,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.DanielssonDistanceMap",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     }
   ],
   "gpu_blocked": [
@@ -317,7 +394,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.graph.diffusion_embedding",
@@ -340,7 +422,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     }
   ],
   "under_covered": [
@@ -366,6 +453,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -390,6 +482,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -414,6 +511,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -438,6 +540,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -462,6 +569,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -486,6 +598,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -510,6 +627,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -534,6 +656,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -558,6 +685,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -582,6 +714,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -606,6 +743,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -630,6 +772,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -654,6 +801,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -678,6 +830,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -702,6 +859,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -726,6 +888,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -750,6 +917,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -774,6 +946,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -798,6 +975,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -822,6 +1004,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -846,6 +1033,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -870,6 +1062,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -894,6 +1091,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -918,6 +1120,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -942,6 +1149,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -966,6 +1178,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -990,6 +1207,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1014,6 +1236,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1038,6 +1265,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1062,6 +1294,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1086,6 +1323,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1110,6 +1352,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1134,6 +1381,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1158,6 +1410,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1182,6 +1439,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1206,6 +1468,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1230,6 +1497,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1254,6 +1526,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1278,6 +1555,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1302,6 +1584,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1326,6 +1613,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1350,6 +1642,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1374,6 +1671,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1398,6 +1700,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1422,6 +1729,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1446,6 +1758,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1470,6 +1787,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1494,6 +1816,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1518,6 +1845,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1542,6 +1874,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        4
+      ],
       "priority": "high"
     },
     {
@@ -1566,6 +1903,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1590,6 +1932,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1614,6 +1961,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1638,6 +1990,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1662,6 +2019,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1686,6 +2048,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1710,6 +2077,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1734,6 +2106,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1758,6 +2135,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1782,6 +2164,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1806,6 +2193,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1830,6 +2222,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1854,6 +2251,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1878,6 +2280,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "high"
     },
     {
@@ -1902,6 +2309,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1926,6 +2338,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1950,6 +2367,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1974,6 +2396,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -1998,6 +2425,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2022,6 +2454,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2046,6 +2483,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2070,6 +2512,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2094,6 +2541,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2118,6 +2570,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.ANTSNeighborhoodCorrelation",
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "high"
     },
     {
@@ -2142,6 +2599,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.MattesMI",
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "high"
     },
     {
@@ -2166,6 +2628,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.Correlation",
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "high"
     },
     {
@@ -2190,6 +2657,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.MeanSquares",
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "high"
     },
     {
@@ -2214,6 +2686,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2238,6 +2715,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2262,6 +2744,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2286,6 +2773,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2310,6 +2802,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2334,6 +2831,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2358,6 +2860,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2382,6 +2889,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2406,6 +2918,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2430,6 +2947,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2454,6 +2976,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2478,6 +3005,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2502,6 +3034,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2526,6 +3063,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2550,6 +3092,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2574,6 +3121,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2598,6 +3150,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2622,6 +3179,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2646,6 +3208,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2670,6 +3237,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2694,6 +3266,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2718,6 +3295,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2742,6 +3324,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2766,6 +3353,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2790,6 +3382,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2814,6 +3411,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2838,6 +3440,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2862,6 +3469,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2886,6 +3498,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2910,6 +3527,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2934,6 +3556,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2958,6 +3585,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -2982,6 +3614,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3006,6 +3643,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3030,6 +3672,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3054,6 +3701,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3078,6 +3730,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3102,6 +3759,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3126,6 +3788,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3150,6 +3817,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3174,6 +3846,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3198,6 +3875,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3222,6 +3904,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3246,6 +3933,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3270,6 +3962,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3294,6 +3991,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3318,6 +4020,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3342,6 +4049,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3366,6 +4078,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3390,6 +4107,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3414,6 +4136,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3438,6 +4165,11 @@
       "input_realism": "synthetic",
       "domain_ref": "fsl.flameo",
       "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        1,
+        5
+      ],
       "priority": "high"
     },
     {
@@ -3462,6 +4194,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3486,6 +4223,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ],
       "priority": "high"
     },
     {
@@ -3510,6 +4252,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.HistogramMatching",
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ],
       "priority": "medium"
     },
     {
@@ -3534,6 +4281,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.N4",
       "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        5
+      ],
       "priority": "medium"
     },
     {
@@ -3558,6 +4310,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "medium"
     },
     {
@@ -3582,6 +4339,11 @@
       "input_realism": "real_planted",
       "domain_ref": "ants.registration",
       "domain_ref_realism": "real_planted",
+      "tier": "marquee",
+      "coverage_score": [
+        6,
+        6
+      ],
       "priority": "medium"
     },
     {
@@ -3606,6 +4368,11 @@
       "input_realism": "real_planted",
       "domain_ref": "ants.registration",
       "domain_ref_realism": "real_planted",
+      "tier": "marquee",
+      "coverage_score": [
+        6,
+        6
+      ],
       "priority": "medium"
     },
     {
@@ -3630,6 +4397,11 @@
       "input_realism": "real_planted",
       "domain_ref": "ants.registration",
       "domain_ref_realism": "real_planted",
+      "tier": "marquee",
+      "coverage_score": [
+        6,
+        6
+      ],
       "priority": "medium"
     },
     {
@@ -3654,6 +4426,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "medium"
     },
     {
@@ -3678,6 +4455,11 @@
       "input_realism": "synthetic",
       "domain_ref": null,
       "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ],
       "priority": "medium"
     },
     {
@@ -3702,6 +4484,11 @@
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.Bilateral",
       "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        5
+      ],
       "priority": "medium"
     },
     {
@@ -3726,6 +4513,11 @@
       "input_realism": "synthetic",
       "domain_ref": "statsmodels.MixedLM",
       "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        6
+      ],
       "priority": "medium"
     }
   ],
@@ -3752,7 +4544,12 @@
         "economic_authoritative": true,
         "input_realism": "synthetic",
         "domain_ref": "fsl.flameo",
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          1,
+          5
+        ]
       }
     ],
     "no_economic_win": [
@@ -3777,7 +4574,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.graph.degree_vector",
@@ -3800,7 +4602,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.geometry.sphere_grid_pad_2d",
@@ -3823,7 +4630,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.graph.laplacian",
@@ -3846,7 +4658,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.graph.girvan_newman_null",
@@ -3869,7 +4686,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.graph.coaffiliation",
@@ -3892,7 +4714,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.geometry.displacement_from_reference_points",
@@ -3915,7 +4742,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.geometry.center_of_mass_points",
@@ -3938,7 +4770,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.geometry.latlong_to_cartesian",
@@ -3961,7 +4798,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       },
       {
         "qualname": "nitrix.signal.tsconv",
@@ -3984,7 +4826,12 @@
         "economic_authoritative": false,
         "input_realism": "synthetic",
         "domain_ref": null,
-        "domain_ref_realism": "synthetic"
+        "domain_ref_realism": "synthetic",
+        "tier": "standard",
+        "coverage_score": [
+          2,
+          3
+        ]
       }
     ],
     "on_real_data": [
@@ -4009,7 +4856,12 @@
         "economic_authoritative": true,
         "input_realism": "real_planted",
         "domain_ref": "ants.registration",
-        "domain_ref_realism": "real_planted"
+        "domain_ref_realism": "real_planted",
+        "tier": "marquee",
+        "coverage_score": [
+          6,
+          6
+        ]
       },
       {
         "qualname": "nitrix.register.affine_register",
@@ -4032,7 +4884,12 @@
         "economic_authoritative": true,
         "input_realism": "real_planted",
         "domain_ref": "ants.registration",
-        "domain_ref_realism": "real_planted"
+        "domain_ref_realism": "real_planted",
+        "tier": "marquee",
+        "coverage_score": [
+          6,
+          6
+        ]
       },
       {
         "qualname": "nitrix.register.diffeomorphic_demons_register",
@@ -4055,7 +4912,154 @@
         "economic_authoritative": true,
         "input_realism": "real_planted",
         "domain_ref": "ants.registration",
-        "domain_ref_realism": "real_planted"
+        "domain_ref_realism": "real_planted",
+        "tier": "marquee",
+        "coverage_score": [
+          6,
+          6
+        ]
+      }
+    ],
+    "marquee_unmet": [
+      {
+        "qualname": "nitrix.stats.lme.reml_fit",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "none",
+        "precision": "f32_only",
+        "provisional": true,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "declared",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 257.138200097798,
+        "economic_authoritative": false,
+        "input_realism": "synthetic",
+        "domain_ref": "statsmodels.MixedLM",
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          2,
+          6
+        ]
+      },
+      {
+        "qualname": "nitrix.stats.lme.flame_two_level",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "cpu_only",
+        "ref_strength": "floor_only",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "scale_capped",
+        "largest_ok_size": 131072,
+        "scale_cap_reason": "timeout",
+        "economic_verdict": "n/a",
+        "economic_amortized": null,
+        "economic_authoritative": true,
+        "input_realism": "synthetic",
+        "domain_ref": "fsl.flameo",
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          1,
+          5
+        ]
+      },
+      {
+        "qualname": "nitrix.numerics.intensity_normalize",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "strong_ref",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": "cupy.intensity_normalize",
+        "gpu_ref_ratio": 0.6366977136809086,
+        "nitrix_slower_on_gpu": true,
+        "scale_status": "no_tier",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 70.11255803492865,
+        "economic_authoritative": false,
+        "input_realism": "synthetic",
+        "domain_ref": null,
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          2,
+          5
+        ]
+      },
+      {
+        "qualname": "nitrix.smoothing.bilateral_gaussian",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "none",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "no_tier",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 10.760849311044987,
+        "economic_authoritative": false,
+        "input_realism": "synthetic",
+        "domain_ref": "simpleitk.Bilateral",
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          2,
+          5
+        ]
+      },
+      {
+        "qualname": "nitrix.bias.n4_bias_field_correction",
+        "runtime": true,
+        "has_case": true,
+        "coverage": "multiplatform",
+        "ref_strength": "none",
+        "precision": "f32_only",
+        "provisional": false,
+        "gpu_blocked": false,
+        "gpu_block_reason": null,
+        "gpu_ref": null,
+        "gpu_ref_ratio": null,
+        "nitrix_slower_on_gpu": false,
+        "scale_status": "no_tier",
+        "largest_ok_size": null,
+        "scale_cap_reason": null,
+        "economic_verdict": "favorable (amortized only)",
+        "economic_amortized": 190.13208353071857,
+        "economic_authoritative": false,
+        "input_realism": "synthetic",
+        "domain_ref": "simpleitk.N4",
+        "domain_ref_realism": "synthetic",
+        "tier": "marquee",
+        "coverage_score": [
+          2,
+          5
+        ]
       }
     ]
   },
@@ -4081,7 +5085,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.sym2vec",
@@ -4104,7 +5113,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.vec2sym",
@@ -4127,7 +5141,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.toeplitz_2d",
@@ -4150,7 +5169,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.recondition_eigenspaces",
@@ -4173,7 +5197,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.residualise",
@@ -4196,7 +5225,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.linear_kernel",
@@ -4219,7 +5253,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.linear_distance",
@@ -4242,7 +5281,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.rbf_kernel",
@@ -4265,7 +5309,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.symlog",
@@ -4288,7 +5337,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.symsqrt",
@@ -4311,7 +5365,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.sympower",
@@ -4334,7 +5393,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.mean_log_euclidean",
@@ -4357,7 +5421,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.cov",
@@ -4380,7 +5449,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.corr",
@@ -4403,7 +5477,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.partialcov",
@@ -4426,7 +5505,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.precision",
@@ -4449,7 +5533,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.analytic_signal",
@@ -4472,7 +5561,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.stats.hilbert_transform",
@@ -4495,7 +5589,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.stats.envelope",
@@ -4518,7 +5617,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.stats.lme.reml_fit",
@@ -4541,7 +5645,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "statsmodels.MixedLM",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        6
+      ]
     },
     {
       "qualname": "nitrix.stats.lme.flame_two_level",
@@ -4564,7 +5673,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": "fsl.flameo",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        1,
+        5
+      ]
     },
     {
       "qualname": "nitrix.signal.linear_interpolate",
@@ -4587,7 +5701,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.lomb_scargle_interpolate",
@@ -4610,7 +5729,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.signal.lomb_scargle_periodogram",
@@ -4633,7 +5757,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.signal.polynomial_detrend",
@@ -4656,7 +5785,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.signal.tsconv",
@@ -4679,7 +5813,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.numerics.zscore_normalize",
@@ -4702,7 +5841,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.numerics.intensity_normalize",
@@ -4725,7 +5869,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        5
+      ]
     },
     {
       "qualname": "nitrix.numerics.complex_decompose",
@@ -4748,7 +5897,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.identity_grid",
@@ -4771,7 +5925,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.spatial_transform",
@@ -4794,7 +5953,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.spatial_transform[lanczos]",
@@ -4817,7 +5981,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.integrate_velocity_field",
@@ -4840,7 +6009,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.jacobian_det_displacement",
@@ -4863,7 +6037,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.sphere_grid_pad_2d",
@@ -4886,7 +6065,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.laplacian",
@@ -4909,7 +6093,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.degree_vector",
@@ -4932,7 +6121,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.laplacian_eigenmap",
@@ -4955,7 +6149,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.dilate",
@@ -4978,7 +6177,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.GrayscaleDilate",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.erode",
@@ -5001,7 +6205,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.GrayscaleErode",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.distance_transform",
@@ -5024,7 +6233,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.DanielssonDistanceMap",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.distance_transform_edt",
@@ -5047,7 +6261,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.morphology.median_filter",
@@ -5070,7 +6289,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.Median",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.morphology.max_pool_with_indices_nd",
@@ -5093,7 +6317,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.morphology.max_unpool_nd",
@@ -5116,7 +6345,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.smoothing.gaussian",
@@ -5139,7 +6373,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.smoothing.bilateral_gaussian",
@@ -5162,7 +6401,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.Bilateral",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        5
+      ]
     },
     {
       "qualname": "nitrix.semiring.semiring_matmul",
@@ -5185,7 +6429,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.semiring.semiring_ell_matmul",
@@ -5208,7 +6457,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.semiring.semiring_ell_edge_aggregate",
@@ -5231,7 +6485,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.semiring.semiring_conv",
@@ -5254,7 +6513,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.ell_from_dense",
@@ -5277,7 +6541,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.grid_laplacian",
@@ -5300,7 +6569,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_k_ring_adjacency",
@@ -5323,7 +6597,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_pool_max",
@@ -5346,7 +6625,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_unpool_max",
@@ -5369,7 +6653,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_bary_upsample",
@@ -5392,7 +6681,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.icosphere_hierarchy",
@@ -5415,7 +6709,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.icosphere_cross_level_adjacency",
@@ -5438,7 +6737,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.icosphere_bary_upsampler",
@@ -5461,7 +6765,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.symexp",
@@ -5484,7 +6793,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.symmap",
@@ -5507,7 +6821,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.tangent_project_spd",
@@ -5530,7 +6849,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.cone_project_spd",
@@ -5553,7 +6877,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.mean_euclidean",
@@ -5576,7 +6905,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.squareform",
@@ -5599,7 +6933,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.toeplitz",
@@ -5622,7 +6961,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.delete_diagonal",
@@ -5645,7 +6989,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.fill_diagonal",
@@ -5668,7 +7017,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.gaussian_kernel",
@@ -5691,7 +7045,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.polynomial_kernel",
@@ -5714,7 +7073,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.sigmoid_kernel",
@@ -5737,7 +7101,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.cosine_kernel",
@@ -5760,7 +7129,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.linalg.parameterised_norm",
@@ -5783,7 +7157,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.partialcorr",
@@ -5806,7 +7185,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.conditionalcov",
@@ -5829,7 +7213,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.conditionalcorr",
@@ -5852,7 +7241,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.pairedcov",
@@ -5875,7 +7269,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.pairedcorr",
@@ -5898,7 +7297,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.product_filter",
@@ -5921,7 +7325,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.product_filtfilt",
@@ -5944,7 +7353,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.instantaneous_phase",
@@ -5967,7 +7381,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.instantaneous_frequency",
@@ -5990,7 +7409,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.env_inst",
@@ -6013,7 +7437,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.lowpass",
@@ -6036,7 +7465,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.highpass",
@@ -6059,7 +7493,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.bandpass",
@@ -6082,7 +7521,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.bandstop",
@@ -6105,7 +7549,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.iir_filter",
@@ -6128,7 +7577,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.sosfilt",
@@ -6151,7 +7605,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.signal.sosfiltfilt",
@@ -6174,7 +7633,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.signal.butterworth_sos",
@@ -6197,7 +7661,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.signal.sample_windows",
@@ -6220,7 +7689,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.complex_recompose",
@@ -6243,7 +7717,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.demean",
@@ -6266,7 +7745,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.percentile_rescale",
@@ -6289,7 +7773,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.psc_normalize",
@@ -6312,7 +7801,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.numerics.robust_zscore_normalize",
@@ -6335,7 +7829,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.resample",
@@ -6358,7 +7857,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "ants.resample_image",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.resample[nearest]",
@@ -6381,7 +7885,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.resample[lanczos]",
@@ -6404,7 +7913,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.resample[cubic]",
@@ -6427,7 +7941,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.resample[multilabel]",
@@ -6450,7 +7969,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.spherical_geodesic_distance",
@@ -6473,7 +7997,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.jacobian_displacement",
@@ -6496,7 +8025,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.center_of_mass_grid",
@@ -6519,7 +8053,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.cartesian_to_latlong",
@@ -6542,7 +8081,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.latlong_to_cartesian",
@@ -6565,7 +8109,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.center_of_mass_points",
@@ -6588,7 +8137,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.compactness_penalty",
@@ -6611,7 +8165,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.displacement_from_reference_grid",
@@ -6634,7 +8193,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.displacement_from_reference_points",
@@ -6657,7 +8221,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.spherical_conv",
@@ -6680,7 +8249,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.geometry.sphere_grid_unpad_2d",
@@ -6703,7 +8277,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.girvan_newman_null",
@@ -6726,7 +8305,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.modularity_matrix",
@@ -6749,7 +8333,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.coaffiliation",
@@ -6772,7 +8361,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.relaxed_modularity",
@@ -6795,7 +8389,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.graph.diffusion_embedding",
@@ -6818,7 +8417,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.open",
@@ -6841,7 +8445,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.morphology.close",
@@ -6864,7 +8473,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        3,
+        4
+      ]
     },
     {
       "qualname": "nitrix.smoothing.susan_emulator",
@@ -6887,7 +8501,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.smoothing.brute_force_knn",
@@ -6910,7 +8529,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.smoothing.spatial_cube_neighbourhood",
@@ -6933,7 +8557,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.semiring.ell_row_softmax",
@@ -6956,7 +8585,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.ell_to_dense",
@@ -6979,7 +8613,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.ell_mask",
@@ -7002,7 +8641,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.ell_pad",
@@ -7025,7 +8669,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.ell_add_self_loops",
@@ -7048,7 +8697,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_coarsen_meanpool",
@@ -7071,7 +8725,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.sectioned_semiring_ell_matmul",
@@ -7094,7 +8753,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.icosphere",
@@ -7117,7 +8781,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.grid_identity",
@@ -7140,7 +8809,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.regular_grid_stencil",
@@ -7163,7 +8837,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_cotangent_laplacian",
@@ -7186,7 +8865,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.sectioned_ell_from_ragged",
@@ -7209,7 +8893,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.icosphere_hierarchy_from_levels",
@@ -7232,7 +8921,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.bias.histogram_match",
@@ -7255,7 +8949,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.HistogramMatching",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        2,
+        3
+      ]
     },
     {
       "qualname": "nitrix.bias.sharpen_histogram",
@@ -7278,7 +8977,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.bias.bspline_approximate",
@@ -7301,7 +9005,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.bias.n4_bias_field_correction",
@@ -7324,7 +9033,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.N4",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "marquee",
+      "coverage_score": [
+        2,
+        5
+      ]
     },
     {
       "qualname": "nitrix.bias.bias_field_correction",
@@ -7347,7 +9061,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.matrix_exp",
@@ -7370,7 +9089,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        4
+      ]
     },
     {
       "qualname": "nitrix.linalg.solve",
@@ -7393,7 +9117,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.cho_solve",
@@ -7416,7 +9145,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.cg",
@@ -7439,7 +9173,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.gauss_newton",
@@ -7462,7 +9201,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.levenberg_marquardt",
@@ -7485,7 +9229,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.linalg.implicit_least_squares",
@@ -7508,7 +9257,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.rigid_exp",
@@ -7531,7 +9285,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.rigid_log",
@@ -7554,7 +9313,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.affine_exp",
@@ -7577,7 +9341,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.apply_affine",
@@ -7600,7 +9369,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.affine_grid",
@@ -7623,7 +9397,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.make_square_affine",
@@ -7646,7 +9425,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.invert_affine",
@@ -7669,7 +9453,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.compose_affine",
@@ -7692,7 +9481,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.fit_affine",
@@ -7715,7 +9509,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.angles_to_rotation_matrix",
@@ -7738,7 +9537,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.rotation_matrix_to_angles",
@@ -7761,7 +9565,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.params_to_affine_matrix",
@@ -7784,7 +9593,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.affine_matrix_to_params",
@@ -7807,7 +9621,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.sample_at_points",
@@ -7830,7 +9649,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.spatial_gradient",
@@ -7853,7 +9677,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.downsample",
@@ -7876,7 +9705,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.upsample",
@@ -7899,7 +9733,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.gaussian_pyramid",
@@ -7922,7 +9761,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.compose_displacement",
@@ -7945,7 +9789,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.compose_velocity",
@@ -7968,7 +9817,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.geometry.invert_displacement",
@@ -7991,7 +9845,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.l2_normalize",
@@ -8014,7 +9873,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.lp_normalize",
@@ -8037,7 +9901,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.instance_norm",
@@ -8060,7 +9929,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.pad_to_multiple",
@@ -8083,7 +9957,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.crop_to_multiple",
@@ -8106,7 +9985,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.nonzero_bounding_box",
@@ -8129,7 +10013,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.gaussian_window",
@@ -8152,7 +10041,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.overlap_add",
@@ -8175,7 +10069,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.euler",
@@ -8198,7 +10097,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.rk4",
@@ -8221,7 +10125,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.odeint",
@@ -8244,7 +10153,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.numerics.fixed_point_solve",
@@ -8267,7 +10181,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.morphology.connected_components",
@@ -8290,7 +10209,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.morphology.largest_connected_component",
@@ -8313,7 +10237,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.compute_vertex_normals",
@@ -8336,7 +10265,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.sparse.mesh_laplacian_smooth",
@@ -8359,7 +10293,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.kl_diagonal_gaussian",
@@ -8382,7 +10321,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.gaussian_nll",
@@ -8405,7 +10349,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.stats.pca_fit",
@@ -8428,7 +10377,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.pca_transform",
@@ -8451,7 +10405,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.stats.pca_inverse_transform",
@@ -8474,7 +10433,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        4,
+        4
+      ]
     },
     {
       "qualname": "nitrix.metrics.ssd",
@@ -8497,7 +10461,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.MeanSquares",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.metrics.ncc",
@@ -8520,7 +10489,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.Correlation",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.metrics.lncc",
@@ -8543,7 +10517,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.ANTSNeighborhoodCorrelation",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.metrics.joint_histogram",
@@ -8566,7 +10545,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.mutual_information",
@@ -8589,7 +10573,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": "simpleitk.MattesMI",
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.metrics.correlation_ratio",
@@ -8612,7 +10601,12 @@
       "economic_authoritative": false,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        1,
+        3
+      ]
     },
     {
       "qualname": "nitrix.metrics.dice",
@@ -8635,7 +10629,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.jaccard",
@@ -8658,7 +10657,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.bce_with_logits",
@@ -8681,7 +10685,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.cross_entropy_with_logits",
@@ -8704,7 +10713,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.focal_loss",
@@ -8727,7 +10741,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.info_nce",
@@ -8750,7 +10769,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.dino_cross_entropy",
@@ -8773,7 +10797,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.ibot_cross_entropy",
@@ -8796,7 +10825,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.metrics.koleo",
@@ -8819,7 +10853,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.register.rigid_register",
@@ -8842,7 +10881,12 @@
       "economic_authoritative": true,
       "input_realism": "real_planted",
       "domain_ref": "ants.registration",
-      "domain_ref_realism": "real_planted"
+      "domain_ref_realism": "real_planted",
+      "tier": "marquee",
+      "coverage_score": [
+        6,
+        6
+      ]
     },
     {
       "qualname": "nitrix.register.affine_register",
@@ -8865,7 +10909,12 @@
       "economic_authoritative": true,
       "input_realism": "real_planted",
       "domain_ref": "ants.registration",
-      "domain_ref_realism": "real_planted"
+      "domain_ref_realism": "real_planted",
+      "tier": "marquee",
+      "coverage_score": [
+        6,
+        6
+      ]
     },
     {
       "qualname": "nitrix.register.diffeomorphic_demons_register",
@@ -8888,7 +10937,12 @@
       "economic_authoritative": true,
       "input_realism": "real_planted",
       "domain_ref": "ants.registration",
-      "domain_ref_realism": "real_planted"
+      "domain_ref_realism": "real_planted",
+      "tier": "marquee",
+      "coverage_score": [
+        6,
+        6
+      ]
     },
     {
       "qualname": "nitrix.register.gradient_smoothness",
@@ -8911,7 +10965,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.register.bending_energy",
@@ -8934,7 +10993,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.register.jacobian_folding_penalty",
@@ -8957,7 +11021,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.gamma_contrast",
@@ -8980,7 +11049,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.random_histogram_shift",
@@ -9003,7 +11077,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.gibbs_ringing",
@@ -9026,7 +11105,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.gaussian_noise",
@@ -9049,7 +11133,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.rician_noise",
@@ -9072,7 +11161,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.random_flip",
@@ -9095,7 +11189,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.random_crop",
@@ -9118,7 +11217,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.random_resized_crop",
@@ -9141,7 +11245,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.random_affine_matrix",
@@ -9164,7 +11273,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.random_svf_displacement",
@@ -9187,7 +11301,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.gmm_label_to_image",
@@ -9210,7 +11329,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     },
     {
       "qualname": "nitrix.augment.simulate_bias_field",
@@ -9233,7 +11357,12 @@
       "economic_authoritative": true,
       "input_realism": "synthetic",
       "domain_ref": null,
-      "domain_ref_realism": "synthetic"
+      "domain_ref_realism": "synthetic",
+      "tier": "standard",
+      "coverage_score": [
+        0,
+        2
+      ]
     }
   ]
 }

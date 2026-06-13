@@ -12,8 +12,10 @@
 - **scaled** (ran at the declared brain-scale tier): 18 / 209 — **1** fragile (oom/timeout)
 - **economically favorable** (GPU beats CPU gold by ≥ the bar): 65 / 209 — **10** not multiplicative
 - **on real data** (planted or full): 3 / 209
+- **marquee** ops (held to the real-data + community-baseline bar): 8 — **5** not yet meeting it
 - **lagging on the GPU**: 12
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
+- ⚠️ **3 benchmarked case(s) absent from the catalogue** (`op_matrix.json` is stale -- invisible to the join until regenerated in nitrix): `bbr_register`, `greedy_syn_register`, `volreg`. Includes **MARQUEE** ops: `bbr_register`, `greedy_syn_register`, `volreg`.
 
 ## Lagging on the deployment target (GPU) — ranked
 
@@ -343,13 +345,30 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 
 ## Real-data coverage (COVERAGE v2)
 
-Marquee functions should be tested on real brain data against real community baselines. Realism ladder: `synthetic` < `real_planted` (real image, planted/known truth) < `real_full` (actual problem). (Tier-gating of which ops are *required* to reach `real` lands in Phase 2.)
+Marquee functions should be tested on real brain data against real community baselines. Realism ladder: `synthetic` < `real_planted` (real image, planted/known truth) < `real_full` (actual problem). Which ops are *required* to reach real data is tier-gated -- see the marquee matrix below.
 
 | op | realism | domain ref (on) |
 |---|---|---|
 | `nitrix.register.rigid_register` | real_planted | ants.registration (real_planted) |
 | `nitrix.register.affine_register` | real_planted | ants.registration (real_planted) |
 | `nitrix.register.diffeomorphic_demons_register` | real_planted | ants.registration (real_planted) |
+
+## Marquee coverage matrix (COVERAGE v2)
+
+The headline functions used on real images, scored against their tier bar (`score` = satisfied / applicable required axes). Glyphs: `✓` met · `✗` unmet · `⚠` fragile · `~` non-authoritative · `·` n/a. Worst-covered first.
+
+| op | score | platform | scale | economic | input | gpu-ref | domain-ref |
+|---|---|---|---|---|---|---|---|
+| `nitrix.stats.lme.flame_two_level` | 1/5 | ✗ cpu_only | ⚠ timeout | · | ✗ synth | · | ◐ fsl.flameo |
+| `nitrix.stats.lme.reml_fit` | 2/6 | ✓ | ○ | ✓~ | ✗ synth | · | ◐ statsmodels.MixedLM |
+| `nitrix.bias.n4_bias_field_correction` | 2/5 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.N4 |
+| `nitrix.numerics.intensity_normalize` | 2/5 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.smoothing.bilateral_gaussian` | 2/5 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.Bilateral |
+| `nitrix.register.affine_register` | 6/6 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.diffeomorphic_demons_register` | 6/6 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.rigid_register` | 6/6 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
+
+**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `reml_fit`, `flame_two_level`, `intensity_normalize`, `bilateral_gaussian`, `n4_bias_field_correction`.
 
 ## Caveats
 

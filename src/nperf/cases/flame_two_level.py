@@ -104,6 +104,7 @@ _LARGE = [(131072, 60), (262144, 60)]
 CASE = Case(
     name='flame_two_level',
     op_qualname='nitrix.stats.lme.flame_two_level',
+    tier='marquee',
     output_independent=True,  # each voxel is an independent FLAME fit
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

@@ -116,6 +116,9 @@ class OpCoverage:
     # at (was it run on real data?).  None when no domain ref was measured.
     domain_ref: Optional[str] = None
     domain_ref_realism: str = 'synthetic'
+    # benchmarking-policy tier (from the Case): 'marquee' ops must reach real
+    # data + a domain ref on real data; 'standard' are not held to that bar.
+    tier: str = 'standard'
 
     @property
     def nitrix_slower_on_gpu(self) -> bool:
@@ -316,7 +319,9 @@ def build_coverage(
             out.append(OpCoverage(
                 qualname=q, runtime=runtime, has_case=bool(case),
                 coverage=UNMEASURED, ref_strength=NO_REF,
-                precision='unmeasured', provisional=False))
+                precision='unmeasured', provisional=False,
+                tier=(getattr(case, 'tier', 'standard')
+                      if case else 'standard')))
             continue
         coverage = _coverage_status(crows)
         gpu_ref, gpu_ratio = _gpu_bar(crows, case.representative)
@@ -340,7 +345,8 @@ def build_coverage(
             economic_verdict=econ_v, economic_amortized=econ_amort,
             economic_authoritative=econ_auth,
             input_realism=_input_realism(crows),
-            domain_ref=dref, domain_ref_realism=dref_rung))
+            domain_ref=dref, domain_ref_realism=dref_rung,
+            tier=getattr(case, 'tier', 'standard')))
     return out
 
 
@@ -375,6 +381,7 @@ def _op_json(r: OpCoverage) -> Dict[str, Any]:
         'economic_authoritative': r.economic_authoritative,
         'input_realism': r.input_realism,
         'domain_ref': r.domain_ref, 'domain_ref_realism': r.domain_ref_realism,
+        'tier': r.tier, 'coverage_score': list(score(r)),
     }
 
 
@@ -411,8 +418,60 @@ def _real_data(records: List[OpCoverage]) -> List[OpCoverage]:
         key=lambda r: -economic.rung_index(r.input_realism))
 
 
-def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
-    '''Machine-readable artifact for the nitrix agent (the ranked deficits).'''
+# --- COVERAGE v2 tier-gated score (Phase 2) -------------------------------
+def axes_status(oc: OpCoverage) -> List[Tuple[str, bool]]:
+    '''The applicable required axes for ``oc``'s tier, each (name, satisfied?).
+    Marquee ops additionally require real-data input + a domain ref measured on
+    real data (the headline-functions bar); the general axes (platform / ref /
+    scale-if-tiered / economic-if-on-GPU) apply to every measured op.'''
+    rp = economic.rung_index('real_planted')
+    axes: List[Tuple[str, bool]] = [
+        ('platform', oc.coverage == MULTIPLATFORM or oc.gpu_blocked),
+        ('reference', oc.ref_strength == STRONG_REF
+         or oc.domain_ref is not None),
+    ]
+    if oc.scale_status != NO_TIER:
+        axes.append(('scale', oc.scale_status == SCALED))
+    if oc.economic_verdict != 'n/a':
+        axes.append(('economic', oc.economic_authoritative
+                     and oc.economic_verdict != 'unmeasured'))
+    if oc.tier == 'marquee':
+        axes.append(
+            ('real_input', economic.rung_index(oc.input_realism) >= rp))
+        axes.append(
+            ('domain_on_real', oc.domain_ref is not None
+             and economic.rung_index(oc.domain_ref_realism) >= rp))
+    return axes
+
+
+def score(oc: OpCoverage) -> Tuple[int, int]:
+    '''(satisfied, applicable) over the tier's required axes.'''
+    a = axes_status(oc)
+    return sum(1 for _, ok in a if ok), len(a)
+
+
+def _marquee_unmet(records: List[OpCoverage]) -> List[OpCoverage]:
+    '''Marquee ops not yet on real data, or lacking a domain ref on real data
+    -- the distinctive marquee bar (worst score first).'''
+    out = []
+    for r in records:
+        if r.tier != 'marquee':
+            continue
+        rp = economic.rung_index('real_planted')
+        real_ok = economic.rung_index(r.input_realism) >= rp
+        dom_ok = (r.domain_ref is not None
+                  and economic.rung_index(r.domain_ref_realism) >= rp)
+        if not (real_ok and dom_ok):
+            out.append(r)
+    return sorted(out, key=lambda r: score(r)[0] - score(r)[1])
+
+
+def render_json(records: List[OpCoverage],
+                orphans: List[str] = ()) -> Dict[str, Any]:
+    '''Machine-readable artifact for the nitrix agent (the ranked deficits).
+    ``orphans`` = ``(qualname, tier)`` for ops that HAVE a perf-bench case (and
+    are benchmarked) but are absent from the nitrix catalogue -- invisible to
+    the join until the catalogue is regenerated.'''
     runtime = [r for r in records if r.runtime]
 
     def _n(pred: Any) -> int:
@@ -422,6 +481,8 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
     blocked = [r for r in records if r.gpu_blocked]
     fragile, no_win = _scale_fragile(records), _no_econ_win(records)
     real = _real_data(records)
+    marquee = [r for r in records if r.tier == 'marquee']
+    unmet = _marquee_unmet(records)
     return {
         'source': 'nitrix-perf-bench coverage-&-deficit report',
         'convention': 'gpu_ref_ratio = strong_ref.min / nitrix.min '
@@ -443,7 +504,11 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
             'economic_not_multiplicative': len(no_win),
             'on_real_data': len(real),
             'on_real_full': _n(lambda r: r.input_realism == 'real_full'),
+            'marquee': len(marquee),
+            'marquee_unmet': len(unmet),
+            'orphan_cases': len(orphans),
         },
+        'orphan_cases': [{'qualname': q, 'tier': t} for q, t in orphans],
         'lagging': [_op_json(r) for r in lagging],
         'gpu_blocked': [_op_json(r) for r in blocked],
         'under_covered': [{**_op_json(r), 'priority': p} for r, p in under],
@@ -451,6 +516,7 @@ def render_json(records: List[OpCoverage]) -> Dict[str, Any]:
             'scale_fragile': [_op_json(r) for r in fragile],
             'no_economic_win': [_op_json(r) for r in no_win],
             'on_real_data': [_op_json(r) for r in real],
+            'marquee_unmet': [_op_json(r) for r in unmet],
         },
         'ops': [_op_json(r) for r in records],
     }
@@ -466,8 +532,10 @@ def _slower(ratio: Optional[float]) -> str:
     return f'~{ratio:.1f}x faster'
 
 
-def render_markdown(records: List[OpCoverage]) -> str:
-    '''Human-facing report: the two ranked lists + a coverage summary.'''
+def render_markdown(records: List[OpCoverage],
+                    orphans: List[str] = ()) -> str:
+    '''Human-facing report: the ranked lists + the coverage matrix + summary.
+    ``orphans`` = benchmarked cases absent from the nitrix catalogue.'''
     runtime = [r for r in records if r.runtime]
     meas = sum(1 for r in runtime if r.coverage != UNMEASURED)
     multi = sum(1 for r in runtime if r.coverage == MULTIPLATFORM)
@@ -481,6 +549,9 @@ def render_markdown(records: List[OpCoverage]) -> str:
     blocked = [r for r in records if r.gpu_blocked]
     fragile, no_win, real = (
         _scale_fragile(records), _no_econ_win(records), _real_data(records))
+    marquee = sorted((r for r in records if r.tier == 'marquee'),
+                     key=lambda r: (score(r)[0] - score(r)[1], r.qualname))
+    unmet = _marquee_unmet(records)
     won = sorted(
         (r for r in records if r.ref_strength == STRONG_REF
          and r.gpu_ref_ratio is not None and not r.nitrix_slower_on_gpu),
@@ -507,8 +578,23 @@ def render_markdown(records: List[OpCoverage]) -> str:
         f'- **economically favorable** (GPU beats CPU gold by ≥ the bar): '
         f'{econ_fav} / {len(runtime)} — **{len(no_win)}** not multiplicative',
         f'- **on real data** (planted or full): {on_real} / {len(runtime)}',
+        f'- **marquee** ops (held to the real-data + community-baseline bar): '
+        f'{len(marquee)} — **{len(unmet)}** not yet meeting it',
         f'- **lagging on the GPU**: {len(lagging)}',
         f'- **GPU blocked upstream** (jaxlib cuSOLVER): {len(blocked)}',
+    ]
+    if orphans:
+        marq = [q for q, t in orphans if t == 'marquee']
+        note = (
+            f'- ⚠️ **{len(orphans)} benchmarked case(s) absent from the '
+            'catalogue** (`op_matrix.json` is stale -- invisible to the join '
+            'until regenerated in nitrix): '
+            + ', '.join(f'`{q.split(".")[-1]}`' for q, _ in orphans) + '.')
+        if marq:
+            note += (' Includes **MARQUEE** ops: '
+                     + ', '.join(f'`{q.split(".")[-1]}`' for q in marq) + '.')
+        lines.append(note)
+    lines += [
         '',
         '## Lagging on the deployment target (GPU) — ranked',
         '',
@@ -631,8 +717,8 @@ def render_markdown(records: List[OpCoverage]) -> str:
         'Marquee functions should be tested on real brain data against real '
         'community baselines. Realism ladder: `synthetic` < `real_planted` '
         '(real image, planted/known truth) < `real_full` (actual problem). '
-        '(Tier-gating of which ops are *required* to reach `real` lands in '
-        'Phase 2.)',
+        'Which ops are *required* to reach real data is tier-gated -- see the '
+        'marquee matrix below.',
         '',
     ]
     if real:
@@ -643,6 +729,49 @@ def render_markdown(records: List[OpCoverage]) -> str:
             for r in real]
     else:
         lines.append('_No op is yet measured on real data._')
+    # --- the marquee coverage matrix (the first-class tier-gated view) ------
+    lines += [
+        '',
+        '## Marquee coverage matrix (COVERAGE v2)',
+        '',
+        'The headline functions used on real images, scored against their '
+        'tier bar (`score` = satisfied / applicable required axes). Glyphs: '
+        '`✓` met · `✗` unmet · `⚠` fragile · `~` non-authoritative · '
+        '`·` n/a. Worst-covered first.',
+        '',
+        '| op | score | platform | scale | economic | input | gpu-ref '
+        '| domain-ref |',
+        '|---|---|---|---|---|---|---|---|',
+    ]
+    for r in marquee:
+        sat, app = score(r)
+        plat = ('✓' if r.coverage == MULTIPLATFORM
+                else '⊘blk' if r.gpu_blocked else f'✗ {r.coverage}')
+        scl = {NO_TIER: '·', SCALED: '✓', SCALE_DECLARED: '○',
+               SCALE_CAPPED: f'⚠ {r.scale_cap_reason}'}[r.scale_status]
+        if r.economic_verdict == 'n/a':
+            eco = '·'
+        else:
+            g = '✓' if r.economic_verdict.startswith('favorable') else '✗'
+            eco = f'{g}{"" if r.economic_authoritative else "~"}'
+        inp = {'synthetic': '✗ synth', 'real_planted': '◐ planted',
+               'real_full': '● full'}[r.input_realism]
+        gref = '✓' if r.ref_strength == STRONG_REF else '·'
+        if r.domain_ref is None:
+            dref = '✗ none'
+        else:
+            on = economic.rung_index(r.domain_ref_realism) >= economic\
+                .rung_index('real_planted')
+            dref = f'{"●" if on else "◐"} {r.domain_ref}'
+        lines.append(
+            f'| `{r.qualname}` | {sat}/{app} | {plat} | {scl} | {eco} '
+            f'| {inp} | {gref} | {dref} |')
+    if unmet:
+        lines += [
+            '',
+            '**Marquee unmet** (no real-data input, or no domain ref on real '
+            'data) — the next-round targets: '
+            + ', '.join(f'`{r.qualname.split(".")[-1]}`' for r in unmet) + '.']
     lines += [
         '',
         '## Caveats',

@@ -1,11 +1,23 @@
 # COVERAGE v2 — multi-axis coverage plan
 
-Status: **in implementation** (Phase 1). Extends the coverage-&-deficit report
+Status: **Phases 1–2 landed.** Phase 1 = scale / economic / real-data axes +
+the community-gold ref-class fix (pure store inference). Phase 2 = `Case.tier`,
+the tier-gated **marquee coverage matrix** + completeness score + the
+*marquee-unmet* deficit, plus **orphan-case surfacing** (benchmarked cases
+absent from a stale `op_matrix.json`). Phase 3 (full-matrix polish +
+COVERAGE_MANDATE §2.2 update) + Phase 4 (optional coverage gate) remain.
+
+Extends the coverage-&-deficit report
 (`report/coverage.py`, `tools/coverage_report.py`; COVERAGE_MANDATE §2.2) from a
 3-axis record to a **tier-gated coverage matrix**, surfacing — as first-class
 information — realistically-large cases, the economic indicator (GPU as a
 multiple of CPU), and (for marquee ops) tests on real brain data against real
 community baselines.
+
+**Finding (Phase 2): the catalogue is stale.** Three marquee registration ops —
+`volreg`, `bbr_register`, `greedy_syn_register` — are benchmarked but absent
+from nitrix's `op_matrix.json`, so the join cannot see them. Surfaced as
+*orphan cases*; the fix is to regenerate the catalogue in nitrix.
 
 ## Design principles
 1. **intent × evidence** — each axis pairs a *declaration* on the `Case` with
