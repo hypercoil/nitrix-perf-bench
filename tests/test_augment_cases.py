@@ -10,7 +10,12 @@ env) -- when present it doubles as the apples-to-apples community check.
 import numpy as np
 import pytest
 
-from nperf.cases import gamma_contrast
+from nperf.cases import (
+    gamma_contrast,
+    gaussian_noise,
+    gibbs_ringing,
+    rician_noise,
+)
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
 
@@ -56,3 +61,64 @@ def test_gamma_monai_agreement():
 
 def test_gamma_op_qualname():
     assert gamma_contrast.CASE.op_qualname == 'nitrix.augment.gamma_contrast'
+
+
+def test_gibbs_baselines_and_no_monai():
+    built = gibbs_ringing._build(gibbs_ringing.CASE.representative)
+    # MONAI GibbsNoise models a different artifact (soft roll-off) -> NOT a
+    # baseline here; the bar is the numpy oracle + the cupy GPU FFT ref.
+    assert set(built.baselines) == {
+        'nitrix-jax', 'numpy.gibbs_ringing', 'cupy.gibbs_ringing'}
+    assert requires_of(built.baselines['cupy.gibbs_ringing'][0]) == 'gpu'
+
+
+def test_gibbs_host_baselines_match_oracle():
+    c = gibbs_ringing.CASE
+    built = gibbs_ringing._build(c.representative)
+    for name, (provider_id, fn) in built.baselines.items():
+        if requires_of(provider_id) == 'gpu':
+            continue  # cupy: needs a device + the refs-cupy env
+        out = np.asarray(fn(*built.inputs_for(framework_of(provider_id))))
+        fid = compare(out, built.fp64_reference, rtol=c.rtol, atol=c.atol)
+        assert fid['status'] == 'pass', f'{name}: {fid["rel_to_tol"]:.3g}'
+
+
+def test_gibbs_op_qualname():
+    assert gibbs_ringing.CASE.op_qualname == 'nitrix.augment.gibbs_ringing'
+
+
+@pytest.mark.parametrize('mod,gpu_ref,monai_ref', [
+    (gaussian_noise, 'cupy.gaussian_noise', 'monai.RandGaussianNoise'),
+    (rician_noise, 'cupy.rician_noise', 'monai.RandRicianNoise'),
+])
+def test_noise_baselines_and_no_oracle(mod, gpu_ref, monai_ref):
+    built = mod._build(mod.CASE.representative)
+    assert gpu_ref in built.baselines and monai_ref in built.baselines
+    # RNG op: no cross-framework oracle, perf-ratio + distribution only.
+    assert built.fp64_reference is None and built.fidelity_note
+    assert requires_of(built.baselines[gpu_ref][0]) == 'gpu'
+    assert requires_of(built.baselines[monai_ref][0]) == 'cpu'
+
+
+def test_gaussian_noise_distribution():
+    '''The residual ``out - x`` is ``sigma * N(0,1)`` -> var ≈ sigma**2.'''
+    import jax
+    from nitrix.augment import gaussian_noise as gn
+    x = np.zeros((64, 64, 64), np.float32)
+    out = np.asarray(gn(x, jax.random.PRNGKey(0), sigma=0.1))
+    assert abs(float(out.var()) - 0.1 ** 2) < 1e-3
+
+
+def test_rician_sigma_zero_is_abs():
+    '''rician_noise reduces to ``|x|`` exactly at sigma=0 (no RNG).'''
+    import jax
+    import jax.numpy as jnp
+    from nitrix.augment import rician_noise as rn
+    x = np.linspace(-3, 3, 4096, dtype=np.float32)
+    out = np.asarray(rn(jnp.asarray(x), jax.random.PRNGKey(0), sigma=0.0))
+    assert np.max(np.abs(out - np.abs(x))) < 1e-5
+
+
+def test_noise_op_qualnames():
+    assert gaussian_noise.CASE.op_qualname == 'nitrix.augment.gaussian_noise'
+    assert rician_noise.CASE.op_qualname == 'nitrix.augment.rician_noise'

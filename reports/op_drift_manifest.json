@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-15T18:51:43Z",
+    "generated": "2026-06-15T19:29:00Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4282,6 +4282,96 @@
             "l1": 135546000.0,
             "l2sq": 22445200000.0,
             "linf": 336.598
+          }
+        ]
+      }
+    },
+    "gibbs_ringing": {
+      "case": "gibbs_ringing",
+      "qualname": "nitrix.augment.gibbs_ringing",
+      "signature": "(x: \"Float[Array, '...']\", alpha: 'float', *, axes: 'Optional[Sequence[int]]' = None) -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            96,
+            96,
+            96
+          ],
+          "alpha": 0.3
+        },
+        "leaves": [
+          {
+            "shape": [
+              96,
+              96,
+              96
+            ],
+            "dtype": "float32",
+            "n_finite": 884736,
+            "n_nonfinite": 0,
+            "l1": 88891900.0,
+            "l2sq": 10654800000.0,
+            "linf": 310.419
+          }
+        ]
+      }
+    },
+    "gaussian_noise": {
+      "case": "gaussian_noise",
+      "qualname": "nitrix.augment.gaussian_noise",
+      "signature": "(x: \"Float[Array, '...']\", key: 'Array', *, sigma: \"Float[Array, '...']\") -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            96,
+            96,
+            96
+          ],
+          "sigma": 0.1
+        },
+        "leaves": [
+          {
+            "shape": [
+              96,
+              96,
+              96
+            ],
+            "dtype": "float32",
+            "n_finite": 884736,
+            "n_nonfinite": 0,
+            "l1": 89277000.0,
+            "l2sq": 11071800000.0,
+            "linf": 336.596
+          }
+        ]
+      }
+    },
+    "rician_noise": {
+      "case": "rician_noise",
+      "qualname": "nitrix.augment.rician_noise",
+      "signature": "(x: \"Float[Array, '...']\", key: 'Array', *, sigma: \"Float[Array, '...']\") -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            96,
+            96,
+            96
+          ],
+          "sigma": 0.1
+        },
+        "leaves": [
+          {
+            "shape": [
+              96,
+              96,
+              96
+            ],
+            "dtype": "float32",
+            "n_finite": 884736,
+            "n_nonfinite": 0,
+            "l1": 89277100.0,
+            "l2sq": 11071800000.0,
+            "linf": 336.508
           }
         ]
       }
