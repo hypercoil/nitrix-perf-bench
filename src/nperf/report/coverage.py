@@ -55,6 +55,29 @@ _DOMAIN_NS = frozenset({
     'ants', 'fsl', 'afni', 'freesurfer', 'dipy', 'simpleitk', 'statsmodels',
 })
 
+# Curated *community* baselines: named libraries optimised over years by expert
+# engineers (scipy/sklearn + MONAI for medical imaging + the domain CLIs).  The
+# CPU-CPU lens (below) races nitrix against the fastest of these ON CPU -- a
+# second view of how close nitrix's *algorithm* is to optimal, independent of
+# the GPU.  Our own ``numpy.*`` reimplementation-oracles and ``*.iofloor``
+# no-ops are NOT community competitors and are deliberately excluded (a naive
+# numpy reimpl would manufacture a flattering or meaningless gap).
+_COMMUNITY_NS = frozenset({'scipy', 'sklearn', 'monai'}) | _DOMAIN_NS
+# A community CPU baseline that outpaces nitrix on CPU by >= this factor is an
+# independent "optimise the algorithm" signal -- it fires even when the GPU
+# economic + performance bars are cleared (it SUPPLEMENTS, never supersedes,
+# those critical signals).  ~1.5-2x is the user's bar; tunable (--cpu-gap).
+CPU_OPTIMIZE_GAP = 1.5
+
+
+def _is_community(baseline: str) -> bool:
+    '''A curated community-library baseline (scipy/sklearn/MONAI/ANTs/...) --
+    not our own numpy reimplementation-oracle, not an iofloor no-op.  Keyed on
+    the name namespace (the domain CLIs are ``framework='numpy'``).'''
+    if baseline.endswith('.iofloor'):
+        return False
+    return baseline.split('.')[0] in _COMMUNITY_NS
+
 
 def _ref_class(baseline: str, framework: str) -> str:
     '''Classify a baseline: the system under test (nitrix), a community-gold
@@ -95,6 +118,14 @@ class OpCoverage:
     # slower (a deficit).  None when no strong GPU ref was measured.
     gpu_ref: Optional[str] = None
     gpu_ref_ratio: Optional[float] = None
+    # CPU-CPU community lens (supplements the GPU signals -- never supersedes):
+    # the fastest curated community CPU baseline (scipy/sklearn/MONAI/ANTs/...)
+    # vs nitrix ON CPU at the representative point, as the STORED ratio
+    # ``community.min / nitrix_cpu.min`` (<1 => nitrix slower on CPU).  A large
+    # gap is an independent "optimise this algorithm" candidate.  None when no
+    # community CPU baseline ran ok there.
+    cpu_ref: Optional[str] = None
+    cpu_ref_ratio: Optional[float] = None
     # --- COVERAGE v2 axes (COVERAGE_V2_PLAN.md) ----------------------------
     # scale: did the op's declared brain-scale tier (large_param_points) run?
     # no_tier (none declared) / declared (declared, not measured on GPU) /
@@ -123,6 +154,15 @@ class OpCoverage:
     @property
     def nitrix_slower_on_gpu(self) -> bool:
         return self.gpu_ref_ratio is not None and self.gpu_ref_ratio < 1.0
+
+    @property
+    def cpu_gap(self) -> Optional[float]:
+        '''How many x faster the fastest community CPU baseline is than nitrix
+        on CPU (``1 / cpu_ref_ratio``); >1 => nitrix slower.  None when no
+        community CPU baseline ran.'''
+        if not self.cpu_ref_ratio or self.cpu_ref_ratio <= 0:
+            return None
+        return 1.0 / self.cpu_ref_ratio
 
 
 def _same_point(pp: Dict[str, Any], rep: Dict[str, Any]) -> bool:
@@ -216,6 +256,32 @@ def _gpu_bar(
                                                     rep)):
             return r['baseline'], r['ratio'].get('value')
     return None, None
+
+
+def _cpu_bar(
+    rows: List[Dict[str, Any]], rep: Dict[str, Any]
+) -> Tuple[Optional[str], Optional[float]]:
+    '''The *fastest* curated community CPU baseline + its stored ratio at the
+    representative point on jax-cpu (``community.min / nitrix_cpu.min``; <1 =>
+    nitrix slower on CPU).  The fastest community tool (smallest ratio) is the
+    strongest evidence of room to optimise, so it is the one reported.  (None,
+    None) if no community baseline ran ok on CPU there.'''
+    best_name, best_ratio = None, None
+    for r in rows:
+        if (r.get('platform') == _CPU and r.get('status') == 'ok'
+                and _is_community(r.get('baseline', ''))
+                and r.get('ratio')
+                and _same_point(r.get('param_point', {}), rep)):
+            v = r['ratio'].get('value')
+            if v is not None and (best_ratio is None or v < best_ratio):
+                best_name, best_ratio = r['baseline'], v
+    return best_name, best_ratio
+
+
+def _lags_on_cpu(oc: 'OpCoverage', gap: float = CPU_OPTIMIZE_GAP) -> bool:
+    '''nitrix is >= ``gap`` x slower than the community CPU baseline.'''
+    g = oc.cpu_gap
+    return g is not None and g >= gap
 
 
 # scale: statuses (COVERAGE_V2_PLAN) + cap reasons marking a fragile tier.
@@ -325,6 +391,7 @@ def build_coverage(
             continue
         coverage = _coverage_status(crows)
         gpu_ref, gpu_ratio = _gpu_bar(crows, case.representative)
+        cpu_ref, cpu_ratio = _cpu_bar(crows, case.representative)
         block_reason = _gpu_block_reason(crows)
         scale, largest_ok, cap_reason = _scale_status(case, crows)
         econ_v, econ_amort, econ_auth = _economic(case, crows, coverage, bar)
@@ -340,6 +407,7 @@ def build_coverage(
             gpu_blocked=block_reason is not None,
             gpu_block_reason=block_reason,
             gpu_ref=gpu_ref, gpu_ref_ratio=gpu_ratio,
+            cpu_ref=cpu_ref, cpu_ref_ratio=cpu_ratio,
             scale_status=scale, largest_ok_size=largest_ok,
             scale_cap_reason=cap_reason,
             economic_verdict=econ_v, economic_amortized=econ_amort,
@@ -374,6 +442,8 @@ def _op_json(r: OpCoverage) -> Dict[str, Any]:
         'gpu_blocked': r.gpu_blocked, 'gpu_block_reason': r.gpu_block_reason,
         'gpu_ref': r.gpu_ref, 'gpu_ref_ratio': r.gpu_ref_ratio,
         'nitrix_slower_on_gpu': r.nitrix_slower_on_gpu,
+        'cpu_ref': r.cpu_ref, 'cpu_ref_ratio': r.cpu_ref_ratio,
+        'cpu_gap': r.cpu_gap, 'nitrix_lagging_on_cpu': _lags_on_cpu(r),
         'scale_status': r.scale_status, 'largest_ok_size': r.largest_ok_size,
         'scale_cap_reason': r.scale_cap_reason,
         'economic_verdict': r.economic_verdict,
@@ -388,6 +458,16 @@ def _op_json(r: OpCoverage) -> Dict[str, Any]:
 def _lagging(records: List[OpCoverage]) -> List[OpCoverage]:
     return sorted((r for r in records if r.nitrix_slower_on_gpu),
                   key=lambda r: r.gpu_ref_ratio or 0.0)
+
+
+def _cpu_lagging(records: List[OpCoverage],
+                 gap: float = CPU_OPTIMIZE_GAP) -> List[OpCoverage]:
+    '''Measured ops where a curated community CPU baseline outpaces nitrix on
+    CPU by >= ``gap`` x -- the algorithm-optimise candidates (worst gap first).
+    Independent of the GPU verdict: a CPU-lagging op can still be a GPU win;
+    this is a supplementary lens, not a gate.'''
+    return sorted((r for r in records if _lags_on_cpu(r, gap)),
+                  key=lambda r: r.cpu_ref_ratio or 1.0)
 
 
 def _under(records: List[OpCoverage]) -> List[Tuple[OpCoverage, str]]:
@@ -469,17 +549,21 @@ def _marquee_unmet(records: List[OpCoverage]) -> List[OpCoverage]:
 
 
 def render_json(records: List[OpCoverage],
-                orphans: List[str] = ()) -> Dict[str, Any]:
+                orphans: List[str] = (),
+                cpu_gap: float = CPU_OPTIMIZE_GAP) -> Dict[str, Any]:
     '''Machine-readable artifact for the nitrix agent (the ranked deficits).
     ``orphans`` = ``(qualname, tier)`` for ops that HAVE a perf-bench case (and
     are benchmarked) but are absent from the nitrix catalogue -- invisible to
-    the join until the catalogue is regenerated.'''
+    the join until the catalogue is regenerated.  ``cpu_gap`` is the CPU-CPU
+    community-baseline factor at which an op is flagged as an optimise
+    candidate.'''
     runtime = [r for r in records if r.runtime]
 
     def _n(pred: Any) -> int:
         return sum(1 for r in runtime if pred(r))
 
     lagging, under = _lagging(records), _under(records)
+    cpu_lag = _cpu_lagging(records, cpu_gap)
     blocked = [r for r in records if r.gpu_blocked]
     fragile, no_win = _scale_fragile(records), _no_econ_win(records)
     real = _real_data(records)
@@ -496,6 +580,7 @@ def render_json(records: List[OpCoverage],
             'with_strong_gpu_ref': _n(lambda r: r.ref_strength == STRONG_REF),
             'with_domain_ref': _n(lambda r: r.domain_ref is not None),
             'lagging_on_gpu': len(lagging),
+            'lagging_on_cpu_vs_community': len(cpu_lag),
             'gpu_blocked_upstream': len(blocked),
             'constructors': sum(1 for r in records if not r.runtime),
             # COVERAGE v2 axes
@@ -512,6 +597,7 @@ def render_json(records: List[OpCoverage],
         },
         'orphan_cases': [{'qualname': q, 'tier': t} for q, t in orphans],
         'lagging': [_op_json(r) for r in lagging],
+        'cpu_lagging_vs_community': [_op_json(r) for r in cpu_lag],
         'gpu_blocked': [_op_json(r) for r in blocked],
         'under_covered': [{**_op_json(r), 'priority': p} for r, p in under],
         'by_axis': {
@@ -565,9 +651,11 @@ def _matrix_cells(r: OpCoverage) -> List[str]:
 
 
 def render_markdown(records: List[OpCoverage],
-                    orphans: List[str] = ()) -> str:
+                    orphans: List[str] = (),
+                    cpu_gap: float = CPU_OPTIMIZE_GAP) -> str:
     '''Human-facing report: the ranked lists + the coverage matrix + summary.
-    ``orphans`` = benchmarked cases absent from the nitrix catalogue.'''
+    ``orphans`` = benchmarked cases absent from the nitrix catalogue.
+    ``cpu_gap`` is the community-baseline factor flagging a CPU-optimise op.'''
     runtime = [r for r in records if r.runtime]
     meas = sum(1 for r in runtime if r.coverage != UNMEASURED)
     multi = sum(1 for r in runtime if r.coverage == MULTIPLATFORM)
@@ -578,6 +666,7 @@ def render_markdown(records: List[OpCoverage],
                    if r.economic_verdict.startswith('favorable'))
     on_real = sum(1 for r in runtime if r.input_realism != 'synthetic')
     lagging, under = _lagging(records), _under(records)
+    cpu_lag = _cpu_lagging(records, cpu_gap)
     blocked = [r for r in records if r.gpu_blocked]
     fragile, no_win, real = (
         _scale_fragile(records), _no_econ_win(records), _real_data(records))
@@ -613,6 +702,8 @@ def render_markdown(records: List[OpCoverage],
         f'- **marquee** ops (held to the real-data + community-baseline bar): '
         f'{len(marquee)} — **{len(unmet)}** not yet meeting it',
         f'- **lagging on the GPU**: {len(lagging)}',
+        f'- **lagging on CPU vs the community baseline** (≥{cpu_gap:g}×, '
+        f'an optimise signal): {len(cpu_lag)}',
         f'- **GPU blocked upstream** (jaxlib cuSOLVER): {len(blocked)}',
     ]
     if orphans:
@@ -649,6 +740,36 @@ def render_markdown(records: List[OpCoverage],
     else:
         lines.append('_No op measured against a strong on-target GPU ref '
                      'yet._')
+    lines += [
+        '',
+        '## Lagging on CPU vs the community baseline — ranked',
+        '',
+        'A **supplementary** lens (it does **not** supersede the strong-GPU '
+        'and GPU-economic signals): nitrix-CPU vs the fastest curated '
+        '*community* CPU baseline (scipy / sklearn / MONAI / ANTs / FSL / …, '
+        'on `jax-cpu`), at the representative point. These libraries are '
+        'optimised over years by expert engineers, so a large CPU gap is a '
+        f'second read on how close nitrix\'s **algorithm** is to optimal — '
+        f'≥{cpu_gap:g}× independently signals "optimise this", even when the '
+        'op already clears the GPU economic + performance bars. (Our own '
+        '`numpy.*` reimpl-oracles and `*.iofloor` no-ops are excluded — only '
+        'named community libraries count.)',
+        '',
+    ]
+    if cpu_lag:
+        lines += [
+            '| # | op | community CPU ref | gap (ref/nitrix) | nitrix |',
+            '|---|---|---|---:|---|',
+        ]
+        for i, r in enumerate(cpu_lag, 1):
+            note = ' · provisional' if r.provisional else ''
+            lines.append(
+                f'| {i} | `{r.qualname}` | {r.cpu_ref} | '
+                f'{r.cpu_ref_ratio:.3g} | {_slower(r.cpu_ref_ratio)}{note} |')
+    else:
+        lines.append(
+            f'_No op lags a community CPU baseline by ≥{cpu_gap:g}× '
+            '(or none measured against one yet)._')
     if blocked:
         lines += [
             '',
@@ -814,6 +935,10 @@ def render_markdown(records: List[OpCoverage],
         '(fast) run; run the full sweep before acting (mandate §7).',
         '- "Lagging" is currently *slower than the strong on-target ref*; '
         'per-op **targets** (mandate §2.4) will refine the bar.',
+        '- The **CPU-vs-community** gap (`community.min / nitrix_cpu.min` at '
+        'the representative point, fastest community tool) is a supplementary '
+        'algorithm-quality signal; it never supersedes the GPU economic / '
+        'performance verdicts, and excludes our own numpy reimpl-oracles.',
         '- Host-side constructors (jit `n/a`) are excluded from the runtime '
         'denominator; they have no device-time bar.',
         '',

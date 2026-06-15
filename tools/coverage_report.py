@@ -68,6 +68,10 @@ def main() -> None:
                          'store). Newest row per key is used.')
     ap.add_argument('--out-md', default='reports/COVERAGE_DEFICIT.md')
     ap.add_argument('--out-json', default='reports/coverage_deficit.json')
+    ap.add_argument('--cpu-gap', type=float, default=cov.CPU_OPTIMIZE_GAP,
+                    help='flag a CPU-optimise candidate when a community CPU '
+                         'baseline is >= this factor faster than nitrix on '
+                         f'CPU (default: {cov.CPU_OPTIMIZE_GAP:g})')
     args = ap.parse_args()
 
     catalogue = json.loads(Path(args.op_matrix).read_text()).get('ops', [])
@@ -86,8 +90,9 @@ def main() -> None:
                      for q, c in op2case.items() if q not in cat_q)
 
     Path(args.out_md).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out_md).write_text(cov.render_markdown(records, orphans))
-    doc = cov.render_json(records, orphans)
+    Path(args.out_md).write_text(
+        cov.render_markdown(records, orphans, cpu_gap=args.cpu_gap))
+    doc = cov.render_json(records, orphans, cpu_gap=args.cpu_gap)
     Path(args.out_json).write_text(json.dumps(doc, indent=2) + '\n')
 
     s = doc['summary']

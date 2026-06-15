@@ -5,15 +5,16 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 209 (+ 16 host-side constructors, apart)
-- **measured** (≥1 platform): 85 / 209
-- **multiplatform** (CPU + GPU): 78 / 209
-- **with a strong on-target GPU ref**: 73 / 209
+- **measured** (≥1 platform): 91 / 209
+- **multiplatform** (CPU + GPU): 84 / 209
+- **with a strong on-target GPU ref**: 79 / 209
 - **with a community-gold ref** (ANTs/FSL/…): 17 / 209
-- **scaled** (ran at the declared brain-scale tier): 18 / 209 — **1** fragile (oom/timeout)
-- **economically favorable** (GPU beats CPU gold by ≥ the bar): 65 / 209 — **10** not multiplicative
+- **scaled** (ran at the declared brain-scale tier): 24 / 209 — **1** fragile (oom/timeout)
+- **economically favorable** (GPU beats CPU gold by ≥ the bar): 69 / 209 — **12** not multiplicative
 - **on real data** (planted or full): 8 / 209
 - **marquee** ops (held to the real-data + community-baseline bar): 8 — **1** not yet meeting it
-- **lagging on the GPU**: 12
+- **lagging on the GPU**: 14
+- **lagging on CPU vs the community baseline** (≥1.5×, an optimise signal): 10
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
 - ⚠️ **3 benchmarked case(s) absent from the catalogue** (`op_matrix.json` is stale -- invisible to the join until regenerated in nitrix): `bbr_register`, `greedy_syn_register`, `volreg`. Includes **MARQUEE** ops: `bbr_register`, `greedy_syn_register`, `volreg`.
 
@@ -26,15 +27,34 @@ nitrix is slower than its strong on-target reference here (`ratio = ref/nitrix <
 | 1 | `nitrix.geometry.sphere_grid_unpad_2d` | cupy.sphere_grid_unpad_2d | 0.0379 | ~26.4x slower |  |
 | 2 | `nitrix.graph.degree_vector` | cupy.degree | 0.177 | ~5.6x slower |  |
 | 3 | `nitrix.morphology.median_filter` | cupyx.scipy.ndimage.median_filter | 0.201 | ~5.0x slower |  |
-| 4 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
-| 5 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
-| 6 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
-| 7 | `nitrix.metrics.ssd` | cupy.ssd | 0.673 | ~1.5x slower |  |
-| 8 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
-| 9 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
-| 10 | `nitrix.stats.pca_transform` | cupy.matmul | 0.778 | ~1.3x slower |  |
-| 11 | `nitrix.stats.pca_fit` | cupy.eigh_cov | 0.962 | ~1.0x slower |  |
-| 12 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.963 | ~1.0x slower | provisional (fast run) |
+| 4 | `nitrix.morphology.connected_components` | cupy.label | 0.298 | ~3.4x slower |  |
+| 5 | `nitrix.linalg.linear_kernel` | cupy.linear_kernel | 0.518 | ~1.9x slower |  |
+| 6 | `nitrix.geometry.spatial_transform` | cupyx.scipy.ndimage.map_coordinates | 0.557 | ~1.8x slower |  |
+| 7 | `nitrix.morphology.largest_connected_component` | cupy.largest_cc | 0.612 | ~1.6x slower |  |
+| 8 | `nitrix.numerics.intensity_normalize` | cupy.intensity_normalize | 0.637 | ~1.6x slower |  |
+| 9 | `nitrix.metrics.ssd` | cupy.ssd | 0.673 | ~1.5x slower |  |
+| 10 | `nitrix.geometry.center_of_mass_points` | cupy.center_of_mass_points | 0.698 | ~1.4x slower |  |
+| 11 | `nitrix.graph.laplacian` | cupy.laplacian | 0.743 | ~1.3x slower |  |
+| 12 | `nitrix.stats.pca_transform` | cupy.matmul | 0.778 | ~1.3x slower |  |
+| 13 | `nitrix.stats.pca_fit` | cupy.eigh_cov | 0.962 | ~1.0x slower |  |
+| 14 | `nitrix.morphology.distance_transform` | cupyx.scipy.ndimage.distance_transform_edt | 0.963 | ~1.0x slower | provisional (fast run) |
+
+## Lagging on CPU vs the community baseline — ranked
+
+A **supplementary** lens (it does **not** supersede the strong-GPU and GPU-economic signals): nitrix-CPU vs the fastest curated *community* CPU baseline (scipy / sklearn / MONAI / ANTs / FSL / …, on `jax-cpu`), at the representative point. These libraries are optimised over years by expert engineers, so a large CPU gap is a second read on how close nitrix's **algorithm** is to optimal — ≥1.5× independently signals "optimise this", even when the op already clears the GPU economic + performance bars. (Our own `numpy.*` reimpl-oracles and `*.iofloor` no-ops are excluded — only named community libraries count.)
+
+| # | op | community CPU ref | gap (ref/nitrix) | nitrix |
+|---|---|---|---:|---|
+| 1 | `nitrix.morphology.connected_components` | scipy.label | 0.0254 | ~39.4x slower |
+| 2 | `nitrix.morphology.largest_connected_component` | scipy.largest_cc | 0.0404 | ~24.8x slower |
+| 3 | `nitrix.morphology.median_filter` | simpleitk.Median | 0.0859 | ~11.6x slower |
+| 4 | `nitrix.geometry.integrate_velocity_field` | scipy.ndimage.map_coordinates | 0.209 | ~4.8x slower |
+| 5 | `nitrix.smoothing.gaussian` | scipy.ndimage.gaussian_filter | 0.284 | ~3.5x slower |
+| 6 | `nitrix.signal.sosfilt` | scipy.signal.sosfilt | 0.363 | ~2.8x slower |
+| 7 | `nitrix.graph.diffusion_embedding` | scipy.sparse.eigsh | 0.506 | ~2.0x slower |
+| 8 | `nitrix.graph.laplacian_eigenmap` | scipy.sparse.eigsh | 0.565 | ~1.8x slower |
+| 9 | `nitrix.signal.sosfiltfilt` | scipy.signal.sosfiltfilt | 0.591 | ~1.7x slower |
+| 10 | `nitrix.smoothing.bilateral_gaussian` | simpleitk.Bilateral | 0.654 | ~1.5x slower |
 
 ## GPU blocked — nitrix path skipped, a GPU ref works
 
@@ -89,7 +109,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.geometry.rigid_log` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.rotation_matrix_to_angles` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sample_at_points` | unmeasured | none | unmeasured |
-| high | `nitrix.geometry.spatial_gradient` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spatial_transform[lanczos]` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.upsample` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cg` | unmeasured | none | unmeasured |
@@ -128,11 +147,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.metrics.mutual_information` | gpu_only | strong_ref | f32_only |
 | high | `nitrix.metrics.ncc` | gpu_only | strong_ref | f32_only |
 | high | `nitrix.metrics.ssd` | gpu_only | strong_ref | f32_only |
-| high | `nitrix.morphology.connected_components` | unmeasured | none | unmeasured |
-| high | `nitrix.morphology.distance_transform_edt` | unmeasured | none | unmeasured |
-| high | `nitrix.morphology.largest_connected_component` | unmeasured | none | unmeasured |
-| high | `nitrix.morphology.max_pool_with_indices_nd` | unmeasured | none | unmeasured |
-| high | `nitrix.morphology.max_unpool_nd` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_decompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_recompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.crop_to_multiple` | unmeasured | none | unmeasured |
@@ -212,11 +226,13 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.metrics.mutual_information` | cupy.mi | 5.84 | ~5.8x faster |
 | `nitrix.geometry.compactness_penalty` | cupy.compactness_penalty | 5.09 | ~5.1x faster |
 | `nitrix.geometry.resample` | cupyx.scipy.ndimage.map_coordinates | 4.18 | ~4.2x faster |
+| `nitrix.geometry.spatial_gradient` | cupy.spatial_gradient | 3.96 | ~4.0x faster |
 | `nitrix.geometry.displacement_from_reference_grid` | cupy.displacement_from_reference_grid | 3.39 | ~3.4x faster |
 | `nitrix.linalg.gaussian_kernel` | cupy.gaussian_kernel | 3.24 | ~3.2x faster |
 | `nitrix.linalg.rbf_kernel` | cupy.rbf_kernel | 3.2 | ~3.2x faster |
 | `nitrix.metrics.correlation_ratio` | cupy.cr | 3 | ~3.0x faster |
 | `nitrix.metrics.lncc` | cupy.lncc | 2.77 | ~2.8x faster |
+| `nitrix.morphology.distance_transform_edt` | cupy.distance_transform_edt | 2.73 | ~2.7x faster |
 | `nitrix.geometry.center_of_mass_grid` | cupy.center_of_mass_grid | 2.63 | ~2.6x faster |
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
 | `nitrix.morphology.close` | cupyx.scipy.ndimage.grey_closing | 2.49 | ~2.5x faster |
@@ -229,10 +245,12 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.conditionalcorr` | cupy.conditionalcorr | 2.18 | ~2.2x faster |
 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 2.16 | ~2.2x faster |
 | `nitrix.numerics.zscore_normalize` | cupy.zscore_normalize | 2.05 | ~2.0x faster |
+| `nitrix.morphology.max_unpool_nd` | cupy.max_unpool | 2.05 | ~2.0x faster |
 | `nitrix.metrics.ncc` | cupy.ncc | 2.02 | ~2.0x faster |
 | `nitrix.stats.conditionalcov` | cupy.conditionalcov | 1.99 | ~2.0x faster |
 | `nitrix.stats.pca_inverse_transform` | cupy.matmul | 1.93 | ~1.9x faster |
 | `nitrix.numerics.psc_normalize` | cupy.psc_normalize | 1.87 | ~1.9x faster |
+| `nitrix.morphology.max_pool_with_indices_nd` | cupy.max_pool | 1.79 | ~1.8x faster |
 | `nitrix.signal.tsconv` | cupyx.scipy.signal.correlate | 1.77 | ~1.8x faster |
 | `nitrix.stats.pairedcorr` | cupy.pairedcorr | 1.74 | ~1.7x faster |
 | `nitrix.geometry.cartesian_to_latlong` | cupy.cartesian_to_latlong | 1.74 | ~1.7x faster |
@@ -268,6 +286,8 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | op | verdict | amortized | domain ref |
 |---|---|---:|---|
 | `nitrix.signal.tsconv` | not multiplicative enough ~ | 3.5x | — |
+| `nitrix.morphology.largest_connected_component` | not multiplicative enough | 3.4x | — |
+| `nitrix.morphology.connected_components` | not multiplicative enough | 2.2x | — |
 | `nitrix.geometry.latlong_to_cartesian` | not multiplicative enough ~ | 2.1x | — |
 | `nitrix.geometry.center_of_mass_points` | not multiplicative enough ~ | 1.5x | — |
 | `nitrix.geometry.displacement_from_reference_points` | not multiplicative enough ~ | 1.3x | — |
@@ -279,7 +299,9 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.geometry.sphere_grid_unpad_2d` | not multiplicative enough ~ | 0.0x | — |
 | `nitrix.signal.lomb_scargle_periodogram` | favorable (amortized only) ~ | 1386.7x | — |
 | `nitrix.signal.polynomial_detrend` | favorable (amortized only) ~ | 469.0x | — |
+| `nitrix.morphology.max_pool_with_indices_nd` | favorable (amortized only) | 366.1x | — |
 | `nitrix.linalg.polynomial_kernel` | favorable (amortized only) ~ | 337.8x | — |
+| `nitrix.morphology.distance_transform_edt` | favorable (amortized only) | 289.9x | — |
 | `nitrix.stats.pca_inverse_transform` | favorable (amortized only) | 261.5x | — |
 | `nitrix.stats.lme.reml_fit` | favorable (amortized only) ~ | 257.1x | statsmodels.MixedLM |
 | `nitrix.linalg.residualise` | favorable (amortized only) ~ | 205.9x | — |
@@ -313,6 +335,8 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.stats.pca_transform` | favorable (amortized only) | 65.7x | — |
 | `nitrix.geometry.compactness_penalty` | favorable (amortized only) ~ | 65.2x | — |
 | `nitrix.numerics.psc_normalize` | favorable (amortized only) ~ | 54.4x | — |
+| `nitrix.morphology.max_unpool_nd` | favorable (amortized only) | 47.0x | — |
+| `nitrix.geometry.spatial_gradient` | favorable (amortized only) | 45.7x | — |
 | `nitrix.bias.histogram_match` | favorable (amortized only) ~ | 43.6x | simpleitk.HistogramMatching |
 | `nitrix.linalg.symexp` | favorable (amortized only) ~ | 34.0x | — |
 | `nitrix.signal.sosfiltfilt` | favorable (amortized only) ~ | 33.2x | — |
@@ -377,23 +401,18 @@ The headline functions used on real images, scored against their tier bar (`scor
 
 ## Full coverage matrix — every op with a case (COVERAGE v2)
 
-All 99 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
+All 100 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
 
 | op | ★ | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|---|
 | `nitrix.stats.lme.flame_two_level` | ★ | 3/5 | ✗ cpu_only | ⚠ timeout | · | ● full | · | ● fsl.flameo |
+| `nitrix.augment.gamma_contrast` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.affine_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.compose_velocity` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.invert_displacement` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.rigid_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.rigid_log` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
-| `nitrix.geometry.spatial_gradient` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.linalg.matrix_exp` |  | 1/3 | ✗ gpu_only | ✓ | ✗~ | ✗ synth | · | ✗ none |
-| `nitrix.morphology.connected_components` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
-| `nitrix.morphology.distance_transform_edt` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
-| `nitrix.morphology.largest_connected_component` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
-| `nitrix.morphology.max_pool_with_indices_nd` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
-| `nitrix.morphology.max_unpool_nd` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.register.bending_energy` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.register.gradient_smoothness` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.register.jacobian_folding_penalty` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
@@ -429,6 +448,7 @@ All 99 ops with a case, scored against their tier (`★` = marquee, which adds t
 | `nitrix.geometry.jacobian_displacement` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.latlong_to_cartesian` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.resample` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ◐ ants.resample_image |
+| `nitrix.geometry.spatial_gradient` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.spatial_transform` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.sphere_grid_pad_2d` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.sphere_grid_unpad_2d` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
@@ -455,9 +475,14 @@ All 99 ops with a case, scored against their tier (`★` = marquee, which adds t
 | `nitrix.linalg.sympower` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.linalg.symsqrt` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.morphology.close` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.morphology.connected_components` |  | 3/3 | ✓ | ✓ | ✗ | ✗ synth | ✓ | ✗ none |
 | `nitrix.morphology.dilate` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ◐ simpleitk.GrayscaleDilate |
 | `nitrix.morphology.distance_transform` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ◐ simpleitk.DanielssonDistanceMap |
+| `nitrix.morphology.distance_transform_edt` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.morphology.erode` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ◐ simpleitk.GrayscaleErode |
+| `nitrix.morphology.largest_connected_component` |  | 3/3 | ✓ | ✓ | ✗ | ✗ synth | ✓ | ✗ none |
+| `nitrix.morphology.max_pool_with_indices_nd` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.morphology.max_unpool_nd` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.morphology.median_filter` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ◐ simpleitk.Median |
 | `nitrix.morphology.open` |  | 3/3 | ✓ | ✓ | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.numerics.psc_normalize` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
@@ -486,5 +511,6 @@ All 99 ops with a case, scored against their tier (`★` = marquee, which adds t
 - `ratio = strong_ref.min / nitrix.min` at the op's representative point; `<1` ⇒ nitrix slower. The "≈Nx" column is its reciprocal (presentation only).
 - A **provisional** op's latest data came from a `--skip-slow` (fast) run; run the full sweep before acting (mandate §7).
 - "Lagging" is currently *slower than the strong on-target ref*; per-op **targets** (mandate §2.4) will refine the bar.
+- The **CPU-vs-community** gap (`community.min / nitrix_cpu.min` at the representative point, fastest community tool) is a supplementary algorithm-quality signal; it never supersedes the GPU economic / performance verdicts, and excludes our own numpy reimpl-oracles.
 - Host-side constructors (jit `n/a`) are excluded from the runtime denominator; they have no device-time bar.
 

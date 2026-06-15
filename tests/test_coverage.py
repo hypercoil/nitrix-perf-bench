@@ -119,6 +119,70 @@ def test_lagging_and_summary_json():
     assert s['gpu_blocked_upstream'] == 1     # pkg.gpu_blocked
 
 
+def test_is_community_classification():
+    # named community libraries count; our own numpy reimpl-oracles + iofloor
+    # no-ops do not.
+    assert cov._is_community('scipy.signal.sosfiltfilt')
+    assert cov._is_community('sklearn.metrics.pairwise')
+    assert cov._is_community('monai.RandGaussianNoise')
+    assert cov._is_community('simpleitk.Median')      # a domain CLI
+    assert not cov._is_community('numpy.intensity')    # our reimpl-oracle
+    assert not cov._is_community('scipy.signal.iofloor')
+
+
+_CPU_CAT = [
+    {'qualname': 'pkg.cpu_lag', 'jit': 'pass'},     # scipy 4x faster on CPU
+    {'qualname': 'pkg.cpu_numpy', 'jit': 'pass'},   # only a numpy reimpl ref
+    {'qualname': 'pkg.cpu_win', 'jit': 'pass'},     # nitrix faster than scipy
+]
+_CPU_O2C = {q['qualname']: _c(q['qualname'].split('.')[-1]) for q in _CPU_CAT}
+
+
+def _cpu_rows():
+    return [
+        # cpu_lag: a community (scipy) CPU ref 4x faster than nitrix on CPU; a
+        # cupy GPU ref also runs (the lens fires independent of the GPU story).
+        _row('cpu_lag', 'nitrix-jax', 'jax', 'jax-cpu'),
+        _row('cpu_lag', 'nitrix-jax', 'jax', 'jax-cuda12'),
+        _row('cpu_lag', 'scipy.foo', 'numpy', 'jax-cpu', ratio=0.25),
+        _row('cpu_lag', 'cupy.foo', 'cupy', 'jax-cuda12', ratio=5.0),
+        # cpu_numpy: the only CPU ref is our numpy reimpl-oracle -> excluded,
+        # so the lens abstains (cpu_ref None) even though it is 4x faster.
+        _row('cpu_numpy', 'nitrix-jax', 'jax', 'jax-cpu'),
+        _row('cpu_numpy', 'nitrix-jax', 'jax', 'jax-cuda12'),
+        _row('cpu_numpy', 'numpy.bar', 'numpy', 'jax-cpu', ratio=0.25),
+        # cpu_win: scipy CPU ref is 2x slower -> nitrix ahead on CPU, no flag.
+        _row('cpu_win', 'nitrix-jax', 'jax', 'jax-cpu'),
+        _row('cpu_win', 'nitrix-jax', 'jax', 'jax-cuda12'),
+        _row('cpu_win', 'scipy.baz', 'numpy', 'jax-cpu', ratio=2.0),
+    ]
+
+
+def test_cpu_community_lens():
+    recs = {r.qualname: r for r in
+            cov.build_coverage(_cpu_rows(), _CPU_CAT, _CPU_O2C)}
+    lag = recs['pkg.cpu_lag']
+    assert lag.cpu_ref == 'scipy.foo' and lag.cpu_ref_ratio == 0.25
+    assert lag.cpu_gap == 4.0 and cov._lags_on_cpu(lag)
+    # a numpy reimpl-oracle is not a community competitor -> abstain.
+    assert recs['pkg.cpu_numpy'].cpu_ref is None
+    assert recs['pkg.cpu_numpy'].cpu_gap is None
+    # nitrix ahead on CPU: ref recorded, but not a lag.
+    win = recs['pkg.cpu_win']
+    assert win.cpu_ref == 'scipy.baz' and not cov._lags_on_cpu(win)
+
+
+def test_cpu_lens_json_summary_and_threshold():
+    recs = cov.build_coverage(_cpu_rows(), _CPU_CAT, _CPU_O2C)
+    doc = cov.render_json(recs)
+    assert doc['summary']['lagging_on_cpu_vs_community'] == 1
+    assert [d['qualname'] for d in doc['cpu_lagging_vs_community']] == [
+        'pkg.cpu_lag']
+    # threshold is tunable: at >=5x the 4x gap no longer qualifies.
+    assert cov._cpu_lagging(recs, gap=5.0) == []
+    assert len(cov._cpu_lagging(recs, gap=1.5)) == 1
+
+
 def test_under_covered_priorities():
     under = {d['qualname']: d['priority']
              for d in cov.render_json(_build())['under_covered']}
