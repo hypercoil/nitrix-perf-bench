@@ -18,7 +18,10 @@ from nperf.cases import (
     random_crop,
     random_flip,
     random_histogram_shift,
+    random_resized_crop,
+    random_svf_displacement,
     rician_noise,
+    simulate_bias_field,
 )
 from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
@@ -206,3 +209,53 @@ def test_rng_aug_op_qualnames():
             == 'nitrix.augment.random_histogram_shift')
     assert (gmm_label_to_image.CASE.op_qualname
             == 'nitrix.augment.gmm_label_to_image')
+
+
+# --- the interp / generator RNG ops (scipy/cupyx twins, no MONAI) ---------
+@pytest.mark.parametrize('mod,gpu_ref', [
+    (random_resized_crop, 'cupy.random_resized_crop'),
+    (simulate_bias_field, 'cupy.simulate_bias_field'),
+    (random_svf_displacement, 'cupy.random_svf_displacement'),
+])
+def test_interp_gen_aug_contract(mod, gpu_ref):
+    built = mod._build(mod.CASE.representative)
+    assert built.fp64_reference is None and built.fidelity_note
+    assert requires_of(built.baselines[gpu_ref][0]) == 'gpu'  # cupy headline
+    # these have no clean MONAI analog (semantics / I/O differ)
+    assert not [n for n in built.baselines if n.startswith('monai.')]
+
+
+def test_resized_crop_output_shape():
+    import jax
+    import jax.numpy as jnp
+    from nitrix.augment import random_resized_crop as rrc
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((48, 48, 48, 1)).astype(np.float32)
+    out = np.asarray(rrc(jnp.asarray(x), jax.random.PRNGKey(0),
+                         size=(24, 24, 24)))
+    assert out.shape == (24, 24, 24, 1)
+
+
+def test_bias_field_positive_and_smooth():
+    import jax
+    from nitrix.augment import simulate_bias_field as sbf
+    out = np.asarray(sbf((48, 48, 48), jax.random.PRNGKey(0)))
+    assert out.shape == (48, 48, 48)
+    assert np.isfinite(out).all() and (out > 0).all()  # multiplicative field
+
+
+def test_svf_shape_and_finite():
+    import jax
+    from nitrix.augment import random_svf_displacement as svf
+    out = np.asarray(svf((48, 48, 48), jax.random.PRNGKey(0)))
+    assert out.shape == (48, 48, 48, 3)  # (*spatial, ndim)
+    assert np.isfinite(out).all()
+
+
+def test_interp_gen_op_qualnames():
+    assert (random_resized_crop.CASE.op_qualname
+            == 'nitrix.augment.random_resized_crop')
+    assert (simulate_bias_field.CASE.op_qualname
+            == 'nitrix.augment.simulate_bias_field')
+    assert (random_svf_displacement.CASE.op_qualname
+            == 'nitrix.augment.random_svf_displacement')

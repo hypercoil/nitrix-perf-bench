@@ -5,12 +5,12 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 209 (+ 16 host-side constructors, apart)
-- **measured** (≥1 platform): 99 / 209
-- **multiplatform** (CPU + GPU): 92 / 209
-- **with a strong on-target GPU ref**: 87 / 209
+- **measured** (≥1 platform): 102 / 209
+- **multiplatform** (CPU + GPU): 95 / 209
+- **with a strong on-target GPU ref**: 90 / 209
 - **with a community-gold ref** (ANTs/FSL/…): 17 / 209
 - **scaled** (ran at the declared brain-scale tier): 24 / 209 — **1** fragile (oom/timeout)
-- **economically favorable** (GPU beats CPU gold by ≥ the bar): 75 / 209 — **14** not multiplicative
+- **economically favorable** (GPU beats CPU gold by ≥ the bar): 78 / 209 — **14** not multiplicative
 - **on real data** (planted or full): 8 / 209
 - **marquee** ops (held to the real-data + community-baseline bar): 8 — **1** not yet meeting it
 - **lagging on the GPU**: 16
@@ -75,9 +75,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | priority | op | coverage | ref strength | precision |
 |---|---|---|---|---|
 | high | `nitrix.augment.random_affine_matrix` | unmeasured | none | unmeasured |
-| high | `nitrix.augment.random_resized_crop` | unmeasured | none | unmeasured |
-| high | `nitrix.augment.random_svf_displacement` | unmeasured | none | unmeasured |
-| high | `nitrix.augment.simulate_bias_field` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bias_field_correction` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.bspline_approximate` | unmeasured | none | unmeasured |
 | high | `nitrix.bias.sharpen_histogram` | unmeasured | none | unmeasured |
@@ -236,6 +233,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.linalg.linear_distance` | cupy.linear_distance | 2.58 | ~2.6x faster |
 | `nitrix.morphology.close` | cupyx.scipy.ndimage.grey_closing | 2.49 | ~2.5x faster |
 | `nitrix.geometry.sphere_grid_pad_2d` | cupy.sphere_grid_pad_2d | 2.4 | ~2.4x faster |
+| `nitrix.augment.simulate_bias_field` | cupy.simulate_bias_field | 2.38 | ~2.4x faster |
 | `nitrix.stats.partialcorr` | cupy.partialcorr | 2.33 | ~2.3x faster |
 | `nitrix.stats.partialcov` | cupy.partialcov | 2.29 | ~2.3x faster |
 | `nitrix.stats.precision` | cupy.inv_cov | 2.23 | ~2.2x faster |
@@ -255,6 +253,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.stats.pairedcorr` | cupy.pairedcorr | 1.74 | ~1.7x faster |
 | `nitrix.geometry.cartesian_to_latlong` | cupy.cartesian_to_latlong | 1.74 | ~1.7x faster |
 | `nitrix.linalg.polynomial_kernel` | cupy.polynomial_kernel | 1.72 | ~1.7x faster |
+| `nitrix.augment.random_svf_displacement` | cupy.random_svf_displacement | 1.7 | ~1.7x faster |
 | `nitrix.graph.relaxed_modularity` | cupy.relaxed_modularity | 1.56 | ~1.6x faster |
 | `nitrix.linalg.sigmoid_kernel` | cupy.sigmoid_kernel | 1.48 | ~1.5x faster |
 | `nitrix.geometry.latlong_to_cartesian` | cupy.latlong_to_cartesian | 1.46 | ~1.5x faster |
@@ -265,6 +264,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.geometry.displacement_from_reference_points` | cupy.displacement_from_reference_points | 1.33 | ~1.3x faster |
 | `nitrix.morphology.erode` | cupyx.scipy.ndimage.grey_erosion | 1.2 | ~1.2x faster |
 | `nitrix.graph.modularity_matrix` | cupy.modularity_matrix | 1.18 | ~1.2x faster |
+| `nitrix.augment.random_resized_crop` | cupy.random_resized_crop | 1.17 | ~1.2x faster |
 | `nitrix.graph.girvan_newman_null` | cupy.gn_null | 1.16 | ~1.2x faster |
 | `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
 | `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
@@ -300,12 +300,14 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.geometry.sphere_grid_pad_2d` | not multiplicative enough ~ | 0.3x | — |
 | `nitrix.graph.degree_vector` | not multiplicative enough ~ | 0.2x | — |
 | `nitrix.geometry.sphere_grid_unpad_2d` | not multiplicative enough ~ | 0.0x | — |
+| `nitrix.augment.simulate_bias_field` | favorable (amortized only) ~ | 1598.4x | — |
 | `nitrix.signal.lomb_scargle_periodogram` | favorable (amortized only) ~ | 1386.7x | — |
 | `nitrix.signal.polynomial_detrend` | favorable (amortized only) ~ | 469.0x | — |
 | `nitrix.morphology.max_pool_with_indices_nd` | favorable (amortized only) | 366.1x | — |
 | `nitrix.linalg.polynomial_kernel` | favorable (amortized only) ~ | 337.8x | — |
 | `nitrix.augment.gibbs_ringing` | favorable (amortized only) ~ | 334.8x | — |
 | `nitrix.morphology.distance_transform_edt` | favorable (amortized only) | 289.9x | — |
+| `nitrix.augment.random_svf_displacement` | favorable (amortized only) ~ | 276.8x | — |
 | `nitrix.stats.pca_inverse_transform` | favorable (amortized only) | 261.5x | — |
 | `nitrix.stats.lme.reml_fit` | favorable (amortized only) ~ | 257.1x | statsmodels.MixedLM |
 | `nitrix.linalg.residualise` | favorable (amortized only) ~ | 205.9x | — |
@@ -320,6 +322,7 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.morphology.distance_transform` | favorable (amortized only) ~ | 116.1x | simpleitk.DanielssonDistanceMap |
 | `nitrix.geometry.spherical_conv` | favorable (amortized only) ~ | 110.6x | — |
 | `nitrix.augment.gmm_label_to_image` | favorable (amortized only) ~ | 103.6x | — |
+| `nitrix.augment.random_resized_crop` | favorable (amortized only) ~ | 103.3x | — |
 | `nitrix.geometry.integrate_velocity_field` | favorable (amortized only) ~ | 102.8x | — |
 | `nitrix.linalg.sympower` | favorable (amortized only) ~ | 102.4x | — |
 | `nitrix.numerics.zscore_normalize` | favorable (amortized only) ~ | 98.2x | — |
@@ -410,7 +413,7 @@ The headline functions used on real images, scored against their tier bar (`scor
 
 ## Full coverage matrix — every op with a case (COVERAGE v2)
 
-All 107 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
+All 110 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
 
 | op | ★ | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|---|
@@ -451,7 +454,10 @@ All 107 ops with a case, scored against their tier (`★` = marquee, which adds 
 | `nitrix.augment.random_crop` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.augment.random_flip` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.augment.random_histogram_shift` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.augment.random_resized_crop` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.augment.random_svf_displacement` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.augment.rician_noise` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.augment.simulate_bias_field` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.bias.histogram_match` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.HistogramMatching |
 | `nitrix.geometry.cartesian_to_latlong` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.center_of_mass_grid` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |

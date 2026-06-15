@@ -367,3 +367,129 @@ def cupy_gmm(means: Any, stds: Any, seed: int) -> Callable[[Any], Any]:
         return cp.maximum(m + s * noise, 0.0).astype(cp.float32)
 
     return run
+
+
+# --- random_resized_crop / simulate_bias_field / random_svf_displacement -- #
+# Interp / integration RNG ops: no cross-framework oracle. The numpy / cupy
+# twins use scipy.ndimage / cupyx.scipy.ndimage (zoom, map_coordinates) -- the
+# canonical resampling tools -- comparable work; cupy is the GPU headline,
+# numpy the CPU floor. Properties are checked in tests. (random_affine_matrix
+# is deliberately NOT a perf case: a (ndim, ndim+1) parameter generator whose
+# timing is jit-dispatch noise, not a compute signal.)
+
+
+def _resized_crop(x: Any, xp: Any, ndi: Any, size, scale_range,
+                  seed: int) -> Any:
+    '''Crop a random window of extent ~ U(scale_range)·shape, then zoom
+    (trilinear) to ``size`` -- the DINOv2 RandomResizedCrop recipe.'''
+    rng = np.random.default_rng(seed)
+    spatial = tuple(x.shape[:-1])
+    scale = float(rng.uniform(scale_range[0], scale_range[1]))
+    extent = [max(1, int(round(scale * s))) for s in spatial]
+    off = [int(rng.integers(0, s - e + 1)) for s, e in zip(spatial, extent)]
+    sl = tuple(slice(o, o + e) for o, e in zip(off, extent)) + (slice(None),)
+    factors = [sz / e for sz, e in zip(size, extent)] + [1.0]
+    return ndi.zoom(x[sl], factors, order=1)
+
+
+def np_resized_crop(size, scale_range, seed: int) -> Callable[[Any], Any]:
+    def run(x: Any) -> Any:
+        import scipy.ndimage as ndi
+
+        return _resized_crop(np.asarray(x), np, ndi, size, scale_range, seed)
+
+    return run
+
+
+def cupy_resized_crop(size, scale_range, seed: int) -> Callable[[Any], Any]:
+    def run(x: Any) -> Any:
+        import cupy as cp
+        import cupyx.scipy.ndimage as cndi
+
+        return _resized_crop(x, cp, cndi, size, scale_range, seed)
+
+    return run
+
+
+def _bias_field(xp: Any, ndi: Any, shape, max_std: float,
+                grid_fraction: float, seed: int) -> Any:
+    '''A smooth multiplicative field: a low-res Gaussian grid, cubic-upsampled
+    to ``shape`` and exponentiated (-> positive).'''
+    rng = np.random.default_rng(seed)
+    low = [max(2, int(round(grid_fraction * s))) for s in shape]
+    g = (rng.standard_normal(low) * max_std).astype(np.float32)
+    factors = [s / lo for s, lo in zip(shape, low)]
+    field = ndi.zoom(xp.asarray(g), factors, order=3)
+    return xp.exp(field)
+
+
+def np_bias_field(shape, max_std: float, grid_fraction: float,
+                  seed: int) -> Callable[..., Any]:
+    def run(*_: Any) -> Any:
+        import scipy.ndimage as ndi
+
+        return np.asarray(
+            _bias_field(np, ndi, shape, max_std, grid_fraction, seed),
+            np.float32)
+
+    return run
+
+
+def cupy_bias_field(shape, max_std: float, grid_fraction: float,
+                    seed: int) -> Callable[..., Any]:
+    def run(*_: Any) -> Any:
+        import cupy as cp
+        import cupyx.scipy.ndimage as cndi
+
+        return _bias_field(cp, cndi, shape, max_std, grid_fraction,
+                           seed).astype(cp.float32)
+
+    return run
+
+
+def _svf(xp: Any, ndi: Any, shape, max_std: float, grid_fraction: float,
+         n_steps: int, seed: int) -> Any:
+    '''A smooth diffeomorphic displacement: a low-res velocity field, upsampled
+    then integrated by scaling-and-squaring (``phi <- phi + phi∘(id+phi)``,
+    ``n_steps`` times via map_coordinates) -- the standard SVF integration.'''
+    rng = np.random.default_rng(seed)
+    nd = len(shape)
+    low = [max(2, int(round(grid_fraction * s))) for s in shape]
+    vlow = (rng.standard_normal((*low, nd)) * max_std).astype(np.float32)
+    factors = [s / lo for s, lo in zip(shape, low)] + [1.0]
+    v = ndi.zoom(xp.asarray(vlow), factors, order=1)  # (*shape, nd)
+    phi = v / (2.0 ** n_steps)
+    ident = xp.stack(xp.meshgrid(
+        *[xp.arange(s, dtype=xp.float32) for s in shape], indexing='ij'),
+        axis=0)  # (nd, *shape)
+    for _ in range(n_steps):
+        coords = ident + xp.stack([phi[..., d] for d in range(nd)], axis=0)
+        warped = xp.stack(
+            [ndi.map_coordinates(phi[..., d], coords, order=1, mode='nearest')
+             for d in range(nd)], axis=-1)
+        phi = phi + warped
+    return phi
+
+
+def np_svf(shape, max_std: float, grid_fraction: float, n_steps: int,
+           seed: int) -> Callable[..., Any]:
+    def run(*_: Any) -> Any:
+        import scipy.ndimage as ndi
+
+        return np.asarray(
+            _svf(np, ndi, shape, max_std, grid_fraction, n_steps, seed),
+            np.float32)
+
+    return run
+
+
+def cupy_svf(shape, max_std: float, grid_fraction: float, n_steps: int,
+             seed: int) -> Callable[..., Any]:
+    def run(*_: Any) -> Any:
+        import cupy as cp
+        import cupyx.scipy.ndimage as cndi
+
+        return _svf(cp, cndi, shape, max_std, grid_fraction, n_steps,
+                    seed).astype(cp.float32)
+
+    return run
