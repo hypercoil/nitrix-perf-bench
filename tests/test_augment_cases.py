@@ -14,6 +14,10 @@ from nperf.cases import (
     gamma_contrast,
     gaussian_noise,
     gibbs_ringing,
+    gmm_label_to_image,
+    random_crop,
+    random_flip,
+    random_histogram_shift,
     rician_noise,
 )
 from nperf.core.fidelity import compare
@@ -122,3 +126,83 @@ def test_rician_sigma_zero_is_abs():
 def test_noise_op_qualnames():
     assert gaussian_noise.CASE.op_qualname == 'nitrix.augment.gaussian_noise'
     assert rician_noise.CASE.op_qualname == 'nitrix.augment.rician_noise'
+
+
+# --- the RNG geometric / synthesis ops (no oracle, property-checked) ------
+@pytest.mark.parametrize('mod,gpu_ref', [
+    (random_flip, 'cupy.random_flip'),
+    (random_crop, 'cupy.random_crop'),
+    (random_histogram_shift, 'cupy.random_histogram_shift'),
+    (gmm_label_to_image, 'cupy.gmm_label_to_image'),
+])
+def test_rng_aug_contract(mod, gpu_ref):
+    built = mod._build(mod.CASE.representative)
+    # RNG op -> no cross-framework oracle; cupy is the GPU headline ref.
+    assert built.fp64_reference is None and built.fidelity_note
+    assert requires_of(built.baselines[gpu_ref][0]) == 'gpu'
+    # MONAI community baseline where it maps (not gmm).
+    monai = [n for n in built.baselines if n.startswith('monai.')]
+    if mod is gmm_label_to_image:
+        assert not monai
+    else:
+        assert len(monai) == 1
+        assert requires_of(built.baselines[monai[0]][0]) == 'cpu'
+
+
+def test_random_flip_preserves_value_multiset():
+    import jax
+    import jax.numpy as jnp
+    from nitrix.augment import random_flip as rf
+    x = np.arange(48 ** 3, dtype=np.float32).reshape(48, 48, 48)
+    out = np.asarray(rf(jnp.asarray(x), jax.random.PRNGKey(0)))
+    assert out.shape == x.shape
+    assert np.array_equal(np.sort(out.ravel()), np.sort(x.ravel()))
+
+
+def test_random_crop_is_subblock():
+    import jax
+    import jax.numpy as jnp
+    from nitrix.augment import random_crop as rc
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((48, 48, 48)).astype(np.float32)
+    out = np.asarray(rc(jnp.asarray(x), jax.random.PRNGKey(0), size=(24, 24,
+                                                                     24)))
+    assert out.shape == (24, 24, 24)
+    # a contiguous sub-block cannot exceed the input's value range
+    assert out.min() >= x.min() and out.max() <= x.max()
+
+
+def test_random_histogram_shift_is_monotone():
+    # the defining property: a monotone remap preserves the voxel rank order.
+    import jax
+    import jax.numpy as jnp
+    from nitrix.augment import random_histogram_shift as rhs
+    rng = np.random.default_rng(0)
+    x = rng.standard_normal((32, 32, 32)).astype(np.float32)
+    out = np.asarray(rhs(jnp.asarray(x), jax.random.PRNGKey(0)))
+    ordered = out.ravel()[np.argsort(x.ravel())]
+    assert np.all(np.diff(ordered) >= -1e-4)  # non-decreasing
+
+
+def test_gmm_per_label_mean():
+    # the distributional property: per-label sample mean ≈ the label's mean.
+    import jax
+    import jax.numpy as jnp
+    from nitrix.augment import gmm_label_to_image as gmm
+
+    from nperf.cases._augment import gmm_labels
+    lab, means, stds = gmm_labels((48, 48, 48), 5, 0)
+    out = np.asarray(gmm(jnp.asarray(lab), jnp.asarray(means),
+                         jnp.asarray(stds), jax.random.PRNGKey(0)))
+    for label in range(5):
+        sample_mean = float(out[lab == label].mean())
+        assert abs(sample_mean - float(means[label])) < 0.2  # ~ std/sqrt(N)
+
+
+def test_rng_aug_op_qualnames():
+    assert random_flip.CASE.op_qualname == 'nitrix.augment.random_flip'
+    assert random_crop.CASE.op_qualname == 'nitrix.augment.random_crop'
+    assert (random_histogram_shift.CASE.op_qualname
+            == 'nitrix.augment.random_histogram_shift')
+    assert (gmm_label_to_image.CASE.op_qualname
+            == 'nitrix.augment.gmm_label_to_image')
