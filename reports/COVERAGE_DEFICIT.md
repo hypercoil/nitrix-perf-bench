@@ -5,12 +5,12 @@
 ## Coverage (runtime ops)
 
 - **runtime ops catalogued**: 209 (+ 16 host-side constructors, apart)
-- **measured** (≥1 platform): 91 / 209
-- **multiplatform** (CPU + GPU): 84 / 209
-- **with a strong on-target GPU ref**: 79 / 209
+- **measured** (≥1 platform): 92 / 209
+- **multiplatform** (CPU + GPU): 85 / 209
+- **with a strong on-target GPU ref**: 80 / 209
 - **with a community-gold ref** (ANTs/FSL/…): 17 / 209
 - **scaled** (ran at the declared brain-scale tier): 24 / 209 — **1** fragile (oom/timeout)
-- **economically favorable** (GPU beats CPU gold by ≥ the bar): 69 / 209 — **12** not multiplicative
+- **economically favorable** (GPU beats CPU gold by ≥ the bar): 70 / 209 — **12** not multiplicative
 - **on real data** (planted or full): 8 / 209
 - **marquee** ops (held to the real-data + community-baseline bar): 8 — **1** not yet meeting it
 - **lagging on the GPU**: 14
@@ -71,7 +71,6 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 
 | priority | op | coverage | ref strength | precision |
 |---|---|---|---|---|
-| high | `nitrix.augment.gamma_contrast` | unmeasured | none | unmeasured |
 | high | `nitrix.augment.gaussian_noise` | unmeasured | none | unmeasured |
 | high | `nitrix.augment.gibbs_ringing` | unmeasured | none | unmeasured |
 | high | `nitrix.augment.gmm_label_to_image` | unmeasured | none | unmeasured |
@@ -244,6 +243,7 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.smoothing.gaussian` | cupyx.scipy.ndimage.gaussian_filter | 2.2 | ~2.2x faster |
 | `nitrix.stats.conditionalcorr` | cupy.conditionalcorr | 2.18 | ~2.2x faster |
 | `nitrix.signal.sosfilt` | cupyx.scipy.signal.sosfilt | 2.16 | ~2.2x faster |
+| `nitrix.augment.gamma_contrast` | cupy.gamma_contrast | 2.11 | ~2.1x faster |
 | `nitrix.numerics.zscore_normalize` | cupy.zscore_normalize | 2.05 | ~2.0x faster |
 | `nitrix.morphology.max_unpool_nd` | cupy.max_unpool | 2.05 | ~2.0x faster |
 | `nitrix.metrics.ncc` | cupy.ncc | 2.02 | ~2.0x faster |
@@ -338,6 +338,7 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.morphology.max_unpool_nd` | favorable (amortized only) | 47.0x | — |
 | `nitrix.geometry.spatial_gradient` | favorable (amortized only) | 45.7x | — |
 | `nitrix.bias.histogram_match` | favorable (amortized only) ~ | 43.6x | simpleitk.HistogramMatching |
+| `nitrix.augment.gamma_contrast` | favorable (amortized only) ~ | 35.4x | — |
 | `nitrix.linalg.symexp` | favorable (amortized only) ~ | 34.0x | — |
 | `nitrix.signal.sosfiltfilt` | favorable (amortized only) ~ | 33.2x | — |
 | `nitrix.stats.pca_fit` | favorable (amortized only) | 30.3x | — |
@@ -406,7 +407,6 @@ All 100 ops with a case, scored against their tier (`★` = marquee, which adds 
 | op | ★ | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|---|
 | `nitrix.stats.lme.flame_two_level` | ★ | 3/5 | ✗ cpu_only | ⚠ timeout | · | ● full | · | ● fsl.flameo |
-| `nitrix.augment.gamma_contrast` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.affine_exp` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.compose_velocity` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.geometry.invert_displacement` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
@@ -436,6 +436,7 @@ All 100 ops with a case, scored against their tier (`★` = marquee, which adds 
 | `nitrix.register.diffeomorphic_demons_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.register.rigid_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.smoothing.bilateral_gaussian` | ★ | 4/4 | ✓ | · | ✓~ | ● full | · | ● simpleitk.Bilateral |
+| `nitrix.augment.gamma_contrast` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.bias.histogram_match` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | · | ◐ simpleitk.HistogramMatching |
 | `nitrix.geometry.cartesian_to_latlong` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.geometry.center_of_mass_grid` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |

@@ -157,6 +157,19 @@ PROVIDERS: Dict[str, Provider] = {
         # nitrix-GPU-vs-AFNI/FSL economic comparison is read cross-platform.
         # Spin-up: tools/setup_neuro_refs.sh (see README "Community neuro
         # reference tools"); /scratch is ephemeral, that script is the recipe.
+        # MONAI reference (the de-facto community medical-imaging augmentation
+        # / metric toolkit; torch-backed).  Its own refs env (jax+nitrix+torch+
+        # monai), selected per attempt via NPERF_PYTHON_MONAI; lazy-imported
+        # in-case.  framework 'monai' -> the numpy no-op sync (the wrappers
+        # force CPU torch tensors, which are synchronous; HBM falls to None as
+        # for the other CPU refs).  requires='cpu' FOR NOW: a CPU community
+        # baseline (the GPU headline ref stays cupy/torch); a GPU MONAI env
+        # (jax-cuda + torch-cuda co-install) is a tracked follow-up for the
+        # tests that need MONAI on-device. See monai-augmentation-parity FR.
+        Provider('monai', 'monai', requires='cpu',
+                 description='MONAI ref (transforms/metrics); refs-monai env '
+                             '(NPERF_PYTHON_MONAI); CPU community baseline '
+                             '(GPU follow-up pending)'),
         Provider('afni', 'numpy', requires='cpu',
                  description='AFNI ref (3dvolreg realign; 3dcalc io-floor); '
                              'binary at NPERF_AFNI_DIR; CPU-only'),

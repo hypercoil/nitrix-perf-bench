@@ -63,4 +63,8 @@ SYNC: Dict[str, Callable[[Any], None]] = {
     'ants': numpy_sync,
     # dipy likewise returns host numpy arrays (own refs env) -- numpy no-op.
     'dipy': numpy_sync,
+    # MONAI runs CPU-only here (the wrappers force CPU torch tensors, which are
+    # synchronous/eager), so no device synchronise is needed -- the numpy
+    # no-op.  When a GPU MONAI env lands, this becomes torch_sync.
+    'monai': numpy_sync,
 }
