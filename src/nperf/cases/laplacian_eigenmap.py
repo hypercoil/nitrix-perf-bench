@@ -15,6 +15,18 @@ Hardened for B18 Win 4 (post the eigensolver rehome to ``linalg._eigsolve``):
   The old case pinned ``solver='lobpcg'`` as the headline; that is *not* the
   dense default.  ``lobpcg`` / ``shift_invert`` / ``poly`` ride as labelled
   variants.
+- **The ``promise_symmetry`` knob (the default users hit + the asserted fast
+  path).**  ``promise_symmetry=False`` (the public DEFAULT, from a bug fix)
+  applies the symmetric part ½(A·X + Aᵀ·X) -- two matvecs per lobpcg iteration
+  -- to stay correct on a possibly-non-symmetric *stored* operator; the
+  ``nitrix-jax-symmetric`` variant (``promise_symmetry=True``) does one matvec.
+  The SBM input is exactly symmetric, so True is **valid here and scored
+  against the same fp64 oracle** (it earns its ratio against a correct
+  baseline, not by computing something cheaper-but-wrong; on a non-symmetric
+  stored pattern it would silently diverge -- the hazard test pins this).
+  Measured (L4): True is **~2.5-2.8× faster on the ELL/lobpcg path** but
+  **~1.4-2.2× slower on dense eigh** (eigh reads one triangle, so the
+  assumed-symmetric route gives no win there).
 - **Accuracy is pinned (the highest-value guard).**  The gate is tight
   (rtol=atol=1e-4); ``eigh`` (exact) and ``lobpcg`` (fp32 runs to the cap,
   ~1e-5/1e-6) pass.  ``shift_invert`` (~1e-3) and ``poly`` (~5e-4) are faster

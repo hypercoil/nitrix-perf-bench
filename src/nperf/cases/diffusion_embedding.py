@@ -10,6 +10,14 @@ of the anisotropic diffusion operator (alpha=0.5).  The sibling of
   cause/scope uncharacterised; ``lobpcg`` for sparse) -- the branch users hit,
   not the old lobpcg-pinned headline.  ``lobpcg`` / ``shift_invert`` / ``poly``
   ride as labelled variants.
+- ``nitrix-jax-symmetric`` (``promise_symmetry=True``) is the asserted-symmetry
+  path: the public DEFAULT ``promise_symmetry=False`` (a bug fix) applies the
+  symmetric part ½(A·X + Aᵀ·X) -- two matvecs per lobpcg iteration -- for a
+  possibly-non-symmetric *stored* operator; True does one matvec.  The SBM
+  input is exactly symmetric, so True is valid + scored against the same fp64
+  oracle (a correct baseline, not a cheaper-but-wrong shortcut; it would
+  silently diverge on a non-symmetric stored pattern -- pinned by the hazard
+  test).  Measured (L4): ~2.5× faster on ELL/lobpcg, ~slower on dense eigh.
 - The gate is tight (rtol=atol=1e-4): ``eigh`` / ``lobpcg`` pass;
   ``shift_invert`` (~1e-3) / ``poly`` (~5e-4) are declared ``ApproxBaseline``
   (accuracy reported beside speed -- the tradeoff is the signal).

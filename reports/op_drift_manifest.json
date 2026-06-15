@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-15T19:29:00Z",
+    "generated": "2026-06-15T20:41:29Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -1894,7 +1894,7 @@
     "diffusion_embedding": {
       "case": "diffusion_embedding",
       "qualname": "nitrix.graph.diffusion_embedding",
-      "signature": "(A: '_GraphInput', *, n_components: 'int', alpha: 'float' = 0.5, t: 'float' = 0.0, solver: '_Solver' = 'auto', preconditioner: '_Preconditioner' = 'none', skip_trivial: 'bool' = True, eps: 'float' = 1e-12, lobpcg_iters: 'int' = 200, lobpcg_tol: 'Optional[float]' = 1e-07, seed: 'int' = 0) -> \"Tuple[Float[Array, 'n n_components'], Float[Array, 'n_components']]\"",
+      "signature": "(A: '_GraphInput', *, n_components: 'int', alpha: 'float' = 0.5, t: 'float' = 0.0, solver: '_Solver' = 'auto', preconditioner: '_Preconditioner' = 'none', promise_symmetry: 'bool' = False, skip_trivial: 'bool' = True, eps: 'float' = 1e-12, lobpcg_iters: 'int' = 200, lobpcg_tol: 'Optional[float]' = 1e-07, seed: 'int' = 0) -> \"Tuple[Float[Array, 'n n_components'], Float[Array, 'n_components']]\"",
       "behaviour": {
         "point": {
           "n": 1024,
@@ -2413,7 +2413,7 @@
     "laplacian_eigenmap": {
       "case": "laplacian_eigenmap",
       "qualname": "nitrix.graph.laplacian_eigenmap",
-      "signature": "(A: '_GraphInput', *, n_components: 'int', solver: '_Solver' = 'auto', preconditioner: '_Preconditioner' = 'none', skip_trivial: 'bool' = True, eps: 'float' = 1e-12, lobpcg_iters: 'int' = 200, lobpcg_tol: 'Optional[float]' = 1e-07, seed: 'int' = 0) -> \"Tuple[Float[Array, 'n n_components'], Float[Array, 'n_components']]\"",
+      "signature": "(A: '_GraphInput', *, n_components: 'int', solver: '_Solver' = 'auto', preconditioner: '_Preconditioner' = 'none', promise_symmetry: 'bool' = False, skip_trivial: 'bool' = True, eps: 'float' = 1e-12, lobpcg_iters: 'int' = 200, lobpcg_tol: 'Optional[float]' = 1e-07, seed: 'int' = 0) -> \"Tuple[Float[Array, 'n n_components'], Float[Array, 'n_components']]\"",
       "behaviour": {
         "point": {
           "n": 1024,

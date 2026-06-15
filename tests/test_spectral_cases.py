@@ -34,8 +34,14 @@ from nperf.core.fidelity import compare
 from nperf.providers import framework_of, requires_of
 
 _MODS = [le, de]
-_EXACT = {'nitrix-jax', 'nitrix-jax-lobpcg', 'nitrix-jax-lobpcg-vjp',
-          'scipy.sparse.eigsh'}
+# Exact solvers that MUST clear the tight gate against the fp64 oracle at every
+# point.  ``nitrix-jax-symmetric`` (promise_symmetry=True) is here because the
+# benchmark input is exactly symmetric (sbm_input), so the assumed-symmetry
+# fast path computes the SAME correct eigenvalues -- it earns its speed ratio
+# against a correct baseline, never by silently computing something cheaper.
+# (The precondition + the violated-assumption hazard are pinned separately.)
+_EXACT = {'nitrix-jax', 'nitrix-jax-symmetric', 'nitrix-jax-lobpcg',
+          'nitrix-jax-lobpcg-vjp', 'scipy.sparse.eigsh'}
 
 
 def _cpu_attempt(mod, name, param):
@@ -149,6 +155,38 @@ def test_cupy_ref_is_gpu_only():
     for mod in _MODS:
         built = mod.CASE.build({'n': 512, 'k': 8, 'fmt': 'dense', 'seed': 0})
         assert requires_of(built.baselines['cupyx.sparse.eigsh'][0]) == 'gpu'
+
+
+def test_promise_symmetry_precondition_and_hazard():
+    # The nitrix-jax-symmetric variant (promise_symmetry=True) is a speed knob
+    # that ASSUMES the operator is symmetric.  Two guards on that assumption:
+    #
+    # (1) precondition holds: the benchmark adjacency (sbm_input) is EXACTLY
+    #     symmetric, so True is valid here -- which is why it sits in _EXACT
+    #     and must match the oracle (test_exact_solvers_pass_tight_gate).
+    assert float(np.max(np.abs(sbm_input(256, seed=0)
+                               - sbm_input(256, seed=0).T))) == 0.0
+    #
+    # (2) it is NOT a free lunch: on a genuinely non-symmetric *stored* pattern
+    #     (top-k kNN -- the op's documented hazard), promise_symmetry=True
+    #     silently returns DIFFERENT eigenvalues than the correct symmetrised
+    #     (=False) path.  This is the "assumption violated -> silently wrong"
+    #     the speed ratio must never be read without.  (NB the False path's own
+    #     degree convention is itself under review -- nitrix FR
+    #     `laplacian-promise-symmetry-degree`; a dedicated non-symmetric
+    #     benchmark case is held pending that decision.)
+    rng = np.random.default_rng(1)
+    A = rng.random((256, 256)).astype(np.float32)
+    np.fill_diagonal(A, 0.0)
+    thresh = np.sort(A, axis=1)[:, -8][:, None]
+    a_topk = np.where(A >= thresh, A, 0.0).astype(np.float32)  # non-symmetric
+    assert float(np.max(np.abs(a_topk - a_topk.T))) > 0.1
+    ell = ell_from_dense(jnp.asarray(a_topk))
+    correct = np.asarray(laplacian_eigenmap(
+        ell, n_components=6, solver='lobpcg', promise_symmetry=False)[1])
+    assumed = np.asarray(laplacian_eigenmap(
+        ell, n_components=6, solver='lobpcg', promise_symmetry=True)[1])
+    assert float(np.max(np.abs(correct - assumed))) > 1e-2  # silently wrong
 
 
 def test_op_qualnames():

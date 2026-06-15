@@ -51,8 +51,8 @@ A **supplementary** lens (it does **not** supersede the strong-GPU and GPU-econo
 | 4 | `nitrix.geometry.integrate_velocity_field` | scipy.ndimage.map_coordinates | 0.209 | ~4.8x slower |
 | 5 | `nitrix.smoothing.gaussian` | scipy.ndimage.gaussian_filter | 0.284 | ~3.5x slower |
 | 6 | `nitrix.signal.sosfilt` | scipy.signal.sosfilt | 0.363 | ~2.8x slower |
-| 7 | `nitrix.graph.diffusion_embedding` | scipy.sparse.eigsh | 0.506 | ~2.0x slower |
-| 8 | `nitrix.graph.laplacian_eigenmap` | scipy.sparse.eigsh | 0.565 | ~1.8x slower |
+| 7 | `nitrix.graph.laplacian_eigenmap` | scipy.sparse.eigsh | 0.45 | ~2.2x slower |
+| 8 | `nitrix.graph.diffusion_embedding` | scipy.sparse.eigsh | 0.492 | ~2.0x slower |
 | 9 | `nitrix.signal.sosfiltfilt` | scipy.signal.sosfiltfilt | 0.591 | ~1.7x slower |
 | 10 | `nitrix.smoothing.bilateral_gaussian` | simpleitk.Bilateral | 0.654 | ~1.5x slower |
 

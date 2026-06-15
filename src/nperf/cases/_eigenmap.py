@@ -105,6 +105,14 @@ def laplacian_eigenvalues(W: Any, k: int = _K) -> np.ndarray:
     lsym = _lsym(np.asarray(W, np.float64))
     return np.sort(np.linalg.eigvalsh(lsym))[1:k + 1]
 
+# NB: a dedicated non-symmetric (kNN) HARD CASE for the promise_symmetry=False
+# path is intentionally NOT added yet -- it is held pending nitrix FR
+# `laplacian-promise-symmetry-degree` (the False path normalises by the stored
+# OUT-degree, diverging ~1.6e-2 from the standard sklearn L_sym(½(A+Aᵀ)); if
+# nitrix adopts full adjacency-symmetrisation the correct baseline changes).
+# The symmetric-input variant (exact) + the silent-divergence hazard test cover
+# the contract in the meantime.
+
 
 def scipy_eigsh(k: int = _K) -> Callable[[Any], Any]:
     '''Smallest k nontrivial L_sym eigenvalues via scipy.sparse.linalg.eigsh
@@ -211,6 +219,23 @@ def spectral_baselines(
 
     baselines = {
         'nitrix-jax': ('jax', runner({})),  # default: eigh(dense)/lobpcg(ell)
+        # The promise_symmetry knob (B18: the default users hit + the asserted
+        # fast path).  promise_symmetry=False (the public DEFAULT, from a bug
+        # fix) applies the symmetric part ½(A·X + Aᵀ·X) -- TWO matvecs per
+        # lobpcg iteration -- to stay correct on a possibly-non-symmetric
+        # stored operator; =True does ONE matvec, trusting symmetry.
+        # CORRECTNESS: the case input (sbm_input) is EXACTLY symmetric, so True
+        # is valid here -- and it is scored against the same fp64 oracle (in
+        # _EXACT), so it earns its ratio against a CORRECT baseline, never by
+        # computing something cheaper-but-wrong.  (On a non-symmetric *stored*
+        # pattern -- e.g. top-k kNN -- True silently diverges; see the hazard
+        # test in tests/test_spectral_cases.py.)
+        # PERF (measured, L4): True is ~2.5-2.8× FASTER on the matrix-free
+        # ELL/lobpcg path (skips the 2nd matvec), but ~1.4-2.2× SLOWER on the
+        # dense eigh path (eigh reads one triangle -> symmetry-agnostic, so the
+        # assumed-symmetric route gives no win there; flagged for nitrix).
+        'nitrix-jax-symmetric': (
+            'jax', runner({'promise_symmetry': True})),
         'nitrix-jax-shift_invert': (
             'jax', runner({'solver': 'shift_invert'})),  # approx ~1e-3
         'nitrix-jax-poly': (
