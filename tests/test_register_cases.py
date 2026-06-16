@@ -7,11 +7,16 @@ recovers the planted warp -- the accuracy pin the no-oracle bench can't gate.
 The recovery tests compile the (unrolled) recipe once each, so they are the
 slow tests in this file by design.
 """
+from dataclasses import replace
+
 import jax.numpy as jnp
 import numpy as np
 import pytest
 from nitrix.register import (
+    MI,
     DemonsSpec,
+    MetricForce,
+    MIForce,
     RegistrationSpec,
     SyNSpec,
     affine_register,
@@ -46,11 +51,17 @@ _RECOVER = [
 @pytest.mark.parametrize('mod', _MODS, ids=lambda m: m.CASE.name)
 def test_case_contract(mod):
     built = mod._build(mod.CASE.representative)
-    # every recipe carries nitrix + the ANTs/dipy cross-tool refs; the demons
-    # case additionally carries the direct ITK demons counterpart.
+    # every recipe carries nitrix + the ANTs/dipy cross-tool refs. demons adds
+    # the direct ITK demons counterpart + the exact-SVF 'algebra' variant (the
+    # log-Demons parity oracle); SyN adds the two MI-force variants (fMRIPrep's
+    # cross-modal metric: closed-form MIForce + autodiff MetricForce(MI)).
     common = {'nitrix-jax', 'ants.registration', 'dipy.registration'}
-    expected = common | ({'simpleitk.demons'}
-                         if mod is demons_mod else set())
+    extra = set()
+    if mod is demons_mod:
+        extra = {'simpleitk.demons', 'nitrix-jax-algebra'}
+    elif mod is syn_mod:
+        extra = {'nitrix-jax-mi', 'nitrix-jax-mi-autodiff'}
+    expected = common | extra
     assert set(built.baselines) == expected
     assert built.ratio_reference == 'nitrix-jax'
     # dipy is declared slow on every recipe (skippable via --skip-slow).
@@ -101,6 +112,34 @@ def test_syn_recovers_deformation():
     after = ncc(np.asarray(res.warped), fixed)
     assert after > before + 0.02, f'no improvement {before:.3f}->{after:.3f}'
     assert bool(jnp.all(res.jacobian_det > 0)), 'folding (jacobian_det <= 0)'
+
+
+def test_syn_mi_force_recovers_and_parity():
+    '''The MI-force variants (fMRIPrep's metric): the closed-form Mattes-MI
+    force recovers the deformation (ncc up, diffeomorphic) AND it agrees with
+    the autodiff MetricForce(MI()) -- the closed-form-vs-autodiff parity oracle
+    the bench's two MI rows measure the *speed* of.'''
+    moving, fixed = syn_pair([28, 28, 28], seed=0)
+    rm = (float(moving.min()), float(moving.max()))
+    rf = (float(fixed.min()), float(fixed.max()))
+    spec = SyNSpec(levels=2, iterations=40)
+    mv, fx = jnp.asarray(moving), jnp.asarray(fixed)
+    r_mi = greedy_syn_register(
+        mv, fx, spec=spec,
+        force=MIForce(bins=32, range_moving=rm, range_fixed=rf))
+    r_ad = greedy_syn_register(
+        mv, fx, spec=spec,
+        force=MetricForce(MI(bins=32, range_moving=rm, range_fixed=rf)))
+    before = ncc(moving, fixed)
+    after = ncc(np.asarray(r_mi.warped), fixed)
+    assert after > before + 0.03, f'MI weak {before:.3f}->{after:.3f}'
+    assert bool(jnp.all(r_mi.jacobian_det > 0)), 'MI folding (jac <= 0)'
+    # parity: the closed form is the autodiff direction (nitrix's S3 oracle) --
+    # the displacement fields are near-identical (cosine ~1).
+    d1 = np.asarray(r_mi.displacement).ravel()
+    d2 = np.asarray(r_ad.displacement).ravel()
+    cos = float(d1 @ d2 / (np.linalg.norm(d1) * np.linalg.norm(d2) + 1e-12))
+    assert cos > 0.99, f'closed-form vs autodiff MI diverge (cosine {cos:.4f})'
 
 
 def test_volreg_contract():
@@ -224,3 +263,22 @@ def test_aniso_demons_recovers_warp():
     before = ncc(moving, fixed)
     after = ncc(np.asarray(res.warped), fixed)
     assert after > before + 0.02, f'no improvement {before:.3f}->{after:.3f}'
+
+
+def test_demons_algebra_recovers_matches_group():
+    '''The 'algebra' representation (exact-SVF, the parity oracle) recovers the
+    planted warp AND lands the same alignment as the default 'group' (perf)
+    path -- the two representations are interchangeable in result, so the bench
+    measures only their *cost* (group ~2 gathers/iter vs algebra re-exp).'''
+    moving, fixed = warp_pair([28, 28, 28], seed=0)
+    mv, fx = jnp.asarray(moving), jnp.asarray(fixed)
+    spec = DemonsSpec(levels=2, iterations=20)
+    r_grp = diffeomorphic_demons_register(mv, fx, spec=spec)
+    r_alg = diffeomorphic_demons_register(
+        mv, fx, spec=replace(spec, representation='algebra'))
+    before = ncc(moving, fixed)
+    a_grp = ncc(np.asarray(r_grp.warped), fixed)
+    a_alg = ncc(np.asarray(r_alg.warped), fixed)
+    assert a_alg > before + 0.05, f'algebra weak {before:.3f}->{a_alg:.3f}'
+    assert abs(a_grp - a_alg) < 0.02, (
+        f'group/algebra diverge in result ({a_grp:.3f} vs {a_alg:.3f})')

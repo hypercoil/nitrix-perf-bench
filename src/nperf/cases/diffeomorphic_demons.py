@@ -29,6 +29,7 @@ see ``cases/_register.py``).  Ratio vs ``nitrix-jax``.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Dict, Tuple
 
 import jax
@@ -85,11 +86,22 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
     baselines = {
         # the recipe; return velocity (the SVF parametrisation -- forces the
-        # full scan to run so compile_time is the real cold compile).
+        # full scan to run so compile_time is the real cold compile). The
+        # DEFAULT representation='group' -- the v4 perf path (~2 gathers/iter).
         'nitrix-jax': (
             'jax',
             lambda mv, fx: diffeomorphic_demons_register(
                 mv, fx, spec=spec).velocity),
+        # the exact-SVF 'algebra' path (re-exp every iter; byte-identical to
+        # the pre-v4 recipe -- the log-Demons parity oracle). Same recipe, one
+        # spec knob flipped, so the ratio vs nitrix-jax is the pure cost of the
+        # group fast path. The matched log-domain reference (better than ANTs/
+        # dipy/ITK, which converge to a *different* warp) for the group result.
+        'nitrix-jax-algebra': (
+            'jax',
+            lambda mv, fx: diffeomorphic_demons_register(
+                mv, fx, spec=replace(spec, representation='algebra')
+            ).velocity),
         'ants.registration': ('ants', ants_ref),     # diffeo ref (SyNOnly)
         'dipy.registration': ('dipy', dipy_ref),      # dipy SyN on SSD
         'simpleitk.demons': ('simpleitk', sitk_ref),  # direct ITK demons

@@ -20,6 +20,25 @@ is only *seconds* on CPU, the GPU win must be **earned** -- it has to clear the
 ~4x hardware-cost bar to count, which the economic verdict measures rather than
 assumes (see ``tools/economic_report.py``).  Ratio vs ``nitrix-jax``.
 
+**The driving force is a benchmarked knob (fMRIPrep parity).**  The default
+``nitrix-jax`` uses the mono-modal LNCC force; two extra nitrix baselines swap
+in the **mutual-information** force that fMRIPrep's SyN-SDC / cross-modal
+deformable registration uses: ``nitrix-jax-mi`` is the closed-form **Mattes
+MI** force (``MIForce`` -- ``mi_grad`` + a joint-histogram scatter, the fast
+cross-modal path), and ``nitrix-jax-mi-autodiff`` is the generic autodiff
+``MetricForce(MI())`` (the same metric driven by ``jax.grad`` of its soft-
+histogram cost).  The two MI rows are *both* the **closed-form-vs-autodiff
+speed lever** (does the hand-written Tier-1 force earn its keep? -- measured
+per platform, not assumed: on CPU the closed form is *not* automatically
+faster, a finding the matrix surfaces) and a **parity oracle** (agree in force
+direction -- nitrix's S3 oracle).  ANTs ``SyNOnly`` already defaults to the
+**mattes-MI** metric (32 bins), so it doubles as the apples-to-apples community
+bar for the MI variants (the fMRIPrep tool itself).  The MI ranges are pinned
+once from the full-res pair (a non-stationary objective).  Note these pairs are
+mono-modal (MI's cost is modality-independent, so the *perf* read is faithful);
+a genuinely cross-modal (T1<->T2 / EPI) input pair is a tracked input-realism
+follow-up.
+
 The size tier also carries **anisotropic** points (``spacing=[1,1,3]``): the op
 corrects the bias where a voxel-isotropic Gaussian / force is physically
 anisotropic (``SyNSpec.spacing``); the refs get the matching voxel->world
@@ -31,7 +50,13 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.register import SyNSpec, greedy_syn_register
+from nitrix.register import (
+    MI,
+    MetricForce,
+    MIForce,
+    SyNSpec,
+    greedy_syn_register,
+)
 
 from ._base import BuiltPoint, Case, SlowBaseline
 from ._real_anatomy import real_syn_pair
@@ -69,6 +94,14 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 
     mj = jax.block_until_ready(jnp.asarray(moving))
     fj = jax.block_until_ready(jnp.asarray(fixed))
+    # MI force ranges, pinned ONCE from the (host) full-res pair -- a data
+    # min/max range drifts as the moving image deforms (a non-stationary
+    # objective), and under jax.jit the recipe cannot resolve a None range from
+    # traced images (float(tracer) is not eager). Same 32 bins as ANTs mattes.
+    rng_m = (float(moving.min()), float(moving.max()))
+    rng_f = (float(fixed.min()), float(fixed.max()))
+    mi_force = MIForce(bins=32, range_moving=rng_m, range_fixed=rng_f)
+    mi_metric = MetricForce(MI(bins=32, range_moving=rng_m, range_fixed=rng_f))
 
     def inputs_for(framework: str) -> Tuple[Any, ...]:
         if framework == 'jax':
@@ -78,9 +111,27 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
     baselines = {
         # return the displacement field (the deliverable): forces the full
         # forward+inverse integrate + midpoint compose to run (real compile).
+        # DEFAULT force = LNCCForce (the mono-modal local-CC path).
         'nitrix-jax': (
             'jax', lambda mv, fx: greedy_syn_register(mv, fx, spec=spec
                                                       ).displacement),
+        # fMRIPrep's metric: the closed-form Mattes-MI force (the cross-modal
+        # deformable fast path -- mi_grad + histogram scatter, no autodiff
+        # tape). Same recipe + a force knob, so the ratio vs nitrix-jax is the
+        # MI-vs-LNCC force cost on the SAME pair.
+        'nitrix-jax-mi': (
+            'jax', lambda mv, fx: greedy_syn_register(
+                mv, fx, spec=spec, force=mi_force).displacement),
+        # the autodiff escape hatch MetricForce(MI()): the parity oracle for
+        # the closed form (agrees in direction/magnitude -- nitrix S3) and
+        # the closed-form-vs-autodiff SPEED LEVER (is the Tier-1 hand-written
+        # force worth it? -- measured per platform, not assumed).
+        'nitrix-jax-mi-autodiff': (
+            'jax', lambda mv, fx: greedy_syn_register(
+                mv, fx, spec=spec, force=mi_metric).displacement),
+        # ANTs SyNOnly defaults to the mattes-MI metric (32 bins) -- so it is
+        # the apples-to-apples community bar for the MI variants (the fMRIPrep
+        # registration tool itself), as well as the SyN gold standard.
         'ants.registration': ('ants', ants_ref),  # gold std (fast: SyNOnly)
         'dipy.registration': ('dipy', dipy_ref),   # dipy diffeo (the slow one)
     }
@@ -141,7 +192,11 @@ CASE = Case(
         'clear the ~4x cost bar to count (measured in ECONOMIC.md, not '
         'assumed). HBM ~ 2 velocity fields + scaling-squaring intermediates '
         '(heaviest after demons). The size tier varies the volume + carries '
-        'anisotropic (1x1x3) points.'),
+        'anisotropic (1x1x3) points. The force is a benchmarked knob: '
+        'nitrix-jax (LNCC) vs the MI force (closed-form MIForce + autodiff '
+        'MetricForce(MI)) -- MI replaces the local-CC window with a '
+        'joint-histogram scatter (modality-independent cost; fMRIPrep parity, '
+        'ANTs SyNOnly = mattes MI is the bar).'),
     build=_build,
     rtol=1e-3,
     atol=1e-4,
