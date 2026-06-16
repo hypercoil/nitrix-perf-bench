@@ -28,23 +28,16 @@ from nperf.cases._register import ncc, syn_pair, warp_pair
 
 _MODS = [rigid_mod, affine_mod, demons_mod, syn_mod]
 # (recipe fn, spec) per case -- coarse-to-fine, few iters (recovery test).
-# affine is xfail(strict): registration-suite-v3 (nitrix 356c768) regressed the
-# multi-level GN/LM affine path -- it DIVERGES at this 28^3 size (the coarse
-# pyramid level falls to <=14^3; params explode). It recovers fine at >=32^3
-# (so the affine *bench* at 96^3+ is unaffected). Filed on nitrix main
-# (FR register-affine-small-grid-divergence, 869ca78); strict so the xfail
-# flips to a failure -- prompting removal -- once nitrix fixes it.
+# affine used to be xfail(strict): registration-suite-v3 (nitrix 356c768)
+# regressed the multi-level GN/LM affine path -- it DIVERGED at this 28^3 size
+# (coarse pyramid level <=14^3). **RESOLVED in registration-suite-v4** (nitrix
+# 58907f8): affine now recovers the planted warp here (the strict xfail flipped
+# to XPASS, prompting this removal; FR register-affine-small-grid-divergence).
 _RECOVER = [
     pytest.param(rigid_register, RegistrationSpec(levels=2, iterations=15),
                  id='rigid'),
-    pytest.param(
-        affine_register, RegistrationSpec(levels=2, iterations=15),
-        id='affine',
-        marks=pytest.mark.xfail(
-            reason='v3 affine multi-level GN/LM diverges at 28^3 (coarse '
-                   '<=14^3); fine >=32^3 -- nitrix FR '
-                   'register-affine-small-grid-divergence (869ca78)',
-            strict=True)),
+    pytest.param(affine_register, RegistrationSpec(levels=2, iterations=15),
+                 id='affine'),
     pytest.param(diffeomorphic_demons_register,
                  DemonsSpec(levels=2, iterations=20), id='demons'),
 ]
