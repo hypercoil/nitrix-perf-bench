@@ -2,20 +2,35 @@
 
 Scale-gaming defence: the scaling curve + the stated cost law, so a small-size win cannot hide a large-size / batched loss or OOM. Platform: `jax-cuda12`.
 
+## affine_exp  (nitrix.geometry.affine_exp)  [jax-cuda12]
+
+**Cost law.** O(B) over the batch B, embarrassingly parallel, but heavier per element than rigid_exp: a matrix_exp (scaling-and-squaring, ~20 3x3 matmuls) of the gl(3) generator + a direct translation. Throughput-bound; HBM ~ B. The batch tier varies B. (The 4x4 matrix is the small-N regime of the matrix_exp case, here batched.)
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| b=1024 | 0.15ms | 1.87ms (affine_exp) | 0.08x | 0.7MB | 0.0MB | — |
+| b=16384 | 0.18ms | 1.86ms (affine_exp) | 0.10x | 11.5MB | 0.8MB | — |
+| b=65536 | 0.32ms | 3.99ms (affine_exp) | 0.08x | 46.1MB | 4.2MB | 11x |
+| b=262144 | 1.43ms | 15.80ms (affine_exp) | 0.09x | 184.5MB | 16.8MB | 11x |
+| b=1048576 | 13.54ms | 99.29ms (affine_exp) | 0.14x | 738.2MB | 67.1MB | 11x |
+
+- **Speed:** nitrix wins 5/5 sizes; at the largest `b=1048576`, nitrix 7.33x ahead.
+- **Projected OOM (≈24GB):** nitrix ~34.1 Melem vs best baseline ~375 Melem (~11x more headroom).
+
 ## affine_register  (nitrix.register.affine_register)  [jax-cuda12]
 
 **Cost law.** post loop-roll (lax.scan): COMPILE ~flat in iterations, ~4-11 s (was 24-211 s unrolled; the L3x30 CPU compile that failed XLA now compiles). STEADY ~ iterations x P x N with P=12 (assemble J^TJ + a matrix_exp of the linear block + a P x P solve) -- ~2x rigid per-iter. GPU steady is overhead-bound below ~48^3 then compute-bound; the GPU/CPU speedup climbs to a brain-scale plateau ~35x. HBM like rigid (J is P-thin); cold peak_hbm is autotune-contaminated -- no OOM projection (see reports/REGISTRATION_SCALING.md). Bias: fixed (levels=2, iters=20); real pipelines raise levels with resolution.
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 11.49ms | — | ok | 219.0MB | — | — |
-| 96x96x96 | 26.36ms | — | ok | 1279.8MB | — | — |
-| 96x96x96 world | 78.45ms | — | ok | 1484.8MB | — | — |
-| mni152 2mm | 36.59ms | — | ok | 1634.8MB | — | — |
-| 128x128x128 | 69.68ms | — | ok | 8733.6MB | — | — |
-| 128x128x128 world | 198.12ms | — | ok | 8758.2MB | — | — |
-| 160x160x160 | 138.91ms | — | ok | 13694.1MB | — | — |
-| 192x192x192 | 244.58ms | — | ok | 1374.6MB | — | — |
+| 48x48x48 | 12.83ms | — | ok | 470.7MB | — | — |
+| 96x96x96 | 35.62ms | — | ok | 1279.6MB | — | — |
+| 96x96x96 world | 73.22ms | — | ok | 593.6MB | — | — |
+| mni152 2mm | 27.49ms | — | ok | 1634.8MB | — | — |
+| 128x128x128 | 52.16ms | — | ok | 8733.2MB | — | — |
+| 128x128x128 world | 176.37ms | — | ok | 734.0MB | — | — |
+| 160x160x160 | 119.53ms | — | ok | 13643.8MB | — | — |
+| 192x192x192 | 223.97ms | — | ok | 1374.6MB | — | — |
 
 - **Projected OOM (≈24GB):** nitrix ~123.6 Melem.
 
@@ -25,12 +40,28 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| N2000 48x48x48 | 6.32ms | — | ok | 336.0MB | — | — |
-| N5000 64x64x64 | 9.63ms | — | ok | 336.7MB | — | — |
-| N20000 64x64x64 | 3.44ms | — | ok | 337.1MB | — | — |
-| N80000 64x64x64 | 5.86ms | — | ok | 338.6MB | — | — |
+| N2000 48x48x48 | 6.21ms | — | ok | 336.0MB | — | — |
+| N5000 64x64x64 | 1.41ms | — | ok | 336.7MB | — | — |
+| N20000 64x64x64 | 5.28ms | — | ok | 337.1MB | — | — |
+| N80000 64x64x64 | 10.14ms | — | ok | 338.6MB | — | — |
 
 - **Projected OOM (≈24GB):** nitrix ~5.7 Melem.
+
+## bending_energy  (nitrix.register.bending_energy)  [jax-cuda12]
+
+**Cost law.** O(N) over the voxel count N but ~2x gradient_smoothness: the displacement Jacobian, then a SECOND central-diff of each of its d*d components (the per-voxel Hessian, ~d*d*d stencil passes) + a Frobenius reduction. Stencil-heavy, bandwidth-bound, GPU-pure; HBM ~ N with a larger constant (the (d*d, d) Hessian intermediate materialises). The brain-scale tier varies the volume.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.32ms | 6.91ms (bending_energy) | 0.05x | 134.9MB | 0.4MB | — |
+| 48^3 | 0.36ms | 7.24ms (bending_energy) | 0.05x | 204.3MB | 2.1MB | 97x |
+| 64^3 | 0.57ms | 7.74ms (bending_energy) | 0.07x | 618.8MB | 4.2MB | 148x |
+| 96^3 | 2.59ms | 13.84ms (bending_energy) | 0.19x | 1317.9MB | 16.8MB | 79x |
+| 128^3 | 7.29ms | 46.39ms (bending_energy) | 0.16x | 8758.2MB | 33.6MB | 261x |
+| 160^3 | 15.21ms | 99.28ms (bending_energy) | 0.15x | 13677.8MB | 67.1MB | 204x |
+
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160^3`, nitrix 6.53x ahead.
+- **Projected OOM (≈24GB):** nitrix ~7.2 Melem vs best baseline ~1465 Melem (~204x more headroom).
 
 ## close  (nitrix.morphology.close)  [jax-cuda12]
 
@@ -50,6 +81,22 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 - **Speed:** nitrix wins 3/7 sizes; baseline ahead at `256x256x256 ball2` 303.67x, `4*128x128x128 ball2` 213.44x, `64x64x64 ball2` 8.54x, `256x256 disk3` 1.21x; at the largest `256x256x256 ball2`, baseline 303.67x ahead.
 - **Projected OOM (≈24GB):** nitrix ~23.7 Melem vs best baseline ~6000 Melem (~253x more headroom).
 - **OOM-as-signal:** nitrix `oom` at `256x256x256 ball4` while grey_closing ran (26.81ms).
+
+## compose_velocity  (nitrix.geometry.compose_velocity)  [jax-cuda12]
+
+**Cost law.** O(N) over the voxel count N (order=2): two displacement Jacobians (central-diff stencils) + two ...ij,...j contractions + the add. Stencil + contraction, memory-bandwidth-bound, GPU-pure; HBM ~ N (the Jacobian intermediates). order=1 is a trivial elementwise add. The brain-scale tier varies the volume.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.12ms | 1.80ms (compose_velocity) | 0.07x | 103.0MB | 0.8MB | — |
+| 48^3 | 0.12ms | 2.08ms (compose_velocity) | 0.06x | 109.6MB | 3.4MB | 32x |
+| 64^3 | 0.13ms | 2.65ms (compose_velocity) | 0.05x | 121.6MB | 8.4MB | 14x |
+| 96^3 | 0.26ms | 6.72ms (compose_velocity) | 0.04x | 182.8MB | 33.6MB | 5x |
+| 128^3 | 1.06ms | 21.22ms (compose_velocity) | 0.05x | 318.8MB | 67.1MB | 5x |
+| 160^3 | 1.98ms | 43.95ms (compose_velocity) | 0.05x | 536.9MB | 134.2MB | 4x |
+
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160^3`, nitrix 22.15x ahead.
+- **Projected OOM (≈24GB):** nitrix ~183.1 Melem vs best baseline ~732 Melem (~4x more headroom).
 
 ## conditionalcorr  (nitrix.stats.conditionalcorr)  [jax-cuda12]
 
@@ -80,6 +127,22 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 - **Speed:** nitrix wins 5/5 sizes; at the largest `c2048 d32 obs8192`, nitrix 1.19x ahead.
 - **Projected OOM (≈24GB):** nitrix ~1087.8 Melem vs best baseline ~5908 Melem (~5x more headroom).
+
+## connected_components  (nitrix.morphology.connected_components)  [jax-cuda12]
+
+**Cost law.** jit-able label propagation with POINTER JUMPING (lax.while_loop: a neighbour-max hop + an L=L[L-1] pointer-jump per pass), O(log d) passes for diameter d, each O(N). MEASURED (L4): nitrix steady GROWS STEEPLY (1.3 -> 15.7 ms over 48 -> 160^3, ~12x) while cupyx label stays ~flat (0.6 -> 0.85 ms), so cupyx pulls from ~2x to ~18x ahead -- nitrix SCALES POORLY here, a kernel/algorithm scale risk (filed on nitrix main).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.68ms | 0.39ms (label) | 1.76x | 33.6MB | 0.0MB | — |
+| 48^3 | 1.33ms | 0.40ms (label) | 3.35x | 33.7MB | 0.1MB | — |
+| 64^3 | 1.64ms | 0.50ms (label) | 3.29x | 33.8MB | 0.3MB | — |
+| 96^3 | 1.75ms | 0.52ms (label) | 3.39x | 34.4MB | 0.9MB | — |
+| 128^3 | 6.06ms | 0.65ms (label) | 9.34x | 52.4MB | 2.1MB | 25x |
+| 160^3 | 15.82ms | 0.87ms (label) | 18.23x | 104.9MB | 4.2MB | 25x |
+
+- **Speed:** nitrix wins 0/6 sizes; baseline ahead at `160^3` 18.23x, `128^3` 9.34x, `96^3` 3.39x, `48^3` 3.35x (+2 more); at the largest `160^3`, baseline 18.23x ahead.
+- **Projected OOM (≈24GB):** nitrix ~937.5 Melem vs best baseline ~23438 Melem (~25x more headroom).
 
 ## corr  (nitrix.stats.corr)  [jax-cuda12]
 
@@ -113,16 +176,16 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 18.43ms | 373.49ms (demons) | 0.05x | 339.1MB | 0.9MB | — |
-| 96x96x96 | 79.46ms | 4032.41ms (demons) | 0.02x | 3777.4MB | 8.4MB | 450x |
-| 96x96x96 aniso1x1x3 | 84.16ms | 4194.85ms (demons) | 0.02x | 3777.4MB | 8.4MB | 450x |
-| mni152 2mm | 117.75ms | 4188.95ms (demons) | 0.03x | 15019.3MB | 16.8MB | 895x |
-| 128x128x128 | 295.31ms | 8629.84ms (demons) | 0.03x | 8783.4MB | 16.8MB | 524x |
-| 128x128x128 aniso1x1x3 | 301.42ms | 9396.10ms (demons) | 0.03x | 8850.5MB | 16.8MB | 528x |
-| 160x160x160 | 647.53ms | 19915.77ms (demons) | 0.03x | 2652.2MB | 33.6MB | 79x |
+| 48x48x48 | 12.63ms | 1170.55ms (demons) | 0.01x | 203.4MB | 0.9MB | — |
+| 96x96x96 | 66.02ms | 4380.52ms (demons) | 0.02x | 1309.5MB | 8.4MB | 156x |
+| 96x96x96 aniso1x1x3 | 51.29ms | 8041.49ms (demons) | 0.01x | 1309.5MB | 8.4MB | 156x |
+| mni152 2mm | 69.31ms | 3126.70ms (demons) | 0.02x | 1634.8MB | 16.8MB | 97x |
+| 128x128x128 | 281.27ms | 10566.57ms (demons) | 0.03x | 8758.2MB | 16.8MB | 522x |
+| 128x128x128 aniso1x1x3 | 183.47ms | 10548.59ms (demons) | 0.02x | 8758.2MB | 16.8MB | 522x |
+| 160x160x160 | 741.09ms | 19498.59ms (demons) | 0.04x | 13643.8MB | 33.6MB | 407x |
 
-- **Speed:** nitrix wins 7/7 sizes; at the largest `160x160x160`, nitrix 30.76x ahead.
-- **Projected OOM (≈24GB):** nitrix ~37.1 Melem vs best baseline ~2930 Melem (~79x more headroom).
+- **Speed:** nitrix wins 7/7 sizes; at the largest `160x160x160`, nitrix 26.31x ahead.
+- **Projected OOM (≈24GB):** nitrix ~7.2 Melem vs best baseline ~2930 Melem (~407x more headroom).
 
 ## diffusion_embedding  (nitrix.graph.diffusion_embedding)  [jax-cuda12]
 
@@ -130,14 +193,14 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| n=1024 dense | — | 30.44ms (eigsh) | skipped | — | 4.2MB | — |
-| n=2048 dense | — | 44.67ms (eigsh) | skipped | — | 16.8MB | — |
-| n=2048 ell | 97.00ms | 44.71ms (eigsh) | 2.17x | 121.0MB | 20.2MB | 6x |
+| n=1024 dense | — | 30.36ms (eigsh) | skipped | — | 4.2MB | — |
+| n=2048 dense | — | 46.26ms (eigsh) | skipped | — | 16.8MB | — |
+| n=2048 ell | 168.55ms | 45.02ms (eigsh) | 3.74x | 121.0MB | 20.2MB | 6x |
 | n=10242 ell | 42.00ms | 129.82ms (eigsh) | 0.32x | 143.3MB | 8.4MB | 17x |
 | n=40962 ell | 22.73ms | 202.86ms (eigsh) | 0.11x | 153.9MB | 33.6MB | 5x |
 | n=120000 ell | 46.31ms | 374.97ms (eigsh) | 0.12x | 204.5MB | 67.1MB | 3x |
 
-- **Speed:** nitrix wins 3/4 sizes; baseline ahead at `n=2048 ell` 2.17x; at the largest `n=120000 ell`, nitrix 8.10x ahead.
+- **Speed:** nitrix wins 3/4 sizes; baseline ahead at `n=2048 ell` 3.74x; at the largest `n=120000 ell`, nitrix 8.10x ahead.
 - **Projected OOM (≈24GB):** nitrix ~225.4 Melem vs best baseline ~687 Melem (~3x more headroom).
 - **Dispatch note (not a scale risk):** nitrix `skipped` at `n=1024 dense`, `n=2048 dense` (the default path is unavailable on this platform -- e.g. the cuSolver eigh block -- while the reference ran).
 
@@ -183,6 +246,22 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 - **Speed:** nitrix wins 5/10 sizes; baseline ahead at `512x512` 1.70x, `256x256` 1.40x, `256x256x256` 1.21x, `128x128` 1.09x (+1 more); at the largest `16*128x128x128`, nitrix 1.10x ahead.
 - **Projected OOM (≈24GB):** nitrix ~1200.0 Melem vs best baseline ~6000 Melem (~5x more headroom).
 
+## distance_transform_edt  (nitrix.morphology.distance_transform_edt)  [jax-cuda12]
+
+**Cost law.** separable min-plus SEMIRING EDT (all-parabola search, the euclidean alias of distance_transform): high-FLOP but shallow/parallel, so it WINS small and LOSES large vs F-H. MEASURED (L4): nitrix 2.4x ahead of cupyx at 48^3, crossing over ~96^3 to 2.2x behind at 160^3 (0.15->1.99 vs cupyx 0.36->0.89 ms) -- the known semiring trade-off. A scale-aware dispatch (semiring small, F-H large) keeps the win at both ends (filed lower-priority on nitrix main).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.14ms | 0.13ms (distance_transform_edt) | 1.10x | 33.8MB | 0.0MB | — |
+| 48^3 | 0.18ms | 0.48ms (distance_transform_edt) | 0.37x | 34.5MB | 0.1MB | — |
+| 64^3 | 0.28ms | 0.21ms (distance_transform_edt) | 1.35x | 36.7MB | 0.3MB | — |
+| 96^3 | 0.37ms | 0.32ms (distance_transform_edt) | 1.17x | 41.5MB | 0.9MB | — |
+| 128^3 | 0.48ms | 0.51ms (distance_transform_edt) | 0.93x | 52.4MB | 2.1MB | 25x |
+| 160^3 | 1.97ms | 0.89ms (distance_transform_edt) | 2.22x | 71.3MB | 4.2MB | 17x |
+
+- **Speed:** nitrix wins 2/6 sizes; baseline ahead at `160^3` 2.22x, `64^3` 1.35x, `96^3` 1.17x, `32^3` 1.10x; at the largest `160^3`, baseline 2.22x ahead.
+- **Projected OOM (≈24GB):** nitrix ~1378.7 Melem vs best baseline ~23438 Melem (~17x more headroom).
+
 ## erode  (nitrix.morphology.erode)  [jax-cuda12]
 
 **Cost law.** time: flat box O(N) (fused reduce_window) vs explicit SE O(N*k^d) (im2col); HBM: box O(N), explicit-SE im2col O(N*k^d) -> 256^3 ball OOMs (~49 GB) while cupy/scipy (O(N*k), in-place) hold. The flat box scales; the disk/ball footprint does not.
@@ -218,21 +297,68 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 | V=262144 | — | — | skipped | — | — | — |
 
 
-## greedy_syn_register  (nitrix.register.greedy_syn_register)  [jax-cuda12]
+## gradient_smoothness  (nitrix.register.gradient_smoothness)  [jax-cuda12]
 
-**Cost law.** STEADY ~ levels x iters x n_steps x N: each iteration warps both images to the midpoint (two scaling-and-squaring SVF integrations), computes the LNCC force, smooths it (fluid) + the velocity (diffusion) -- two Gaussians/iter -- then a midpoint compose+invert at the end. The heaviest recipe to COMPILE (two velocity fields), but ANTs SyNOnly (the gold standard) is FAST on CPU (~0.5/2.9/6.0 s at 48/96/128^3 measured), so the GPU win is NOT a given -- it must clear the ~4x cost bar to count (measured in ECONOMIC.md, not assumed). HBM ~ 2 velocity fields + scaling-squaring intermediates (heaviest after demons). The size tier varies the volume + carries anisotropic (1x1x3) points.
+**Cost law.** O(N) over the voxel count N: one roll-based central-diff pass (the displacement Jacobian) + a Frobenius reduction. Stencil + reduction, memory-bandwidth-bound and GPU-pure (no solver); HBM ~ N (a few d-component field copies). The brain-scale tier varies the volume.
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 184.43ms | — | ok | 339.1MB | — | — |
-| 64x64x64 | 178.89ms | — | ok | 1711.4MB | — | — |
-| 64x64x64 aniso1x1x3 | 205.60ms | — | ok | 1711.4MB | — | — |
-| 96x96x96 | 741.84ms | — | ok | 3777.4MB | — | — |
-| 96x96x96 aniso1x1x3 | 775.93ms | — | ok | 3777.4MB | — | — |
-| mni152 2mm | 1062.44ms | — | ok | 4749.4MB | — | — |
-| 128x128x128 | 2459.94ms | — | ok | 8783.4MB | — | — |
+| 32^3 | 0.10ms | 0.88ms (gradient_smoothness) | 0.12x | 33.9MB | 0.4MB | — |
+| 48^3 | 0.11ms | 1.04ms (gradient_smoothness) | 0.10x | 35.7MB | 2.1MB | 17x |
+| 64^3 | 0.11ms | 1.25ms (gradient_smoothness) | 0.09x | 37.7MB | 4.2MB | 9x |
+| 96^3 | 0.16ms | 3.25ms (gradient_smoothness) | 0.05x | 50.3MB | 16.8MB | 3x |
+| 128^3 | 0.23ms | 11.27ms (gradient_smoothness) | 0.02x | 67.1MB | 33.6MB | 2x |
+| 160^3 | 0.35ms | 22.91ms (gradient_smoothness) | 0.02x | 83.9MB | 67.1MB | 1x |
+
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160^3`, nitrix 65.36x ahead.
+- **Projected OOM (≈24GB):** nitrix ~1171.6 Melem vs best baseline ~1465 Melem (~1x more headroom).
+
+## greedy_syn_register  (nitrix.register.greedy_syn_register)  [jax-cuda12]
+
+**Cost law.** STEADY ~ levels x iters x n_steps x N: each iteration warps both images to the midpoint (two scaling-and-squaring SVF integrations), computes the LNCC force, smooths it (fluid) + the velocity (diffusion) -- two Gaussians/iter -- then a midpoint compose+invert at the end. The heaviest recipe to COMPILE (two velocity fields), but ANTs SyNOnly (the gold standard) is FAST on CPU (~0.5/2.9/6.0 s at 48/96/128^3 measured), so the GPU win is NOT a given -- it must clear the ~4x cost bar to count (measured in ECONOMIC.md, not assumed). HBM ~ 2 velocity fields + scaling-squaring intermediates (heaviest after demons). The size tier varies the volume + carries anisotropic (1x1x3) points. The force is a benchmarked knob: nitrix-jax (LNCC) vs the MI force (closed-form MIForce + autodiff MetricForce(MI)) -- MI replaces the local-CC window with a joint-histogram scatter (modality-independent cost; fMRIPrep parity, ANTs SyNOnly = mattes MI is the bar).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 48x48x48 | 74.60ms | — | ok | 291.8MB | — | — |
+| 64x64x64 | 115.54ms | — | ok | 616.7MB | — | — |
+| 64x64x64 aniso1x1x3 | 120.23ms | — | ok | 616.7MB | — | — |
+| 96x96x96 | 398.74ms | — | ok | 1309.5MB | — | — |
+| 96x96x96 aniso1x1x3 | 418.95ms | — | ok | 1309.5MB | — | — |
+| mni152 2mm | 534.62ms | — | ok | 1634.8MB | — | — |
+| 128x128x128 | 1236.47ms | — | ok | 8758.2MB | — | — |
 
 - **Projected OOM (≈24GB):** nitrix ~5.7 Melem.
+
+## invert_displacement  (nitrix.geometry.invert_displacement)  [jax-cuda12]
+
+**Cost law.** O(K x N): K Picard iterations (data-adaptive -- a lax.while_loop to relative tol, NOT a fixed scan), each a 3-channel linear-interp warp (gather) over N voxels. Compile flat (one while_loop body); steady ~ K x N, K set by convergence (‖∇s‖ controls K). The headline is capability: IFT-differentiable (numpy/cupy are not) + early-exit coexisting with the implicit backward. The brain-scale tier varies N (capped at 128^3 -- iterative + the cupy host-sync ref).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.71ms | 10.56ms (invert_displacement) | 0.07x | 33.9MB | 0.4MB | — |
+| 48^3 | 1.11ms | 12.62ms (invert_displacement) | 0.09x | 35.7MB | 2.1MB | 17x |
+| 64^3 | 2.82ms | 16.64ms (invert_displacement) | 0.17x | 37.7MB | 4.2MB | 9x |
+| 96^3 | 11.12ms | 18.63ms (invert_displacement) | 0.60x | 105.1MB | 16.8MB | 6x |
+| 128^3 | — | — | fidelity_failed | — | — | — |
+
+- **Speed:** nitrix wins 4/4 sizes; at the largest `96^3`, nitrix 1.68x ahead.
+- **Projected OOM (≈24GB):** nitrix ~202.0 Melem vs best baseline ~1266 Melem (~6x more headroom).
+
+## jacobian_folding_penalty  (nitrix.register.jacobian_folding_penalty)  [jax-cuda12]
+
+**Cost law.** O(N) over the voxel count N: one roll-based central-diff pass (the Jacobian) + a closed-form Sarrus determinant + relu + a mean. Stencil + reduction, memory-bandwidth-bound, GPU-pure; HBM ~ N. The relu makes the *value* data-dependent but the *cost* is not (det + relu run on every voxel). The brain-scale tier varies the volume.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.10ms | 0.92ms (jacobian_folding_penalty) | 0.11x | 33.9MB | 0.4MB | — |
+| 48^3 | 0.11ms | 0.92ms (jacobian_folding_penalty) | 0.12x | 35.7MB | 2.1MB | 17x |
+| 64^3 | 0.13ms | 0.96ms (jacobian_folding_penalty) | 0.13x | 37.7MB | 4.2MB | 9x |
+| 96^3 | 0.15ms | 1.61ms (jacobian_folding_penalty) | 0.09x | 50.3MB | 16.8MB | 3x |
+| 128^3 | 0.24ms | 8.90ms (jacobian_folding_penalty) | 0.03x | 67.1MB | 33.6MB | 2x |
+| 160^3 | 0.27ms | 18.44ms (jacobian_folding_penalty) | 0.01x | 83.9MB | 67.1MB | 1x |
+
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160^3`, nitrix 67.78x ahead.
+- **Projected OOM (≈24GB):** nitrix ~1171.8 Melem vs best baseline ~1465 Melem (~1x more headroom).
 
 ## laplacian_eigenmap  (nitrix.graph.laplacian_eigenmap)  [jax-cuda12]
 
@@ -240,18 +366,34 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| n=1024 dense | — | 31.32ms (eigsh) | skipped | — | 4.2MB | — |
-| n=1024 dense k32 | — | 86.25ms (eigsh) | skipped | — | 4.2MB | — |
-| n=2048 dense | — | 69.52ms (eigsh) | skipped | — | 16.8MB | — |
-| n=2048 ell | 179.47ms | 50.75ms (eigsh) | 3.54x | 121.0MB | 20.2MB | 6x |
-| n=4096 ell | 225.66ms | 83.16ms (eigsh) | 2.71x | 101.0MB | 80.3MB | 1x |
+| n=1024 dense | — | 31.34ms (eigsh) | skipped | — | 4.2MB | — |
+| n=1024 dense k32 | — | 81.87ms (eigsh) | skipped | — | 4.2MB | — |
+| n=2048 dense | — | 45.91ms (eigsh) | skipped | — | 16.8MB | — |
+| n=2048 ell | 146.31ms | 46.20ms (eigsh) | 3.17x | 121.0MB | 20.2MB | 6x |
+| n=4096 ell | 631.83ms | 81.93ms (eigsh) | 7.71x | 101.1MB | 80.3MB | 1x |
 | n=10242 ell | 42.59ms | 609.07ms (eigsh) | 0.07x | 143.3MB | 8.4MB | 17x |
 | n=40962 ell | 23.55ms | 1002.00ms (eigsh) | 0.02x | 153.9MB | 33.6MB | 5x |
 | n=120000 ell | 47.35ms | 3273.97ms (eigsh) | 0.01x | 204.5MB | 67.1MB | 3x |
 
-- **Speed:** nitrix wins 3/5 sizes; baseline ahead at `n=2048 ell` 3.54x, `n=4096 ell` 2.71x; at the largest `n=120000 ell`, nitrix 69.15x ahead.
+- **Speed:** nitrix wins 3/5 sizes; baseline ahead at `n=4096 ell` 7.71x, `n=2048 ell` 3.17x; at the largest `n=120000 ell`, nitrix 69.15x ahead.
 - **Projected OOM (≈24GB):** nitrix ~225.4 Melem vs best baseline ~687 Melem (~3x more headroom).
 - **Dispatch note (not a scale risk):** nitrix `skipped` at `n=1024 dense`, `n=1024 dense k32`, `n=2048 dense` (the default path is unavailable on this platform -- e.g. the cuSolver eigh block -- while the reference ran).
+
+## largest_connected_component  (nitrix.morphology.largest_connected_component)  [jax-cuda12]
+
+**Cost law.** connected_components (pointer-jumping label propagation, O(log d) passes for diameter d) + a bincount/argmax over labels. Global, GPU-pure; steady ~ N log(d). MEASURED (L4, 48^3): like connected_components, nitrix lags cupyx label here (cupyx ~2x) -- a shared kernel/algorithm candidate. The size tier varies N.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.70ms | 0.70ms (largest_cc) | 0.99x | 33.6MB | 0.0MB | — |
+| 48^3 | 1.38ms | 0.85ms (largest_cc) | 1.63x | 33.7MB | 0.1MB | — |
+| 64^3 | 2.24ms | 1.02ms (largest_cc) | 2.20x | 33.8MB | 0.3MB | — |
+| 96^3 | 2.21ms | 1.07ms (largest_cc) | 2.07x | 34.4MB | 0.9MB | — |
+| 128^3 | 7.20ms | 1.06ms (largest_cc) | 6.79x | 35.7MB | 2.1MB | 17x |
+| 160^3 | 18.60ms | 1.20ms (largest_cc) | 15.56x | 79.5MB | 4.2MB | 19x |
+
+- **Speed:** nitrix wins 1/6 sizes; baseline ahead at `160^3` 15.56x, `128^3` 6.79x, `64^3` 2.20x, `96^3` 2.07x (+1 more); at the largest `160^3`, baseline 15.56x ahead.
+- **Projected OOM (≈24GB):** nitrix ~1236.6 Melem vs best baseline ~23438 Melem (~19x more headroom).
 
 ## matrix_exp  (nitrix.linalg.matrix_exp)  [jax-cuda12]
 
@@ -267,6 +409,38 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 - **Speed:** nitrix wins 3/5 sizes; baseline ahead at `n=16` 6.31x, `n=64` 1.11x; at the largest `n=1024`, nitrix 1.39x ahead.
 - **Projected OOM (≈24GB):** nitrix ~0.2 Melem vs best baseline ~0 Melem (~1x more headroom).
+
+## max_pool_with_indices_nd  (nitrix.morphology.max_pool_with_indices_nd)  [jax-cuda12]
+
+**Cost law.** O(N) over the input voxel count N (B*C*d^3): one windowed max + a windowed argmax per non-overlapping 2^3 block. Embarrassingly parallel, memory-bandwidth-bound, GPU-pure; the argmax ~doubles the cost over a max-only pool (~2.6x on the L4). The tier varies N.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.12ms | 0.16ms (max_pool) | 0.74x | 34.5MB | 0.8MB | — |
+| 48^3 | 0.13ms | 0.23ms (max_pool) | 0.56x | 38.4MB | 4.2MB | 9x |
+| 64^3 | 0.19ms | 0.37ms (max_pool) | 0.50x | 43.5MB | 8.4MB | 5x |
+| 96^3 | 0.36ms | 1.16ms (max_pool) | 0.31x | 106.0MB | 33.6MB | 3x |
+| 128^3 | 1.05ms | 2.63ms (max_pool) | 0.40x | 146.8MB | 67.1MB | 2x |
+| 160^3 | 1.91ms | 5.19ms (max_pool) | 0.37x | 293.0MB | 134.2MB | 2x |
+
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160^3`, nitrix 2.72x ahead.
+- **Projected OOM (≈24GB):** nitrix ~335.5 Melem vs best baseline ~732 Melem (~2x more headroom).
+
+## max_unpool_nd  (nitrix.morphology.max_unpool_nd)  [jax-cuda12]
+
+**Cost law.** O(N) over the output voxel count N (B*C*d^3): allocate a zeroed grid and scatter one value per pooled position to its flat index. A scatter (data-dependent writes), memory-bandwidth-bound, GPU-pure; HBM ~ N. The size tier varies the output volume.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.11ms | 0.23ms (max_unpool) | 0.47x | 37.2MB | 37.2MB | 1x |
+| 48^3 | 0.10ms | 0.21ms (max_unpool) | 0.49x | 47.3MB | 47.3MB | 1x |
+| 64^3 | 0.11ms | 0.21ms (max_unpool) | 0.54x | 64.5MB | 64.5MB | 1x |
+| 96^3 | 0.21ms | 0.24ms (max_unpool) | 0.90x | 176.7MB | 176.7MB | 1x |
+| 128^3 | 0.80ms | 0.75ms (max_unpool) | 1.07x | 348.1MB | 348.1MB | 1x |
+| 160^3 | 1.50ms | 1.64ms (max_unpool) | 0.92x | 684.3MB | 684.3MB | 1x |
+
+- **Speed:** nitrix wins 5/6 sizes; baseline ahead at `128^3` 1.07x; at the largest `160^3`, nitrix 1.09x ahead.
+- **Projected OOM (≈24GB):** nitrix ~143.7 Melem vs best baseline ~144 Melem (~1x more headroom).
 
 ## open  (nitrix.morphology.open)  [jax-cuda12]
 
@@ -410,8 +584,39 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 | V=64 | 11.30ms | — | ok | 151.1MB | — | — |
 | V=256 | 11.35ms | — | ok | 151.2MB | — | — |
 | V=1024 | 11.29ms | — | ok | 135.0MB | — | — |
+| V=512 | 12.65ms | — | ok | 151.1MB | — | — |
 
-- **Projected OOM (≈24GB):** nitrix ~0.2 Melem.
+- **Projected OOM (≈24GB):** nitrix ~174.8 Melem.
+
+## rigid_exp  (nitrix.geometry.rigid_exp)  [jax-cuda12]
+
+**Cost law.** O(B) over the batch B, embarrassingly parallel: Rodrigues SO(3) exp (a few 3x3 matmuls) + a direct translation per transform, tiny 4x4 matrices. Throughput-bound; launch-bound at small B (GPU favoured as B grows). HBM ~ B. The batch tier varies B (cohort / per-voxel local-affine field scale).
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| b=1024 | 0.11ms | 0.25ms (rigid_exp) | 0.42x | 0.2MB | 0.0MB | — |
+| b=16384 | 0.12ms | 0.71ms (rigid_exp) | 0.17x | 34.2MB | 0.4MB | — |
+| b=65536 | 0.12ms | 1.00ms (rigid_exp) | 0.12x | 36.7MB | 2.1MB | 18x |
+| b=262144 | 0.22ms | 1.42ms (rigid_exp) | 0.15x | 75.5MB | 8.4MB | 9x |
+| b=1048576 | 1.54ms | 8.15ms (rigid_exp) | 0.19x | 251.7MB | 33.6MB | 8x |
+
+- **Speed:** nitrix wins 5/5 sizes; at the largest `b=1048576`, nitrix 5.31x ahead.
+- **Projected OOM (≈24GB):** nitrix ~100.0 Melem vs best baseline ~750 Melem (~8x more headroom).
+
+## rigid_log  (nitrix.geometry.rigid_log)  [jax-cuda12]
+
+**Cost law.** O(B) over the batch B, embarrassingly parallel: principal SO(3) log (trace -> angle, off-diagonals -> axis) + the translation column per transform, tiny 4x4 matrices. Throughput-bound; HBM ~ B. The batch tier varies B.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| b=1024 | 0.10ms | 0.09ms (rigid_log) | 1.09x | 0.1MB | 0.1MB | — |
+| b=16384 | 0.10ms | 0.42ms (rigid_log) | 0.25x | 2.2MB | 1.0MB | 2x |
+| b=65536 | 0.11ms | 0.41ms (rigid_log) | 0.26x | 8.7MB | 4.2MB | 2x |
+| b=262144 | 0.12ms | 0.42ms (rigid_log) | 0.30x | 34.6MB | 16.8MB | 2x |
+| b=1048576 | 0.92ms | 2.20ms (rigid_log) | 0.42x | 138.4MB | 67.1MB | 2x |
+
+- **Speed:** nitrix wins 4/5 sizes; baseline ahead at `b=1024` 1.09x; at the largest `b=1048576`, nitrix 2.40x ahead.
+- **Projected OOM (≈24GB):** nitrix ~181.8 Melem vs best baseline ~375 Melem (~2x more headroom).
 
 ## rigid_register  (nitrix.register.rigid_register)  [jax-cuda12]
 
@@ -419,16 +624,32 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| 48x48x48 | 5.47ms | — | ok | 203.4MB | — | — |
-| 96x96x96 | 20.24ms | — | ok | 1279.8MB | — | — |
-| 96x96x96 world | 49.24ms | — | ok | 1514.6MB | — | — |
-| mni152 2mm | 29.22ms | — | ok | 1606.0MB | — | — |
-| 128x128x128 | 61.33ms | — | ok | 8733.6MB | — | — |
-| 128x128x128 world | 137.27ms | — | ok | 8758.2MB | — | — |
-| 160x160x160 | 125.17ms | — | ok | 13694.1MB | — | — |
-| 192x192x192 | 225.81ms | — | ok | 1366.6MB | — | — |
+| 48x48x48 | 5.18ms | — | ok | 203.4MB | — | — |
+| 96x96x96 | 26.54ms | — | ok | 1279.6MB | — | — |
+| 96x96x96 world | 44.00ms | — | ok | 460.7MB | — | — |
+| mni152 2mm | 22.83ms | — | ok | 1605.7MB | — | — |
+| 128x128x128 | 42.74ms | — | ok | 8741.5MB | — | — |
+| 128x128x128 world | 115.92ms | — | ok | 566.2MB | — | — |
+| 160x160x160 | 111.01ms | — | ok | 13643.8MB | — | — |
+| 192x192x192 | 205.37ms | — | ok | 1338.3MB | — | — |
 
-- **Projected OOM (≈24GB):** nitrix ~124.3 Melem.
+- **Projected OOM (≈24GB):** nitrix ~126.9 Melem.
+
+## spatial_gradient  (nitrix.geometry.spatial_gradient)  [jax-cuda12]
+
+**Cost law.** O(N) over the voxel count N: one roll-based central-diff pass per spatial axis (ndim passes), each a shift + subtract. Pure stencil, memory-bandwidth-bound and GPU-pure (no solver); HBM ~ N (the ndim-component output). The size tier varies the volume.
+
+| size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
+|---|---|---|---|---|---|---|
+| 32^3 | 0.16ms | 0.28ms (spatial_gradient) | 0.58x | 134.6MB | 0.1MB | — |
+| 48^3 | 0.16ms | 0.57ms (spatial_gradient) | 0.29x | 202.7MB | 0.4MB | — |
+| 64^3 | 0.17ms | 1.14ms (spatial_gradient) | 0.15x | 615.6MB | 1.0MB | 587x |
+| 96^3 | 0.24ms | 0.62ms (spatial_gradient) | 0.38x | 1305.3MB | 4.2MB | 311x |
+| 128^3 | 0.47ms | 1.37ms (spatial_gradient) | 0.35x | 8749.8MB | 8.4MB | 1043x |
+| 160^3 | 1.17ms | 2.86ms (spatial_gradient) | 0.41x | 13643.8MB | 16.8MB | 813x |
+
+- **Speed:** nitrix wins 6/6 sizes; at the largest `160^3`, nitrix 2.44x ahead.
+- **Projected OOM (≈24GB):** nitrix ~7.2 Melem vs best baseline ~5859 Melem (~813x more headroom).
 
 ## volreg  (nitrix.register.volreg)  [jax-cuda12]
 
@@ -436,15 +657,15 @@ Scale-gaming defence: the scaling curve + the stated cost law, so a small-size w
 
 | size | nitrix | best baseline | ratio (nx/base) | nitrix HBM | base HBM | HBM x |
 |---|---|---|---|---|---|---|
-| T8 32x32x32 | 1.02ms | — | ok | 135.5MB | — | — |
-| T16 32x32x32 | 1.35ms | — | ok | 136.3MB | — | — |
-| T32 32x32x32 | 3.02ms | — | ok | 138.4MB | — | — |
-| T50 48x48x48 | 81.24ms | — | ok | 334.8MB | — | — |
-| T100 48x48x48 | 172.76ms | — | ok | 625.3MB | — | — |
-| T200 48x48x48 | 355.58ms | — | ok | 1208.0MB | — | — |
-| T100 64x64x64 | 443.45ms | — | ok | 1347.5MB | — | — |
-| T100 80x80x80 | 1073.26ms | — | ok | 2638.0MB | — | — |
-| T500 48x48x48 | 904.76ms | — | ok | 2815.2MB | — | — |
+| T8 32x32x32 | 1.06ms | — | ok | 135.5MB | — | — |
+| T16 32x32x32 | 1.45ms | — | ok | 136.3MB | — | — |
+| T32 32x32x32 | 2.25ms | — | ok | 138.4MB | — | — |
+| T50 48x48x48 | 74.52ms | — | ok | 334.8MB | — | — |
+| T100 48x48x48 | 157.10ms | — | ok | 625.3MB | — | — |
+| T200 48x48x48 | 338.05ms | — | ok | 1070.7MB | — | — |
+| T100 64x64x64 | 423.46ms | — | ok | 1283.5MB | — | — |
+| T100 80x80x80 | 1048.37ms | — | ok | 2415.9MB | — | — |
+| T500 48x48x48 | 885.55ms | — | ok | 2483.4MB | — | — |
 
-- **Projected OOM (≈24GB):** nitrix ~471.4 Melem.
+- **Projected OOM (≈24GB):** nitrix ~534.4 Melem.
 

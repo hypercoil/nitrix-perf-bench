@@ -14,7 +14,7 @@
 - **on real data** (planted or full): 8 / 209
 - **marquee** ops (held to the real-data + community-baseline bar): 8 — **1** not yet meeting it
 - **lagging on the GPU**: 16
-- **lagging on CPU vs the community baseline** (≥1.5×, an optimise signal): 12
+- **lagging on CPU vs the community baseline** (≥1.5×, an optimise signal): 11
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
 - ⚠️ **3 benchmarked case(s) absent from the catalogue** (`op_matrix.json` is stale -- invisible to the join until regenerated in nitrix): `bbr_register`, `greedy_syn_register`, `volreg`. Includes **MARQUEE** ops: `bbr_register`, `greedy_syn_register`, `volreg`.
 
@@ -56,9 +56,8 @@ A **supplementary** lens (it does **not** supersede the strong-GPU and GPU-econo
 | 7 | `nitrix.signal.sosfilt` | scipy.signal.sosfilt | 0.363 | ~2.8x slower |
 | 8 | `nitrix.graph.laplacian_eigenmap` | scipy.sparse.eigsh | 0.45 | ~2.2x slower |
 | 9 | `nitrix.graph.diffusion_embedding` | scipy.sparse.eigsh | 0.492 | ~2.0x slower |
-| 10 | `nitrix.register.diffeomorphic_demons_register` | simpleitk.demons | 0.514 | ~1.9x slower |
-| 11 | `nitrix.signal.sosfiltfilt` | scipy.signal.sosfiltfilt | 0.591 | ~1.7x slower |
-| 12 | `nitrix.smoothing.bilateral_gaussian` | simpleitk.Bilateral | 0.654 | ~1.5x slower |
+| 10 | `nitrix.signal.sosfiltfilt` | scipy.signal.sosfiltfilt | 0.591 | ~1.7x slower |
+| 11 | `nitrix.smoothing.bilateral_gaussian` | simpleitk.Bilateral | 0.654 | ~1.5x slower |
 
 ## GPU blocked — nitrix path skipped, a GPU ref works
 
@@ -357,8 +356,8 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.morphology.max_unpool_nd` | favorable (amortized only) | 47.0x | — |
 | `nitrix.geometry.spatial_gradient` | favorable (amortized only) | 45.7x | — |
 | `nitrix.bias.histogram_match` | favorable (amortized only) ~ | 43.6x | simpleitk.HistogramMatching |
+| `nitrix.register.diffeomorphic_demons_register` | favorable (amortized only) | 40.4x | ants.registration |
 | `nitrix.augment.random_histogram_shift` | favorable (amortized only) ~ | 39.5x | — |
-| `nitrix.register.diffeomorphic_demons_register` | favorable (amortized only) | 39.0x | ants.registration |
 | `nitrix.register.rigid_register` | favorable (amortized only) | 35.9x | ants.registration |
 | `nitrix.augment.gamma_contrast` | favorable (amortized only) ~ | 35.4x | — |
 | `nitrix.linalg.symexp` | favorable (amortized only) ~ | 34.0x | — |

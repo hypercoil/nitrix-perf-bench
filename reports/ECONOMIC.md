@@ -8,19 +8,28 @@ A GPU-hour costs **~4x** a CPU-hour on the major clouds (an L4 instance, e.g. AW
 
 **Caveats (read with care):** the CPU domain tools (ANTs / dipy) run a FIXED internal schedule and ignore our `(levels, iters)`, so the verdict is meaningful across the **size / T tier**, not the dev configs; nitrix runs a fixed-iteration scan while ANTs / dipy early-exit on convergence (a wall-clock economic read, not a per-iteration claim); **time only** (HBM excluded -- cold peak is autotune-contaminated, see `SCALING.md`). For volreg the CPU bar is the **community realignment standard** -- AFNI `3dvolreg` / FSL `mcflirt` (fast, hand-optimised C), **I/O-floor-subtracted** (`compute = tool - the matching 3dcalc/fslmaths no-op`); ANTs `motion_correction` is kept only as a slow reference (timed out at T=500).
 
+## affine_exp  (nitrix.geometry.affine_exp)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| b=262144 | 1.4 ms | 422.5 ms | 495.1 ms (numpy.affine_exp) | 345.1x | 1.2x | favorable (amortized only) |
+| b=1048576 | 13.5 ms | 343.5 ms | 3.18 s (numpy.affine_exp) | 235.3x | 8.9x | favorable |
+
+- **2/2** size(s) favorable at 4x; best amortized **345.1x** at `b=262144` (single-run 1.2x).
+
 ## affine_register  (nitrix.register.affine_register)
 
 | size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
 |---|---|---|---|---|---|---|
-| 96x96x96 | 26.4 ms | 10.14 s | 520.8 ms (ants.registration) | 19.8x | 0.1x | favorable (amortized only) |
-| 96x96x96 world | 78.4 ms | 15.00 s | 273.7 ms (ants.registration) | 3.5x | 0.0x | not multiplicative enough |
-| mni152 2mm | 36.6 ms | 10.63 s | 270.0 ms (ants.registration) | 7.4x | 0.0x | favorable (amortized only) |
-| 128x128x128 | 69.7 ms | 12.19 s | 1.15 s (ants.registration) | 16.5x | 0.1x | favorable (amortized only) |
-| 128x128x128 world | 198.1 ms | 20.51 s | 470.3 ms (ants.registration) | 2.4x | 0.0x | not multiplicative enough |
-| 160x160x160 | 138.9 ms | 12.76 s | 1.46 s (ants.registration) | 10.5x | 0.1x | favorable (amortized only) |
-| 192x192x192 | 244.6 ms | 28.86 s | 980.2 ms (ants.registration) | 4.0x | 0.0x | favorable (amortized only) |
+| 96x96x96 | 35.6 ms | 34.34 s | 4.19 s (ants.registration) | 117.5x | 0.1x | favorable (amortized only) |
+| 96x96x96 world | 73.2 ms | 31.12 s | 4.40 s (ants.registration) | 60.0x | 0.1x | favorable (amortized only) |
+| mni152 2mm | 27.5 ms | 26.03 s | 818.0 ms (ants.registration) | 29.8x | 0.0x | favorable (amortized only) |
+| 128x128x128 | 52.2 ms | 35.82 s | 4.44 s (ants.registration) | 85.0x | 0.1x | favorable (amortized only) |
+| 128x128x128 world | 176.4 ms | 44.12 s | 1.14 s (ants.registration) | 6.5x | 0.0x | favorable (amortized only) |
+| 160x160x160 | 119.5 ms | 36.40 s | 4.78 s (ants.registration) | 40.0x | 0.1x | favorable (amortized only) |
+| 192x192x192 | 224.0 ms | 30.93 s | 1.58 s (ants.registration) | 7.1x | 0.1x | favorable (amortized only) |
 
-- **5/7** size(s) favorable at 4x; best amortized **19.8x** at `96x96x96` (single-run 0.1x).
+- **7/7** size(s) favorable at 4x; best amortized **117.5x** at `96x96x96` (single-run 0.1x).
 
 ## bbr_register  (nitrix.register.bbr_register)
 
@@ -28,11 +37,31 @@ A GPU-hour costs **~4x** a CPU-hour on the major clouds (an L4 instance, e.g. AW
 
 | size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
 |---|---|---|---|---|---|---|
-| N5000 64x64x64 | 9.6 ms | 7.64 s | 23.0 ms (nitrix-CPU) | 2.4x | 0.0x | not multiplicative enough |
-| N20000 64x64x64 | 3.4 ms | 7.80 s | 43.8 ms (nitrix-CPU) | 12.7x | 0.0x | favorable (amortized only) |
-| N80000 64x64x64 | 5.9 ms | 6.15 s | 174.3 ms (nitrix-CPU) | 29.7x | 0.0x | favorable (amortized only) |
+| N5000 64x64x64 | 1.4 ms | 6.44 s | 23.4 ms (nitrix-CPU) | 16.6x | 0.0x | favorable (amortized only) |
+| N20000 64x64x64 | 5.3 ms | 6.75 s | 45.6 ms (nitrix-CPU) | 8.6x | 0.0x | favorable (amortized only) |
+| N80000 64x64x64 | 10.1 ms | 4.46 s | 169.7 ms (nitrix-CPU) | 16.7x | 0.0x | favorable (amortized only) |
 
-- **2/3** size(s) favorable at 4x; best amortized **29.7x** at `N80000 64x64x64` (single-run 0.0x).
+- **3/3** size(s) favorable at 4x; best amortized **16.7x** at `N80000 64x64x64` (single-run 0.0x).
+
+## bending_energy  (nitrix.register.bending_energy)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 2.6 ms | 2.84 s | 395.6 ms (numpy.bending_energy) | 152.5x | 0.1x | favorable (amortized only) |
+| 128^3 | 7.3 ms | 3.84 s | 1.03 s (numpy.bending_energy) | 141.6x | 0.3x | favorable (amortized only) |
+| 160^3 | 15.2 ms | 3.68 s | 2.32 s (numpy.bending_energy) | 152.3x | 0.6x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **152.5x** at `96^3` (single-run 0.1x).
+
+## compose_velocity  (nitrix.geometry.compose_velocity)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.3 ms | 847.3 ms | 155.5 ms (numpy.compose_velocity) | 603.9x | 0.2x | favorable (amortized only) |
+| 128^3 | 1.1 ms | 921.3 ms | 526.1 ms (numpy.compose_velocity) | 498.5x | 0.6x | favorable (amortized only) |
+| 160^3 | 2.0 ms | 878.4 ms | 1.56 s (numpy.compose_velocity) | 785.6x | 1.8x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **785.6x** at `160^3` (single-run 1.8x).
 
 ## conditionalcorr  (nitrix.stats.conditionalcorr)
 
@@ -52,31 +81,109 @@ A GPU-hour costs **~4x** a CPU-hour on the major clouds (an L4 instance, e.g. AW
 
 - **2/2** size(s) favorable at 4x; best amortized **89.1x** at `c1024 d16 obs4096` (single-run 0.1x).
 
+## connected_components  (nitrix.morphology.connected_components)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 1.7 ms | 697.4 ms | 11.5 ms (scipy.label) | 6.5x | 0.0x | favorable (amortized only) |
+| 128^3 | 6.1 ms | 841.0 ms | 21.9 ms (scipy.label) | 3.6x | 0.0x | not multiplicative enough |
+| 160^3 | 15.8 ms | 646.0 ms | 34.8 ms (scipy.label) | 2.2x | 0.1x | not multiplicative enough |
+
+- **1/3** size(s) favorable at 4x; best amortized **6.5x** at `96^3` (single-run 0.0x).
+
 ## diffeomorphic_demons  (nitrix.register.diffeomorphic_demons_register)
 
 | size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
 |---|---|---|---|---|---|---|
-| 96x96x96 | 79.5 ms | 9.91 s | 2.23 s (simpleitk.demons) | 28.1x | 0.2x | favorable (amortized only) |
-| 96x96x96 aniso1x1x3 | 84.2 ms | 12.08 s | 2.25 s (simpleitk.demons) | 26.8x | 0.2x | favorable (amortized only) |
-| mni152 2mm | 117.7 ms | 18.19 s | 2.72 s (simpleitk.demons) | 23.1x | 0.1x | favorable (amortized only) |
-| 128x128x128 | 295.3 ms | 30.90 s | 5.64 s (simpleitk.demons) | 19.1x | 0.2x | favorable (amortized only) |
-| 128x128x128 aniso1x1x3 | 301.4 ms | 52.03 s | 5.69 s (simpleitk.demons) | 18.9x | 0.1x | favorable (amortized only) |
-| 160x160x160 | 647.5 ms | 30.26 s | 11.45 s (simpleitk.demons) | 17.7x | 0.4x | favorable (amortized only) |
+| 96x96x96 | 66.0 ms | 24.45 s | 3.58 s (simpleitk.demons) | 54.2x | 0.1x | favorable (amortized only) |
+| 96x96x96 aniso1x1x3 | 51.3 ms | 23.78 s | 2.43 s (simpleitk.demons) | 47.3x | 0.1x | favorable (amortized only) |
+| mni152 2mm | 69.3 ms | 31.68 s | 2.80 s (simpleitk.demons) | 40.4x | 0.1x | favorable (amortized only) |
+| 128x128x128 | 281.3 ms | 27.97 s | 6.11 s (simpleitk.demons) | 21.7x | 0.2x | favorable (amortized only) |
+| 128x128x128 aniso1x1x3 | 183.5 ms | 28.33 s | 6.17 s (simpleitk.demons) | 33.6x | 0.2x | favorable (amortized only) |
+| 160x160x160 | 741.1 ms | 24.24 s | 11.90 s (simpleitk.demons) | 16.1x | 0.5x | favorable (amortized only) |
 
-- **6/6** size(s) favorable at 4x; best amortized **28.1x** at `96x96x96` (single-run 0.2x).
+- **6/6** size(s) favorable at 4x; best amortized **54.2x** at `96x96x96` (single-run 0.1x).
+
+## distance_transform_edt  (nitrix.morphology.distance_transform_edt)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.4 ms | 824.4 ms | 111.2 ms (scipy.distance_transform_edt) | 299.6x | 0.1x | favorable (amortized only) |
+| 128^3 | 0.5 ms | 1.04 s | 358.7 ms (scipy.distance_transform_edt) | 752.6x | 0.3x | favorable (amortized only) |
+| 160^3 | 2.0 ms | 880.6 ms | 572.0 ms (scipy.distance_transform_edt) | 289.9x | 0.6x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **752.6x** at `128^3` (single-run 0.3x).
+
+## gradient_smoothness  (nitrix.register.gradient_smoothness)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.2 ms | 540.3 ms | 109.5 ms (numpy.gradient_smoothness) | 670.2x | 0.2x | favorable (amortized only) |
+| 128^3 | 0.2 ms | 470.7 ms | 325.6 ms (numpy.gradient_smoothness) | 1438.9x | 0.7x | favorable (amortized only) |
+| 160^3 | 0.4 ms | 667.1 ms | 811.5 ms (numpy.gradient_smoothness) | 2315.0x | 1.2x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **2315.0x** at `160^3` (single-run 1.2x).
 
 ## greedy_syn_register  (nitrix.register.greedy_syn_register)
 
 | size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
 |---|---|---|---|---|---|---|
-| 64x64x64 | 178.9 ms | 21.97 s | 1.10 s (ants.registration) | 6.2x | 0.0x | favorable (amortized only) |
-| 64x64x64 aniso1x1x3 | 205.6 ms | 22.74 s | 2.11 s (ants.registration) | 10.3x | 0.1x | favorable (amortized only) |
-| 96x96x96 | 741.8 ms | 21.65 s | 3.40 s (ants.registration) | 4.6x | 0.2x | favorable (amortized only) |
-| 96x96x96 aniso1x1x3 | 775.9 ms | 25.12 s | 6.43 s (ants.registration) | 8.3x | 0.2x | favorable (amortized only) |
-| mni152 2mm | 1.06 s | 38.33 s | 4.51 s (ants.registration) | 4.2x | 0.1x | favorable (amortized only) |
-| 128x128x128 | 2.46 s | 45.23 s | 6.32 s (ants.registration) | 2.6x | 0.1x | not multiplicative enough |
+| 64x64x64 | 115.5 ms | 29.67 s | 1.73 s (ants.registration) | 15.0x | 0.1x | favorable (amortized only) |
+| 64x64x64 aniso1x1x3 | 120.2 ms | 32.42 s | 2.80 s (ants.registration) | 23.3x | 0.1x | favorable (amortized only) |
+| 96x96x96 | 398.7 ms | 33.55 s | 3.67 s (ants.registration) | 9.2x | 0.1x | favorable (amortized only) |
+| 96x96x96 aniso1x1x3 | 419.0 ms | 32.40 s | 6.63 s (ants.registration) | 15.8x | 0.2x | favorable (amortized only) |
+| mni152 2mm | 534.6 ms | 44.87 s | 6.34 s (ants.registration) | 11.9x | 0.1x | favorable (amortized only) |
+| 128x128x128 | 1.24 s | 40.63 s | 6.71 s (ants.registration) | 5.4x | 0.2x | favorable (amortized only) |
 
-- **5/6** size(s) favorable at 4x; best amortized **10.3x** at `64x64x64 aniso1x1x3` (single-run 0.1x).
+- **6/6** size(s) favorable at 4x; best amortized **23.3x** at `64x64x64 aniso1x1x3` (single-run 0.1x).
+
+## invert_displacement  (nitrix.geometry.invert_displacement)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 11.1 ms | 815.5 ms | 4.06 s (numpy.invert_displacement) | 365.4x | 4.9x | favorable |
+
+- **1/1** size(s) favorable at 4x; best amortized **365.4x** at `96^3` (single-run 4.9x).
+
+## jacobian_folding_penalty  (nitrix.register.jacobian_folding_penalty)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.1 ms | 1.01 s | 95.5 ms (numpy.jacobian_folding_penalty) | 649.9x | 0.1x | favorable (amortized only) |
+| 128^3 | 0.2 ms | 697.5 ms | 211.4 ms (numpy.jacobian_folding_penalty) | 872.9x | 0.3x | favorable (amortized only) |
+| 160^3 | 0.3 ms | 682.8 ms | 544.3 ms (numpy.jacobian_folding_penalty) | 2000.3x | 0.8x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **2000.3x** at `160^3` (single-run 0.8x).
+
+## largest_connected_component  (nitrix.morphology.largest_connected_component)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 2.2 ms | 1.35 s | 10.4 ms (scipy.largest_cc) | 4.7x | 0.0x | favorable (amortized only) |
+| 128^3 | 7.2 ms | 1.66 s | 33.3 ms (scipy.largest_cc) | 4.6x | 0.0x | favorable (amortized only) |
+| 160^3 | 18.6 ms | 1.71 s | 63.7 ms (scipy.largest_cc) | 3.4x | 0.0x | not multiplicative enough |
+
+- **2/3** size(s) favorable at 4x; best amortized **4.7x** at `96^3` (single-run 0.0x).
+
+## max_pool_with_indices_nd  (nitrix.morphology.max_pool_with_indices_nd)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.4 ms | 412.0 ms | 135.9 ms (numpy.max_pool) | 379.4x | 0.3x | favorable (amortized only) |
+| 128^3 | 1.0 ms | 456.5 ms | 352.1 ms (numpy.max_pool) | 336.2x | 0.8x | favorable (amortized only) |
+| 160^3 | 1.9 ms | 410.0 ms | 700.0 ms (numpy.max_pool) | 366.1x | 1.7x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **379.4x** at `96^3` (single-run 0.3x).
+
+## max_unpool_nd  (nitrix.morphology.max_unpool_nd)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.2 ms | 179.9 ms | 6.5 ms (numpy.max_unpool) | 30.5x | 0.0x | favorable (amortized only) |
+| 128^3 | 0.8 ms | 224.1 ms | 37.5 ms (numpy.max_unpool) | 47.1x | 0.2x | favorable (amortized only) |
+| 160^3 | 1.5 ms | 178.7 ms | 70.5 ms (numpy.max_unpool) | 47.0x | 0.4x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **47.1x** at `128^3` (single-run 0.2x).
 
 ## pairedcorr  (nitrix.stats.pairedcorr)
 
@@ -125,19 +232,47 @@ A GPU-hour costs **~4x** a CPU-hour on the major clouds (an L4 instance, e.g. AW
 
 - **2/2** size(s) favorable at 4x; best amortized **68.5x** at `131072x512 k64` (single-run 0.4x).
 
+## rigid_exp  (nitrix.geometry.rigid_exp)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| b=262144 | 0.2 ms | 577.5 ms | 60.4 ms (numpy.rigid_exp) | 274.6x | 0.1x | favorable (amortized only) |
+| b=1048576 | 1.5 ms | 719.7 ms | 370.7 ms (numpy.rigid_exp) | 241.4x | 0.5x | favorable (amortized only) |
+
+- **2/2** size(s) favorable at 4x; best amortized **274.6x** at `b=262144` (single-run 0.1x).
+
+## rigid_log  (nitrix.geometry.rigid_log)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| b=262144 | 0.1 ms | 222.8 ms | 15.8 ms (numpy.rigid_log) | 127.7x | 0.1x | favorable (amortized only) |
+| b=1048576 | 0.9 ms | 217.9 ms | 74.5 ms (numpy.rigid_log) | 81.2x | 0.3x | favorable (amortized only) |
+
+- **2/2** size(s) favorable at 4x; best amortized **127.7x** at `b=262144` (single-run 0.1x).
+
 ## rigid_register  (nitrix.register.rigid_register)
 
 | size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
 |---|---|---|---|---|---|---|
-| 96x96x96 | 20.2 ms | 5.61 s | 330.7 ms (ants.registration) | 16.3x | 0.1x | favorable (amortized only) |
-| 96x96x96 world | 49.2 ms | 13.31 s | 260.4 ms (ants.registration) | 5.3x | 0.0x | favorable (amortized only) |
-| mni152 2mm | 29.2 ms | 7.19 s | 252.8 ms (ants.registration) | 8.7x | 0.0x | favorable (amortized only) |
-| 128x128x128 | 61.3 ms | 7.81 s | 381.4 ms (ants.registration) | 6.2x | 0.0x | favorable (amortized only) |
-| 128x128x128 world | 137.3 ms | 17.29 s | 429.3 ms (ants.registration) | 3.1x | 0.0x | not multiplicative enough |
-| 160x160x160 | 125.2 ms | 8.54 s | 731.8 ms (ants.registration) | 5.8x | 0.1x | favorable (amortized only) |
-| 192x192x192 | 225.8 ms | 26.61 s | 965.4 ms (ants.registration) | 4.3x | 0.0x | favorable (amortized only) |
+| 96x96x96 | 26.5 ms | 32.38 s | 3.93 s (ants.registration) | 148.0x | 0.1x | favorable (amortized only) |
+| 96x96x96 world | 44.0 ms | 11.78 s | 777.0 ms (ants.registration) | 17.7x | 0.1x | favorable (amortized only) |
+| mni152 2mm | 22.8 ms | 22.63 s | 820.1 ms (ants.registration) | 35.9x | 0.0x | favorable (amortized only) |
+| 128x128x128 | 42.7 ms | 29.39 s | 4.02 s (ants.registration) | 94.0x | 0.1x | favorable (amortized only) |
+| 128x128x128 world | 115.9 ms | 41.05 s | 4.18 s (ants.registration) | 36.0x | 0.1x | favorable (amortized only) |
+| 160x160x160 | 111.0 ms | 24.26 s | 1.22 s (ants.registration) | 10.9x | 0.0x | favorable (amortized only) |
+| 192x192x192 | 205.4 ms | 26.97 s | 1.52 s (ants.registration) | 7.4x | 0.1x | favorable (amortized only) |
 
-- **6/7** size(s) favorable at 4x; best amortized **16.3x** at `96x96x96` (single-run 0.1x).
+- **7/7** size(s) favorable at 4x; best amortized **148.0x** at `96x96x96` (single-run 0.1x).
+
+## spatial_gradient  (nitrix.geometry.spatial_gradient)
+
+| size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
+|---|---|---|---|---|---|---|
+| 96^3 | 0.2 ms | 3.06 s | 8.2 ms (numpy.spatial_gradient) | 34.5x | 0.0x | favorable (amortized only) |
+| 128^3 | 0.5 ms | 3.89 s | 25.9 ms (numpy.spatial_gradient) | 54.6x | 0.0x | favorable (amortized only) |
+| 160^3 | 1.2 ms | 4.01 s | 53.5 ms (numpy.spatial_gradient) | 45.7x | 0.0x | favorable (amortized only) |
+
+- **3/3** size(s) favorable at 4x; best amortized **54.6x** at `128^3` (single-run 0.0x).
 
 ## volreg  (nitrix.register.volreg)
 
@@ -145,12 +280,12 @@ A GPU-hour costs **~4x** a CPU-hour on the major clouds (an L4 instance, e.g. AW
 
 | size | GPU steady | GPU compile | CPU compute (tool) | amortized | single-run | verdict |
 |---|---|---|---|---|---|---|
-| T50 48x48x48 | 81.2 ms | 6.69 s | 1.02 s (fsl.mcflirt; 3.23 s−2.22 s io) | 12.5x | 0.1x | favorable (amortized only) |
-| T100 48x48x48 | 172.8 ms | 10.00 s | 2.01 s (fsl.mcflirt; 6.21 s−4.20 s io) | 11.6x | 0.2x | favorable (amortized only) |
-| T200 48x48x48 | 355.6 ms | 10.13 s | 3.92 s (fsl.mcflirt; 12.19 s−8.27 s io) | 11.0x | 0.4x | favorable (amortized only) |
-| T100 64x64x64 | 443.5 ms | 10.04 s | 4.63 s (fsl.mcflirt; 14.23 s−9.60 s io) | 10.4x | 0.4x | favorable (amortized only) |
-| T100 80x80x80 | 1.07 s | 12.09 s | 8.42 s (fsl.mcflirt; 26.54 s−18.12 s io) | 7.8x | 0.6x | favorable (amortized only) |
-| T500 48x48x48 | 904.8 ms | 12.49 s | 10.17 s (fsl.mcflirt; 29.77 s−19.60 s io) | 11.2x | 0.8x | favorable (amortized only) |
+| T50 48x48x48 | 74.5 ms | 11.01 s | 1.03 s (fsl.mcflirt; 3.20 s−2.17 s io) | 13.9x | 0.1x | favorable (amortized only) |
+| T100 48x48x48 | 157.1 ms | 16.59 s | 3.87 s (fsl.mcflirt; 8.07 s−4.20 s io) | 24.6x | 0.2x | favorable (amortized only) |
+| T200 48x48x48 | 338.1 ms | 18.07 s | 3.91 s (fsl.mcflirt; 11.90 s−7.99 s io) | 11.6x | 0.2x | favorable (amortized only) |
+| T100 64x64x64 | 423.5 ms | 17.61 s | 4.56 s (fsl.mcflirt; 14.28 s−9.72 s io) | 10.8x | 0.3x | favorable (amortized only) |
+| T100 80x80x80 | 1.05 s | 18.29 s | 8.47 s (fsl.mcflirt; 26.89 s−18.43 s io) | 8.1x | 0.4x | favorable (amortized only) |
+| T500 48x48x48 | 885.6 ms | 15.91 s | 9.92 s (fsl.mcflirt; 29.13 s−19.21 s io) | 11.2x | 0.6x | favorable (amortized only) |
 
-- **6/6** size(s) favorable at 4x; best amortized **12.5x** at `T50 48x48x48` (single-run 0.1x).
+- **6/6** size(s) favorable at 4x; best amortized **24.6x** at `T100 48x48x48` (single-run 0.2x).
 

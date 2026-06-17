@@ -26,6 +26,25 @@ prepends rigid+affine, fails on this pair) -- and **dipy**
 ``SymmetricDiffeomorphicRegistration`` on SSD (the counterpart of nitrix's
 SSD-driven log-Demons; pyramid driven by this case's ``levels`` x ``iters`` --
 see ``cases/_register.py``).  Ratio vs ``nitrix-jax``.
+
+**The representation is a benchmarked knob (v4 group fast-path).**
+``nitrix-jax`` runs the default ``representation='group'`` (carries the
+displacement, greedy compositive update -- the v4 perf path); ``nitrix-jax-
+algebra`` runs ``'algebra'`` (carries the stationary velocity, re-exponentiates
+each iteration -- the exact-SVF path, byte-identical to the pre-v4 recipe).
+Both recover the *same* warp (a tests parity pin), so the ratio is the pure
+representation cost -- with one **measured subtlety** that flips the verdict by
+deliverable.  This case reads ``.velocity`` (the SVF parametrisation -- it
+forces the full scan + is a real deliverable for composing/inverting/stats).
+The ``'group'`` path does **not** carry the velocity, so a ``.velocity`` read
+triggers a one-off ``geometry.field_log`` recovery (~0.45 s at 160^3 on the
+L4); ``'algebra'`` carries it natively.  So on the **velocity** read algebra
+*wins* at large isotropic sizes (160^3: group 0.74 s vs algebra 0.50 s) --
+**but that is the field_log, not the per-iteration cost**: on the
+**displacement** deliverable (no recovery) the group fast-path is ~1.8x faster
+(160^3: group 0.29 s vs algebra 0.52 s, measured).  The honest read: group is
+the perf path for the warped-image / displacement use, algebra is the better
+choice (and the parity oracle) when the *velocity field* is the deliverable.
 """
 from __future__ import annotations
 
