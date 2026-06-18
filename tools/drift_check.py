@@ -242,12 +242,32 @@ def main() -> None:
     # Keyed by CASE name, not op qualname: several cases can target one op via
     # different branches (distance_transform euclidean vs chamfer), each with
     # its own behaviour fingerprint; the qualname is recorded as a field.
+    import jax
+    # Canonical gate config: x64 OFF.  The drift gate is a *change detector*
+    # (nitrix vs its committed past), NOT a correctness check vs an oracle --
+    # that is the separate fidelity gate, which runs under the worker's x64-on
+    # measurement policy.  All the gate needs is a reproducible baseline, and
+    # the manifest has always been seeded at the jax default (x64 off).  Pin it
+    # explicitly so the sweep can't drift to x64 just because some earlier case
+    # enabled it.
+    jax.config.update('jax_enable_x64', False)
     current: Dict[str, Dict[str, Any]] = {}
     for name in names:
         case = CASES[name]
         if case.op_qualname is None:
             continue  # throwaway smoke case has no public op
-        current[case.name] = fingerprint(case)
+        # Per-case isolation: a case may flip a process-wide flag at build time
+        # (e.g. semiring_matmul re-enables x64, which it genuinely needs).
+        # Snapshot before and restore to the canonical config after, so one
+        # case can never leak into the next in this single-process sweep -- the
+        # latent bug that seeded a few entries (sosfilt) under x64.
+        _x64 = bool(getattr(jax.config, 'jax_enable_x64', False))
+        _prec = getattr(jax.config, 'jax_default_matmul_precision', None)
+        try:
+            current[case.name] = fingerprint(case)
+        finally:
+            jax.config.update('jax_enable_x64', _x64)
+            jax.config.update('jax_default_matmul_precision', _prec)
 
     manifest = (json.loads(MANIFEST.read_text())
                 if MANIFEST.exists() else {'ops': {}})

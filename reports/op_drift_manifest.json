@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-18T01:08:22Z",
+    "generated": "2026-06-18T05:20:37Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -2133,7 +2133,7 @@
     "flame_two_level": {
       "case": "flame_two_level",
       "qualname": "nitrix.stats.lme.flame_two_level",
-      "signature": "(beta_subject: \"Float[Array, 'V N']\", var_within: \"Float[Array, 'V N']\", X_group: \"Float[Array, 'N p']\", *, log_sigma_b_sq_init: \"Optional[Float[Array, 'V']]\" = None, n_iter: 'int' = 30, damping: 'float' = 1e-06) -> 'FLAMEResult'",
+      "signature": "(beta_subject: \"Float[Array, 'V N']\", var_within: \"Float[Array, 'V N']\", X_group: \"Float[Array, 'N p']\", *, log_sigma_b_sq_init: \"Optional[Float[Array, 'V']]\" = None, n_iter: 'int' = 30, damping: 'float' = 1e-06, block: 'Optional[int]' = None) -> 'FLAMEResult'",
       "behaviour": {
         "point": {
           "V": 8192,
@@ -2148,8 +2148,8 @@
             "dtype": "float32",
             "n_finite": 16384,
             "n_nonfinite": 0,
-            "l1": 49183.5,
-            "l2sq": 213810.0,
+            "l1": 49182.9,
+            "l2sq": 213808.0,
             "linf": 5.58009
           }
         ]
@@ -2833,7 +2833,7 @@
     "reml_fit": {
       "case": "reml_fit",
       "qualname": "nitrix.stats.lme.reml_fit",
-      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", Z: \"Float[Array, 'N q']\", *, theta_init: \"Optional[Float[Array, 'V 2']]\" = None, n_iter: 'int' = 20, damping: 'float' = 1e-06) -> 'REMLResult'",
+      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", Z: \"Float[Array, 'N q']\", *, theta_init: \"Optional[Float[Array, 'V 2']]\" = None, n_iter: 'int' = 20, damping: 'float' = 1e-06, block: 'Optional[int]' = None, low_rank: 'bool' = False) -> 'REMLResult'",
       "behaviour": {
         "point": {
           "V": 256,
@@ -2849,8 +2849,8 @@
             "dtype": "float32",
             "n_finite": 768,
             "n_nonfinite": 0,
-            "l1": 1789.44,
-            "l2sq": 6978.47,
+            "l1": 1789.45,
+            "l2sq": 6978.5,
             "linf": 6.33985
           }
         ]
@@ -3007,7 +3007,7 @@
               256,
               8192
             ],
-            "dtype": "float64",
+            "dtype": "float32",
             "n_finite": 2097152,
             "n_nonfinite": 0,
             "l1": 1414780.0,
