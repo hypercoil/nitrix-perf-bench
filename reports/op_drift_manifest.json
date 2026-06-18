@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-18T05:20:37Z",
+    "generated": "2026-06-18T06:28:34Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4977,6 +4977,191 @@
             "l1": 4910290.0,
             "l2sq": 5025910000.0,
             "linf": 4528.12
+          }
+        ]
+      }
+    },
+    "tfce": {
+      "case": "tfce",
+      "qualname": "nitrix.stats.inference.tfce",
+      "signature": "(stat: \"Float[Array, '*spatial']\", *, E: 'float' = 0.5, H: 'float' = 2.0, n_steps: 'int' = 100, connectivity: 'int' = 1, two_sided: 'bool' = True, mask: \"Optional[Bool[Array, '*spatial']]\" = None) -> \"Float[Array, '*spatial']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "float32",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 1244690.0,
+            "l2sq": 61221700.0,
+            "linf": 160.276
+          }
+        ]
+      }
+    },
+    "cluster_size_map": {
+      "case": "cluster_size_map",
+      "qualname": "nitrix.stats.inference.cluster_size_map",
+      "signature": "(labels: \"Int[Array, '*spatial']\") -> \"Float[Array, '*spatial']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "float32",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 62304.0,
+            "l2sq": 3181920.0,
+            "linf": 89.0
+          }
+        ]
+      }
+    },
+    "cluster_mass_map": {
+      "case": "cluster_mass_map",
+      "qualname": "nitrix.stats.inference.cluster_mass_map",
+      "signature": "(labels: \"Int[Array, '*spatial']\", stat: \"Float[Array, '*spatial']\", threshold: 'float') -> \"Float[Array, '*spatial']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "float32",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 45243.1,
+            "l2sq": 1947210.0,
+            "linf": 73.1706
+          }
+        ]
+      }
+    },
+    "cluster_extent": {
+      "case": "cluster_extent",
+      "qualname": "nitrix.stats.inference.cluster.supra_threshold_clusters",
+      "signature": "(stat: \"Float[Array, '*spatial']\", threshold: 'float', *, connectivity: 'int' = 1) -> \"Int[Array, '*spatial']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "leaves": [
+          {
+            "shape": [
+              48,
+              48,
+              48
+            ],
+            "dtype": "float32",
+            "n_finite": 110592,
+            "n_nonfinite": 0,
+            "l1": 62304.0,
+            "l2sq": 3181920.0,
+            "linf": 89.0
+          }
+        ]
+      }
+    },
+    "fdr_bh": {
+      "case": "fdr_bh",
+      "qualname": "nitrix.stats.inference.fdr_bh",
+      "signature": "(p_values: \"Float[Array, 'n']\", *, alpha: 'float' = 0.05) -> \"Tuple[Bool[Array, 'n'], Float[Array, 'n']]\"",
+      "behaviour": {
+        "point": {
+          "n": 100000
+        },
+        "leaves": [
+          {
+            "shape": [
+              100000
+            ],
+            "dtype": "float32",
+            "n_finite": 100000,
+            "n_nonfinite": 0,
+            "l1": 85053.5,
+            "l2sq": 77332.2,
+            "linf": 0.999997
+          }
+        ]
+      }
+    },
+    "bonferroni": {
+      "case": "bonferroni",
+      "qualname": "nitrix.stats.inference.bonferroni",
+      "signature": "(p_values: \"Float[Array, 'n']\", *, alpha: 'float' = 0.05) -> \"Tuple[Bool[Array, 'n'], Float[Array, 'n']]\"",
+      "behaviour": {
+        "point": {
+          "n": 100000
+        },
+        "leaves": [
+          {
+            "shape": [
+              100000
+            ],
+            "dtype": "float32",
+            "n_finite": 100000,
+            "n_nonfinite": 0,
+            "l1": 99997.6,
+            "l2sq": 99996.9,
+            "linf": 1.0
+          }
+        ]
+      }
+    },
+    "gpd_pvalue": {
+      "case": "gpd_pvalue",
+      "qualname": "nitrix.stats.inference.gpd_pvalue",
+      "signature": "(stat: \"Float[Array, '...']\", null_dist: \"Float[Array, 'n']\", *, n_exceedances: 'int' = 250) -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "n": 100000
+        },
+        "leaves": [
+          {
+            "shape": [
+              100000
+            ],
+            "dtype": "float32",
+            "n_finite": 100000,
+            "n_nonfinite": 0,
+            "l1": 50418.8,
+            "l2sq": 33881.9,
+            "linf": 1.0
           }
         ]
       }
