@@ -12,13 +12,25 @@ The headline read is nitrix **steady** (warm) + its **one-time compile** vs the
 gold standard's full wall-clock.  Two CPU domain references (own refs envs, not
 jit-compiled): **ANTsPy** ``registration(SyNOnly)`` -- the canonical SyN, run
 **deformable-only** to match nitrix's greedy SyN (no affine pre-step) -- and
-**dipy** ``SymmetricDiffeomorphic`` (SSD).  Crucially, ANTs SyNOnly is **fast**
-on CPU (measured here ~0.47 / 2.9 / 6.0 s at 48 / 96 / 128^3 -- ITK-backed
-C++), so it is **not** a slow_baseline; **dipy** is the genuinely slow one
-(~126 s at 128^3, CPU-only cython).  Because even this deformable gold standard
-is only *seconds* on CPU, the GPU win must be **earned** -- it has to clear the
-~4x hardware-cost bar to count, which the economic verdict measures rather than
-assumes (see ``tools/economic_report.py``).  Ratio vs ``nitrix-jax``.
+**dipy** ``SymmetricDiffeomorphic`` (SSD).  Because even this deformable gold
+standard is only *seconds*-to-minutes on CPU, the GPU win must be **earned** --
+it has to clear the ~4x hardware-cost bar to count, which the economic verdict
+measures rather than assumes (see ``tools/economic_report.py``).  Ratio vs
+``nitrix-jax``.
+
+**Matched schedule (the size / economic tier).**  ANTs is treated as
+**canonical** and all three tools run the SAME pyramid there: 3 levels (shrink
+``4x2x1``), per-level iters ``(40, 20, 10)``, with ANTs' ``[...,1e-7,8]``
+early-exit mirrored on nitrix via ``Convergence`` and on dipy via matched
+``level_iters`` -- so the wall-clock is apples-to-apples (no
+different-work confound; matched-schedule fairness).  NB ANTs' *default*
+``SyNOnly`` preset is ``(40, 20, 0)`` which **skips the full-res level** (0
+iters there -- measured ~0.5 / 2.9 / 6.0 s at 48 / 96 / 128^3); the matched
+``(40, 20, 10)`` makes it do real full-res work (~3.3x slower, ~15 s at 96^3
+measured) -- the honest, heavier bar.  dipy is the genuinely slow tool at this
+schedule (full-res cython, super-linear) -- the lone ``slow_baseline``.  (The
+dev tier keeps a flat ``(levels, iters)`` for compile characterisation, where
+the verdict is *not* read -- see the economic-report caveats.)
 
 **The driving force is a benchmarked knob (fMRIPrep parity).**  The default
 ``nitrix-jax`` uses the mono-modal LNCC force; two extra nitrix baselines swap
@@ -52,6 +64,7 @@ import jax
 import jax.numpy as jnp
 from nitrix.register import (
     MI,
+    Convergence,
     MetricForce,
     MIForce,
     SyNSpec,
@@ -70,26 +83,44 @@ from ._register import (
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    levels, iters = int(param['levels']), int(param['iters'])
+    # A scalar 'iters' is the legacy flat schedule (dev tier, no early-exit);
+    # a per-level tuple (e.g. [40, 20, 10]) is the ANTs-canonical MATCHED
+    # schedule -- 3 levels (shrink 4x2x1 via pyramid_factor=2), with ANTs'
+    # [...,1e-7,8] early-exit mirrored on nitrix (Convergence) so the economic
+    # wall-clock is apples-to-apples (the size/economic tier; see the module
+    # note + ants_register/_dipy_pyramid). ants_iters/dipy get the same tuple.
+    raw = param['iters']
+    if isinstance(raw, (list, tuple)):
+        iters: Any = tuple(int(i) for i in raw)
+        levels = len(iters)
+        conv = Convergence(threshold=1e-7, window=8)
+        ants_iters: Any = iters
+    else:
+        iters = int(raw)
+        levels = int(param['levels'])
+        conv = None
+        ants_iters = None
     spacing = param.get('spacing')  # None -> isotropic (voxel space)
     seed = param.get('seed', 0)
     if param.get('data') == 'mni152':
         # REAL anatomy: MNI152 T1 under a smooth non-rigid warp (a small
         # background noise floor; see _real_anatomy).
         moving, fixed = real_syn_pair(int(param.get('resolution', 2)), seed)
-        spec = SyNSpec(levels=levels, iterations=iters)
-        ants_ref = ants_register('SyNOnly')
+        spec = SyNSpec(levels=levels, iterations=iters, convergence=conv)
+        ants_ref = ants_register('SyNOnly', reg_iterations=ants_iters)
         dipy_ref = dipy_register('syn', levels, iters)
     elif spacing is not None:
         moving, fixed, sp = aniso_pair(tuple(param['shape']), spacing, seed)
-        spec = SyNSpec(levels=levels, iterations=iters, spacing=sp)
+        spec = SyNSpec(levels=levels, iterations=iters, spacing=sp,
+                       convergence=conv)
         aff = _affine(spacing)
-        ants_ref = ants_register('SyNOnly', spacing=list(spacing))
+        ants_ref = ants_register('SyNOnly', spacing=list(spacing),
+                                 reg_iterations=ants_iters)
         dipy_ref = dipy_register('syn', levels, iters, affines=(aff, aff))
     else:
         moving, fixed = syn_pair(tuple(param['shape']), seed)
-        spec = SyNSpec(levels=levels, iterations=iters)
-        ants_ref = ants_register('SyNOnly')
+        spec = SyNSpec(levels=levels, iterations=iters, convergence=conv)
+        ants_ref = ants_register('SyNOnly', reg_iterations=ants_iters)
         dipy_ref = dipy_register('syn', levels, iters)
 
     mj = jax.block_until_ready(jnp.asarray(moving))
@@ -150,16 +181,19 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 # cheap L1x40 (for --quick / drift).
 _CONFIGS = [(1, 40), (2, 80), (3, 80)]
 _SHAPE = [48, 48, 48]
-# Size tier (brain-scale): vary the volume at a fixed mid config (SyN is
-# identical-shape / intra-pair, so only the spatial axis scales), plus
-# anisotropic points (1x1x3) at two sizes.
-_LARGE = [{'shape': s, 'levels': 2, 'iters': 80, 'seed': 0}
+# Size tier (brain-scale): vary the volume at the ANTs-CANONICAL matched
+# schedule -- 3 levels (shrink 4x2x1), per-level iters (40, 20, 10), early-exit
+# 1e-7/win-8 -- so the economic verdict reads apples-to-apples vs ANTs / dipy
+# (the per-level tuple triggers the matched path in _build; ANTs gets the same
+# reg_iterations, dipy the same level_iters). Plus anisotropic (1x1x3) points.
+_MATCHED = [40, 20, 10]
+_LARGE = [{'shape': s, 'levels': 3, 'iters': _MATCHED, 'seed': 0}
           for s in ([64, 64, 64], [96, 96, 96], [128, 128, 128])]
-_LARGE += [{'shape': s, 'levels': 2, 'iters': 80, 'seed': 0,
+_LARGE += [{'shape': s, 'levels': 3, 'iters': _MATCHED, 'seed': 0,
             'spacing': [1, 1, 3]} for s in ([64, 64, 64], [96, 96, 96])]
 # Real-anatomy point: MNI152 T1 (~99^3 @2mm) under a smooth non-rigid warp.
-_LARGE += [{'data': 'mni152', 'resolution': 2, 'levels': 2, 'iters': 80,
-            'seed': 0}]
+_LARGE += [{'data': 'mni152', 'resolution': 2, 'levels': 3,
+            'iters': _MATCHED, 'seed': 0}]
 
 CASE = Case(
     name='greedy_syn_register',
@@ -176,23 +210,27 @@ CASE = Case(
     # stays in dev cycles as the gold-standard bar; dipy SyN is the slow one.
     slow_baselines=(
         SlowBaseline('dipy.registration',
-                     reason='dipy SymmetricDiffeomorphic ~126 s at 128^3 on '
-                            'CPU (CPU-only cython, super-linear); '
-                            'worker-timeout-capped in the full matrix. ANTs '
-                            'SyNOnly is fast (~6 s at 128^3) -- not slow.'),
+                     reason='dipy SymmetricDiffeomorphic, super-linear cython '
+                            'on CPU; at the matched (40,20,10) full-res '
+                            'schedule it is the slow tool -- worker-timeout-'
+                            'capped in the full matrix. ANTs SyNOnly runs the '
+                            'same schedule (~15 s at 96^3) but completes.'),
     ),
     complexity=(
         'STEADY ~ levels x iters x n_steps x N: each iteration warps both '
         'images to the midpoint (two scaling-and-squaring SVF integrations), '
         'computes the LNCC force, smooths it (fluid) + the velocity '
         '(diffusion) -- two Gaussians/iter -- then a midpoint compose+invert '
-        'at the end. The heaviest recipe to COMPILE (two velocity fields), '
-        'but ANTs SyNOnly (the gold standard) is FAST on CPU (~0.5/2.9/6.0 s '
-        'at 48/96/128^3 measured), so the GPU win is NOT a given -- it must '
-        'clear the ~4x cost bar to count (measured in ECONOMIC.md, not '
-        'assumed). HBM ~ 2 velocity fields + scaling-squaring intermediates '
-        '(heaviest after demons). The size tier varies the volume + carries '
-        'anisotropic (1x1x3) points. The force is a benchmarked knob: '
+        'at the end. The heaviest recipe to COMPILE (two velocity fields). '
+        'The size tier runs the ANTs-CANONICAL matched schedule (3 levels, '
+        '40x20x10, early-exit 1e-7/8) on all three tools -- ANTs at its '
+        'DEFAULT skip-full-res preset was ~0.5/2.9/6.0 s at 48/96/128^3, but '
+        'the matched full-res schedule is ~3.3x heavier (~15 s at 96^3, the '
+        'honest apples-to-apples bar); the GPU win must still clear ~4x to '
+        'count (measured in ECONOMIC.md, not assumed). HBM ~ 2 velocity '
+        'fields + scaling-squaring intermediates (heaviest after demons). The '
+        'size tier varies the volume + carries anisotropic (1x1x3) points. '
+        'The force is a benchmarked knob: '
         'nitrix-jax (LNCC) vs the MI force (closed-form MIForce + autodiff '
         'MetricForce(MI)) -- MI replaces the local-CC window with a '
         'joint-histogram scatter (modality-independent cost; fMRIPrep parity, '

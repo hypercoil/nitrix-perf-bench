@@ -122,7 +122,11 @@ def analyse(case: Any, rows: List[dict], bar: float,
             f = floors.get(r['baseline'].split('.')[0], 0.0)
             return max(_steady_min(r) - f, 1e-6)  # I/O-subtracted
 
-        domain = [r for r in cpu_ok if r['baseline'] != 'nitrix-jax'
+        # the CPU "gold standard" is a COMMUNITY/domain tool only -- exclude
+        # *every* nitrix baseline (``nitrix-jax`` and its force/representation
+        # variants ``nitrix-jax-mi`` / ``-mi-autodiff`` / ``-algebra``), else a
+        # nitrix-CPU variant could masquerade as the competitor bar.
+        domain = [r for r in cpu_ok if not r['baseline'].startswith('nitrix')
                   and not r['baseline'].endswith('.iofloor')]
         if domain:  # strongest competitor = fastest tool AFTER I/O subtraction
             best = min(domain, key=_compute)

@@ -53,7 +53,11 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.register import DemonsSpec, diffeomorphic_demons_register
+from nitrix.register import (
+    Convergence,
+    DemonsSpec,
+    diffeomorphic_demons_register,
+)
 
 from ._base import BuiltPoint, Case, SlowBaseline
 from ._real_anatomy import real_syn_pair
@@ -68,7 +72,25 @@ from ._register import (
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
-    levels, iters = int(param['levels']), int(param['iters'])
+    # A scalar 'iters' is the legacy flat schedule (dev tier, no early-exit);
+    # a per-level tuple (e.g. [40, 20, 10]) is the ANTs-canonical MATCHED
+    # schedule -- 3 levels (shrink 4x2x1), ANTs' [...,1e-7,8] early-exit
+    # mirrored on nitrix (Convergence), so the size/economic verdict reads
+    # apples-to-apples vs ANTs SyNOnly / dipy. sitk demons is single-resolution
+    # (no pyramid), so it gets the TOTAL iteration budget (sum); see the note.
+    raw = param['iters']
+    if isinstance(raw, (list, tuple)):
+        iters: Any = tuple(int(i) for i in raw)
+        levels = len(iters)
+        conv = Convergence(threshold=1e-7, window=8)
+        ants_iters: Any = iters
+        sitk_iters = sum(iters)
+    else:
+        iters = int(raw)
+        levels = int(param['levels'])
+        conv = None
+        ants_iters = None
+        sitk_iters = iters
     spacing = param.get('spacing')  # None -> isotropic (voxel space)
     seed = param.get('seed', 0)
     if param.get('data') == 'mni152':
@@ -76,25 +98,27 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         # background noise floor breaks the demons-ESM 0/0 on the uniform
         # template background -- FR register-demons-force-divide-by-zero).
         moving, fixed = real_syn_pair(int(param.get('resolution', 2)), seed)
-        spec = DemonsSpec(levels=levels, iterations=iters)
-        ants_ref = ants_register('SyNOnly')
+        spec = DemonsSpec(levels=levels, iterations=iters, convergence=conv)
+        ants_ref = ants_register('SyNOnly', reg_iterations=ants_iters)
         dipy_ref = dipy_register('syn', levels, iters)
-        sitk_ref = sitk_demons_register(iters)
+        sitk_ref = sitk_demons_register(sitk_iters)
     elif spacing is not None:
         moving, fixed, sp = aniso_pair(tuple(param['shape']), spacing, seed)
-        spec = DemonsSpec(levels=levels, iterations=iters, spacing=sp)
+        spec = DemonsSpec(levels=levels, iterations=iters, spacing=sp,
+                          convergence=conv)
         aff = _affine(spacing)
-        ants_ref = ants_register('SyNOnly', spacing=list(spacing))
+        ants_ref = ants_register('SyNOnly', spacing=list(spacing),
+                                 reg_iterations=ants_iters)
         dipy_ref = dipy_register('syn', levels, iters, affines=(aff, aff))
-        sitk_ref = sitk_demons_register(iters, spacing=spacing)
+        sitk_ref = sitk_demons_register(sitk_iters, spacing=spacing)
     else:
         # isotropic path unchanged (preserves the existing representative /
         # drift seed): warp_pair's small known warp registered in voxel space.
         moving, fixed = warp_pair(tuple(param['shape']), seed)
-        spec = DemonsSpec(levels=levels, iterations=iters)
-        ants_ref = ants_register('SyNOnly')
+        spec = DemonsSpec(levels=levels, iterations=iters, convergence=conv)
+        ants_ref = ants_register('SyNOnly', reg_iterations=ants_iters)
         dipy_ref = dipy_register('syn', levels, iters)
-        sitk_ref = sitk_demons_register(iters)
+        sitk_ref = sitk_demons_register(sitk_iters)
     mj = jax.block_until_ready(jnp.asarray(moving))
     fj = jax.block_until_ready(jnp.asarray(fixed))
 
@@ -139,20 +163,24 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
 # ~seconds (and L2x20 == L2x40 in compile -- flat in iters).
 _CONFIGS = [(1, 20), (2, 20), (2, 40)]
 _SHAPE = [48, 48, 48]
-# Size tier (brain-scale): fix a mid config, vary the volume. Capped at 160^3:
-# demons' SVF field + scaling-squaring intermediates cost ~3 KB/voxel (~1.7x
-# rigid/affine) at the clean small sizes, so it is the HBM-heaviest recipe --
-# but cold peak_hbm is autotune-contaminated (see complexity / the report).
+# Size tier (brain-scale): vary the volume at the ANTs-CANONICAL matched
+# schedule -- 3 levels (shrink 4x2x1), per-level iters (40, 20, 10), early-exit
+# 1e-7/win-8 -- so the size/economic verdict reads apples-to-apples vs ANTs
+# SyNOnly / dipy (the per-level tuple triggers the matched path in _build).
+# Capped at 160^3: demons' SVF field + scaling-squaring intermediates cost ~3
+# KB/voxel (~1.7x rigid/affine), the HBM-heaviest recipe -- but cold peak_hbm
+# is autotune-contaminated (see complexity / the report).
+_MATCHED = [40, 20, 10]
 _LARGE = [[96, 96, 96], [128, 128, 128], [160, 160, 160]]
 # Anisotropic points (1x1x3, the clinical thick-slice regime): DemonsSpec.
 # spacing corrects the bias where a voxel-isotropic Gaussian/force is
 # physically anisotropic; the refs get the matching spacing/affine.
-_LARGE_ANISO = [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0,
+_LARGE_ANISO = [{'shape': s, 'levels': 3, 'iters': _MATCHED, 'seed': 0,
                  'spacing': [1, 1, 3]}
                 for s in ([96, 96, 96], [128, 128, 128])]
 # Real-anatomy point: MNI152 T1 (~99^3 @2mm) under a smooth non-rigid warp.
-_LARGE_REAL = [{'data': 'mni152', 'resolution': 2, 'levels': 2, 'iters': 20,
-                'seed': 0}]
+_LARGE_REAL = [{'data': 'mni152', 'resolution': 2, 'levels': 3,
+                'iters': _MATCHED, 'seed': 0}]
 
 CASE = Case(
     name='diffeomorphic_demons',
@@ -165,7 +193,8 @@ CASE = Case(
                   for (lv, it) in _CONFIGS],
     representative={'shape': _SHAPE, 'levels': 1, 'iters': 20, 'seed': 0},
     large_param_points=tuple(
-        [{'shape': s, 'levels': 2, 'iters': 20, 'seed': 0} for s in _LARGE]
+        [{'shape': s, 'levels': 3, 'iters': _MATCHED, 'seed': 0}
+         for s in _LARGE]
         + _LARGE_ANISO + _LARGE_REAL),
     # dipy SyN is pathologically slow at scale (128^3 ~126 s on CPU, vs ITK
     # demons ~few s) -- declare it slow so --skip-slow drops it for dev cycles
@@ -183,7 +212,11 @@ CASE = Case(
         'Gaussians; no inner solve), but SUPER-linear at large N (bandwidth-'
         'bound on the SVF field): the GPU/CPU speedup peaks ~43x (48-96^3) '
         'then erodes to ~28x (160^3) -- the most bandwidth-bound recipe at '
-        'scale. HBM: the heaviest recipe (~3 vs rigid/affine ~1.8 KB/voxel at '
+        'scale. The size tier runs the ANTs-CANONICAL matched schedule (3 '
+        'levels, 40x20x10, early-exit 1e-7/8) on nitrix + ANTs SyNOnly + dipy '
+        'so the verdict is apples-to-apples (the dev tier keeps flat L2x20/40 '
+        'for compile characterisation). HBM: the heaviest recipe (~3 vs '
+        'rigid/affine ~1.8 KB/voxel at '
         'clean small sizes), but cold peak_hbm is contaminated by XLA '
         'autotune scratch (a shared ~8.7 GB 128^3 spike, non-monotonic) so NO '
         'OOM projection is trustworthy; none hit OOM to 160^3 on the 23 GB '

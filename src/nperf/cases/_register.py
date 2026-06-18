@@ -72,7 +72,8 @@ def ncc(a: Any, b: Any) -> float:
 
 
 def ants_register(transform: str = 'Rigid',
-                  spacing: Any = None) -> Callable[..., Any]:
+                  spacing: Any = None,
+                  reg_iterations: Any = None) -> Callable[..., Any]:
     '''ANTsPy registration (the task-level domain reference) for the given
     ``type_of_transform`` (``'Rigid'`` / ``'Affine'`` / ``'SyN'`` -- the
     rigid / affine / diffeomorphic counterparts of the nitrix recipes);
@@ -85,7 +86,17 @@ def ants_register(transform: str = 'Rigid',
     in the *same* physical space nitrix's ``WorldSpace`` uses -- the
     apples-to-apples comparison on anisotropic / different grids (ANTs is a
     physical-space tool, so this is its native regime). ``None`` keeps ANTs'
-    default 1 mm isotropic (the shared-grid IndexSpace case).'''
+    default 1 mm isotropic (the shared-grid IndexSpace case).
+
+    ``reg_iterations`` (a per-level tuple, e.g. ``(40, 20, 10)``) **pins the
+    deformable (SyN) pyramid to a matched schedule** instead of ANTs' preset:
+    ANTs re-derives the shrink factors / smoothing sigmas purely from
+    ``len(reg_iterations)`` (``4x2x1`` / ``2x1x0`` vox for length 3) and runs
+    ``synits`` iterations per level with its ``[...,1e-7,8]`` early-exit -- so
+    passing the SAME ``(levels, per-level iters)`` nitrix + dipy run makes the
+    economic wall-clock apples-to-apples (DESIGN: matched-schedule fairness).
+    ANTs' default ``(40, 20, 0)`` SKIPS the full-res level (0 iters there);
+    ``None`` keeps that preset.'''
 
     def run(moving: Any, fixed: Any) -> Any:
         import ants
@@ -98,26 +109,37 @@ def ants_register(transform: str = 'Rigid',
             f_sp, m_sp = (sp, sp) if np.isscalar(sp[0]) else (sp[0], sp[1])
             f.set_spacing(tuple(float(s) for s in f_sp))
             m.set_spacing(tuple(float(s) for s in m_sp))
+        kw = {} if reg_iterations is None else {
+            'reg_iterations': tuple(int(i) for i in reg_iterations)}
         reg = ants.registration(fixed=f, moving=m,
-                                type_of_transform=transform)
+                                type_of_transform=transform, **kw)
         return reg['warpedmovout'].numpy()
 
     return run
 
 
-def _dipy_pyramid(levels: int, iters: int
+def _dipy_pyramid(levels: int, iters: Any
                   ) -> Tuple[list, list, list]:
-    '''The coarse->fine schedule for dipy, truncated to ``levels`` stages and
-    ``iters`` iterations per stage -- the same knob the nitrix recipe uses, so
-    dipy's work tracks the config (the standard downsample factors / smoothing
-    sigmas, finest ``levels`` of ``[4,2,1]`` / ``[3,1,0]``).'''
+    '''The coarse->fine schedule for dipy.  A scalar ``iters`` gives the legacy
+    flat schedule (``[iters]*levels``, finest ``levels`` of ``[4,2,1]`` /
+    ``[3,1,0]``).  A per-level **tuple** ``iters`` (e.g. ``(40, 20, 10)``) pins
+    the **ANTs-matched** schedule: ``level_iters = list(iters)`` and the shrink
+    / smoothing derived exactly as ANTs does from the length (``2**[n-1..0]`` =
+    ``4x2x1`` and ``[n-1..0]`` = ``2x1x0`` for length 3) -- so dipy, ANTs, and
+    nitrix run the same pyramid (matched-schedule fairness).'''
+    if isinstance(iters, (list, tuple)):
+        n = len(iters)
+        level_iters = [int(i) for i in iters]
+        factors = [2 ** s for s in range(n)][::-1]       # 4x2x1 (n=3)
+        sigmas = [float(s) for s in range(n)][::-1]      # 2x1x0 (n=3), ANTs
+        return level_iters, sigmas, factors
     factors = [4, 2, 1][-levels:]
     sigmas = [3.0, 1.0, 0.0][-levels:]
     level_iters = [iters] * levels
     return level_iters, sigmas, factors
 
 
-def dipy_register(kind: str, levels: int, iters: int,
+def dipy_register(kind: str, levels: int, iters: Any,
                   affines: Any = None) -> Callable[..., Any]:
     '''dipy registration (the numpy/scipy/cython task-level domain reference),
     returning the warped moving.  ``kind`` picks the counterpart of the nitrix
@@ -125,8 +147,10 @@ def dipy_register(kind: str, levels: int, iters: int,
     information, the rigid / 12-DOF transforms), ``'syn'`` -> the symmetric
     diffeomorphic ``SymmetricDiffeomorphicRegistration`` on SSD (the
     counterpart of nitrix's SSD-driven log-Demons).  Its pyramid is driven by
-    the case's ``(levels, iters)`` via ``_dipy_pyramid``, so dipy's wall-clock
-    scales with the same budget.  dipy lazy (only its refs env imports it); not
+    the case's ``(levels, iters)`` via ``_dipy_pyramid`` (``iters`` scalar for
+    the flat schedule, or a per-level tuple for the ANTs-matched one), so dipy
+    wall-clock tracks the same budget.  dipy lazy (only its refs env imports);
+    not
     jit-compiled, so its wall-clock is the full registration (no separate
     compile) -- read against nitrix's steady + one-time compile.
 

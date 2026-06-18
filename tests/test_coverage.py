@@ -327,6 +327,28 @@ def test_economic_na_and_fallback_and_authoritative():
     assert ov2.verdict == 'favorable' and ov2.authoritative is True
 
 
+def test_economic_cpu_bar_excludes_all_nitrix_variants():
+    '''Regression: the CPU 'gold standard' bar must be a COMMUNITY/domain tool
+    -- a nitrix force/representation variant on CPU (``nitrix-jax-mi`` /
+    ``-mi-autodiff`` / ``-algebra``) must NOT masquerade as the competitor,
+    even when it is the FASTEST CPU row.'''
+    case = _c('op', large=[{'V': 1000}])
+    rows = [
+        _vrow('nitrix-jax', 'jax-cuda12', 'ok', {'V': 1000},
+              steady=0.01, compile=0.1),
+        # nitrix CPU variants FASTER than the domain tool: must NOT win
+        _vrow('nitrix-jax-mi-autodiff', 'jax-cpu', 'ok', {'V': 1000},
+              steady=1.0),
+        _vrow('nitrix-jax-algebra', 'jax-cpu', 'ok', {'V': 1000}, steady=0.8),
+        _vrow('ants.registration', 'jax-cpu', 'ok', {'V': 1000},
+              framework='ants', steady=5.0),
+    ]
+    analysed = econ.analyse(case, rows, 4.0)
+    assert len(analysed) == 1
+    assert analysed[0]['tool'] == 'ants.registration', analysed[0]['tool']
+    assert abs(analysed[0]['cpu'] - 5.0) < 1e-6  # the bar is ANTs, not 0.8/1.0
+
+
 # -- tier + score + marquee (Phase 2) ---------------------------------------
 def _oc(**kw):
     base = dict(qualname='q', runtime=True, has_case=True,

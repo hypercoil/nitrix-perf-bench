@@ -282,3 +282,22 @@ def test_demons_algebra_recovers_matches_group():
     assert a_alg > before + 0.05, f'algebra weak {before:.3f}->{a_alg:.3f}'
     assert abs(a_grp - a_alg) < 0.02, (
         f'group/algebra diverge in result ({a_grp:.3f} vs {a_alg:.3f})')
+
+
+@pytest.mark.parametrize('mod', [syn_mod, demons_mod], ids=['syn', 'demons'])
+def test_matched_schedule_builds_and_runs(mod):
+    '''The ANTs-canonical size tier uses a per-level iters TUPLE: _build must
+    derive levels from its length, enable the early-exit, and wire the matched
+    refs (ANTs reg_iterations / dipy level_iters), and the nitrix baseline must
+    run finite. A small synthetic tuple point (the real tier is 64^3+).'''
+    # the large tier carries the matched tuple-iters points.
+    assert any(isinstance(p.get('iters'), (list, tuple))
+               for p in mod.CASE.large_param_points)
+    p = {'shape': [24, 24, 24], 'levels': 3, 'iters': [8, 4, 2], 'seed': 0}
+    built = mod._build(p)
+    fn = built.baselines['nitrix-jax'][1]
+    out = np.asarray(fn(*built.inputs_for('jax')))
+    assert np.isfinite(out).all(), 'matched-schedule nitrix output not finite'
+    assert out.shape[-1] == 3, 'expected a (*spatial, ndim) field'
+    # the matched path still carries the cross-tool refs (each gets the sched).
+    assert {'ants.registration', 'dipy.registration'} <= set(built.baselines)
