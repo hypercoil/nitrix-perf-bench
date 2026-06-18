@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-16T03:46:21Z",
+    "generated": "2026-06-18T01:08:22Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4585,6 +4585,398 @@
             "l1": 1038410.0,
             "l2sq": 2301820.0,
             "linf": 6.81578
+          }
+        ]
+      }
+    },
+    "ledoit_wolf": {
+      "case": "ledoit_wolf",
+      "qualname": "nitrix.stats.ledoit_wolf",
+      "signature": "(X: \"Float[Array, 'n p']\", *, assume_centered: 'bool' = False) -> \"Tuple[Float[Array, 'p p'], Float[Array, '']]\"",
+      "behaviour": {
+        "point": {
+          "c": 500,
+          "n_obs": 200
+        },
+        "leaves": [
+          {
+            "shape": [
+              500,
+              500
+            ],
+            "dtype": "float32",
+            "n_finite": 250000,
+            "n_nonfinite": 0,
+            "l1": 903238.0,
+            "l2sq": 5487250.0,
+            "linf": 46.7562
+          }
+        ]
+      }
+    },
+    "oas": {
+      "case": "oas",
+      "qualname": "nitrix.stats.oas",
+      "signature": "(X: \"Float[Array, 'n p']\", *, assume_centered: 'bool' = False) -> \"Tuple[Float[Array, 'p p'], Float[Array, '']]\"",
+      "behaviour": {
+        "point": {
+          "c": 500,
+          "n_obs": 200
+        },
+        "leaves": [
+          {
+            "shape": [
+              500,
+              500
+            ],
+            "dtype": "float32",
+            "n_finite": 250000,
+            "n_nonfinite": 0,
+            "l1": 902279.0,
+            "l2sq": 5476130.0,
+            "linf": 46.7332
+          }
+        ]
+      }
+    },
+    "shrunk_covariance": {
+      "case": "shrunk_covariance",
+      "qualname": "nitrix.stats.shrunk_covariance",
+      "signature": "(X: \"Float[Array, 'n p']\", *, method: 'ShrinkageMethod' = 'ledoit_wolf', assume_centered: 'bool' = False) -> \"Float[Array, 'p p']\"",
+      "behaviour": {
+        "point": {
+          "c": 500,
+          "n_obs": 200
+        },
+        "leaves": [
+          {
+            "shape": [
+              500,
+              500
+            ],
+            "dtype": "float32",
+            "n_finite": 250000,
+            "n_nonfinite": 0,
+            "l1": 903238.0,
+            "l2sq": 5487250.0,
+            "linf": 46.7562
+          }
+        ]
+      }
+    },
+    "glasso": {
+      "case": "glasso",
+      "qualname": "nitrix.stats.glasso",
+      "signature": "(S: \"Float[Array, 'p p']\", lam: \"float | Float[Array, '']\", *, n_outer: 'int' = 100, n_inner: 'int' = 50) -> \"Float[Array, 'p p']\"",
+      "behaviour": {
+        "point": {
+          "c": 80
+        },
+        "leaves": [
+          {
+            "shape": [
+              80,
+              80
+            ],
+            "dtype": "float32",
+            "n_finite": 6400,
+            "n_nonfinite": 0,
+            "l1": 189.368,
+            "l2sq": 365.252,
+            "linf": 2.44542
+          }
+        ]
+      }
+    },
+    "glasso_path": {
+      "case": "glasso_path",
+      "qualname": "nitrix.stats.glasso_path",
+      "signature": "(S: \"Float[Array, 'p p']\", lambdas: \"Float[Array, 'L']\", *, n_outer: 'int' = 100, n_inner: 'int' = 50) -> \"Float[Array, 'L p p']\"",
+      "behaviour": {
+        "point": {
+          "c": 80
+        },
+        "leaves": [
+          {
+            "shape": [
+              8,
+              80,
+              80
+            ],
+            "dtype": "float32",
+            "n_finite": 51200,
+            "n_nonfinite": 0,
+            "l1": 1518.11,
+            "l2sq": 2933.99,
+            "linf": 2.44542
+          }
+        ]
+      }
+    },
+    "ebic_score": {
+      "case": "ebic_score",
+      "qualname": "nitrix.stats.ebic_score",
+      "signature": "(theta: \"Float[Array, 'p p']\", S: \"Float[Array, 'p p']\", n: \"int | Float[Array, '']\", *, gamma: 'float' = 0.5, edge_tol: 'float' = 1e-08) -> \"Float[Array, '']\"",
+      "behaviour": {
+        "point": {
+          "c": 160,
+          "n_obs": 320
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 8542.03,
+            "l2sq": 72966200.0,
+            "linf": 8542.03
+          }
+        ]
+      }
+    },
+    "gaussian_nll": {
+      "case": "gaussian_nll",
+      "qualname": "nitrix.stats.gaussian_nll",
+      "signature": "(x: \"Float[Array, '...']\", mean: \"Float[Array, '...']\", log_var: \"Float[Array, '...']\", *, axis: 'Optional[_AxisArg]' = None, reduction: 'Reduction' = 'mean') -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            16384,
+            128
+          ]
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 2.19247,
+            "l2sq": 4.80692,
+            "linf": 2.19247
+          }
+        ]
+      }
+    },
+    "kl_diagonal_gaussian": {
+      "case": "kl_diagonal_gaussian",
+      "qualname": "nitrix.stats.kl_diagonal_gaussian",
+      "signature": "(mean: \"Float[Array, '...']\", log_var: \"Float[Array, '...']\", *, axis: 'Optional[_AxisArg]' = None, reduction: 'Reduction' = 'sum') -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "shape": [
+            16384,
+            128
+          ]
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 1334870.0,
+            "l2sq": 1781880000000.0,
+            "linf": 1334870.0
+          }
+        ]
+      }
+    },
+    "instantaneous_phase": {
+      "case": "instantaneous_phase",
+      "qualname": "nitrix.stats.instantaneous_phase",
+      "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None, period: 'float' = 6.283185307179586) -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "n_sig": 256,
+          "t": 8192
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              8192
+            ],
+            "dtype": "float32",
+            "n_finite": 2097152,
+            "n_nonfinite": 0,
+            "l1": 8584710000.0,
+            "l2sq": 46866700000000.0,
+            "linf": 8482.8
+          }
+        ]
+      }
+    },
+    "instantaneous_frequency": {
+      "case": "instantaneous_frequency",
+      "qualname": "nitrix.stats.instantaneous_frequency",
+      "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None, fs: 'float' = 1.0, period: 'float' = 6.283185307179586) -> \"Float[Array, '...']\"",
+      "behaviour": {
+        "point": {
+          "n_sig": 256,
+          "t": 8192
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              8191
+            ],
+            "dtype": "float32",
+            "n_finite": 2096896,
+            "n_nonfinite": 0,
+            "l1": 524074.0,
+            "l2sq": 162561.0,
+            "linf": 0.500021
+          }
+        ]
+      }
+    },
+    "env_inst": {
+      "case": "env_inst",
+      "qualname": "nitrix.stats.env_inst",
+      "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None, fs: 'float' = 1.0, period: 'float' = 6.283185307179586) -> \"Tuple[Float[Array, '...'], Float[Array, '...'], Float[Array, '...']]\"",
+      "behaviour": {
+        "point": {
+          "n_sig": 256,
+          "t": 8192
+        },
+        "leaves": [
+          {
+            "shape": [],
+            "dtype": "float32",
+            "n_finite": 1,
+            "n_nonfinite": 0,
+            "l1": 8587670000.0,
+            "l2sq": 7.37481e+19,
+            "linf": 8587670000.0
+          }
+        ]
+      }
+    },
+    "product_filter": {
+      "case": "product_filter",
+      "qualname": "nitrix.stats.product_filter",
+      "signature": "(X: \"Num[Array, '... obs']\", weight: \"Num[Array, '... obs_freq']\", **fft_params: 'Any') -> \"Num[Array, '... obs']\"",
+      "behaviour": {
+        "point": {
+          "n_sig": 256,
+          "t": 8192
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              8192
+            ],
+            "dtype": "float32",
+            "n_finite": 2097152,
+            "n_nonfinite": 0,
+            "l1": 725756.0,
+            "l2sq": 394196.0,
+            "linf": 2.08992
+          }
+        ]
+      }
+    },
+    "product_filtfilt": {
+      "case": "product_filtfilt",
+      "qualname": "nitrix.stats.product_filtfilt",
+      "signature": "(X: \"Num[Array, '... obs']\", weight: \"Num[Array, '... obs_freq']\", **fft_params: 'Any') -> \"Num[Array, '... obs']\"",
+      "behaviour": {
+        "point": {
+          "n_sig": 256,
+          "t": 8192
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              8192
+            ],
+            "dtype": "float32",
+            "n_finite": 2097152,
+            "n_nonfinite": 0,
+            "l1": 610188.0,
+            "l2sq": 278718.0,
+            "linf": 1.81086
+          }
+        ]
+      }
+    },
+    "glm_fit": {
+      "case": "glm_fit",
+      "qualname": "nitrix.stats.glm_fit",
+      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", *, family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>), weights: \"Optional[Float[Array, 'N']]\" = None, n_iter: 'int' = 25, ridge: 'float' = 0.0, block: 'Optional[int]' = None) -> 'GLMResult'",
+      "behaviour": {
+        "point": {
+          "V": 10000,
+          "N": 120,
+          "p": 8
+        },
+        "leaves": [
+          {
+            "shape": [
+              10000,
+              8
+            ],
+            "dtype": "float32",
+            "n_finite": 80000,
+            "n_nonfinite": 0,
+            "l1": 63915.5,
+            "l2sq": 80240.0,
+            "linf": 4.73039
+          }
+        ]
+      }
+    },
+    "t_contrast": {
+      "case": "t_contrast",
+      "qualname": "nitrix.stats.t_contrast",
+      "signature": "(result: 'GLMResult', contrast: \"Float[Array, 'p']\") -> \"Tuple[Float[Array, 'V'], Float[Array, 'V'], Float[Array, 'V'], Float[Array, 'V']]\"",
+      "behaviour": {
+        "point": {
+          "V": 10000,
+          "N": 120,
+          "p": 8
+        },
+        "leaves": [
+          {
+            "shape": [
+              10000
+            ],
+            "dtype": "float32",
+            "n_finite": 10000,
+            "n_nonfinite": 0,
+            "l1": 160868.0,
+            "l2sq": 4113500.0,
+            "linf": 78.6835
+          }
+        ]
+      }
+    },
+    "f_contrast": {
+      "case": "f_contrast",
+      "qualname": "nitrix.stats.f_contrast",
+      "signature": "(result: 'GLMResult', contrast: \"Float[Array, 'm p']\") -> \"Tuple[Float[Array, 'V'], Float[Array, 'V'], float, float]\"",
+      "behaviour": {
+        "point": {
+          "V": 10000,
+          "N": 120,
+          "p": 8
+        },
+        "leaves": [
+          {
+            "shape": [
+              10000
+            ],
+            "dtype": "float32",
+            "n_finite": 10000,
+            "n_nonfinite": 0,
+            "l1": 4910290.0,
+            "l2sq": 5025910000.0,
+            "linf": 4528.12
           }
         ]
       }
