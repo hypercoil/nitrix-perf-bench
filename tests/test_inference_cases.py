@@ -105,3 +105,53 @@ def test_tfce_and_clusters_nonnegative():
         out = np.asarray(jax.block_until_ready(
             bp.baselines['nitrix-jax'][1](*bp.inputs_for('jax'))))
         assert out.min() >= -1e-6, f'{name} has negative values'
+
+
+# -- permutation_test HEADLINE (separate: Monte Carlo, fp64_reference=None) ---
+def test_permutation_test_contract():
+    c = load_case('permutation_test')
+    bp = c.build({'shape': [16, 16, 16], 'subj': 12, 'n_perm': 50, 'seed': 0})
+    assert set(bp.baselines) == {
+        'nitrix-jax', 'fsl.randomise', 'fsl.iofloor', 'nilearn.permuted_ols'}
+    assert bp.ratio_reference == 'nitrix-jax'
+    assert c.op_qualname == 'nitrix.stats.inference.permutation_test'
+    assert c.tier == 'marquee'
+    # permutation FWE p-maps are Monte Carlo -> no exact oracle, but noted.
+    assert bp.fp64_reference is None
+    assert bp.fidelity_note and 'Monte Carlo' in bp.fidelity_note
+    # both community permutation tools are declared slow (CPU loops).
+    slow = {s.baseline for s in c.slow_baselines}
+    assert {'fsl.randomise', 'nilearn.permuted_ols'} <= slow
+
+
+def test_permutation_test_stat_matches_oracle():
+    '''The DETERMINISTIC observed t-map (PermResult.stat) matches a numpy one-
+    sample-t oracle, even though p_fwe is Monte Carlo.'''
+    from nitrix.stats.inference import permutation_test
+
+    from nperf.cases._inference import np_onesample_t, perm_data
+    shape, subj = (16, 16, 16), 12
+    data, design, contrast = perm_data(shape, subj, 0)
+    r = permutation_test(
+        jax.numpy.asarray(data), jax.numpy.asarray(design),
+        jax.numpy.asarray(contrast), key=jax.random.PRNGKey(0),
+        n_perm=50, enhancement='tfce')
+    stat = np.asarray(jax.block_until_ready(r.stat))
+    ref = np_onesample_t()(data)
+    rel = np.max(np.abs(stat - ref) / (1e-4 + 1e-3 * np.abs(ref)))
+    assert rel <= 1.0, f'observed stat vs numpy t: rel_to_tol {rel:.2f} > 1'
+
+
+def test_permutation_test_recovers_planted_cluster():
+    '''p_fwe is a valid p-map and the planted central cube is more significant
+    than the background (the effect is detected).'''
+    c = load_case('permutation_test')
+    shape = [16, 16, 16]
+    bp = c.build({'shape': shape, 'subj': 12, 'n_perm': 100, 'seed': 0})
+    p = np.asarray(jax.block_until_ready(
+        bp.baselines['nitrix-jax'][1](*bp.inputs_for('jax'))))
+    assert p.min() >= 0.0 and p.max() <= 1.0 + 1e-6
+    blob = np.zeros(shape, bool)
+    sl = tuple(slice(s // 3, 2 * s // 3) for s in shape)
+    blob[tuple(sl)] = True
+    assert np.median(p[blob]) < np.median(p[~blob])

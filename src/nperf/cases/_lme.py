@@ -124,6 +124,87 @@ def statsmodels_reml(Y: Any, X: Any, groups: Any) -> np.ndarray:
     return out
 
 
+# R lme4 ``lmer`` is THE gold-standard mixed-effects REML; for the balanced
+# one-way design ``y ~ 1 + (1|group)`` its REML estimate equals the closed-form
+# oracle (and what nitrix reml_fit targets).  One Rscript loops lmer over the V
+# voxels (so we pay R startup once, not per voxel) and writes (V, 3).
+_R_LME4_CODE = r'''
+args <- commandArgs(trailingOnly=TRUE); d <- args[1]
+suppressMessages(library(lme4))
+Y <- as.matrix(read.csv(file.path(d, "Y.csv"), header=FALSE))   # V x N
+g <- factor(scan(file.path(d, "grp.csv"), quiet=TRUE))          # length N
+V <- nrow(Y); out <- matrix(0.0, V, 3)
+ctrl <- lmerControl(check.conv.singular="ignore",
+                    check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore")
+for (i in 1:V) {
+  y <- as.numeric(Y[i, ])
+  m <- suppressMessages(suppressWarnings(
+        lmer(y ~ 1 + (1 | g), REML=TRUE, control=ctrl)))
+  vc <- as.data.frame(VarCorr(m))
+  sb <- vc$vcov[vc$grp == "g" & is.na(vc$var2)]
+  se <- vc$vcov[vc$grp == "Residual"]
+  out[i, ] <- c(as.numeric(fixef(m))[1], sb, se)
+}
+write.table(out, file.path(d, "out.csv"), sep=",",
+            row.names=FALSE, col.names=FALSE)
+'''
+
+# I/O floor: boot Rscript, read the SAME Y/grp CSVs, write a trivial (V, 3) --
+# NO library(lme4), NO fit.  Isolates the file-coupling artifact R pays and
+# nitrix never does: the CSV write/read + the R interpreter startup (which is
+# a LARGE fraction of wall-clock at small V).  economic_report subtracts the
+# same-namespace ``r.iofloor`` (``compute = R.lme4 - floor``); mirrors
+# ``flameo_iofloor`` (which runs the cheap fslmaths, not flameo).
+_R_IOFLOOR_CODE = r'''
+args <- commandArgs(trailingOnly=TRUE); d <- args[1]
+Y <- as.matrix(read.csv(file.path(d, "Y.csv"), header=FALSE))
+g <- scan(file.path(d, "grp.csv"), quiet=TRUE)
+out <- matrix(0.0, nrow(Y), 3)   # no fit -- IO + R startup only
+write.table(out, file.path(d, "out.csv"), sep=",",
+            row.names=FALSE, col.names=FALSE)
+'''
+
+
+def _r_run(code: str, Y: Any, groups: Any) -> np.ndarray:
+    '''Write ``Y``/``groups`` to a temp dir, run ``code`` via Rscript, read the
+    ``(V, 3)`` ``out.csv`` back.  Rscript at ``$NPERF_RSCRIPT`` (default
+    ``/scratch/nperf/renv/bin/Rscript``).'''
+    import os
+    import subprocess
+    import tempfile
+
+    rscript = os.environ.get('NPERF_RSCRIPT',
+                             '/scratch/nperf/renv/bin/Rscript')
+    yh = np.asarray(Y, np.float64)
+    grp = np.asarray(groups).ravel().astype(np.int64)
+    with tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR')) as d:
+        np.savetxt(f'{d}/Y.csv', yh, delimiter=',')
+        np.savetxt(f'{d}/grp.csv', grp, fmt='%d')
+        with open(f'{d}/fit.R', 'w') as f:
+            f.write(code)
+        subprocess.run([rscript, f'{d}/fit.R', d], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        out = np.loadtxt(f'{d}/out.csv', delimiter=',')
+    return out.reshape(yh.shape[0], 3)
+
+
+def r_lme4_reml(Y: Any, groups: Any) -> np.ndarray:
+    '''Looped R **lme4 ``lmer``** REML (the gold-standard mixed-model fit) ->
+    ``(V, 3)`` ``[beta, sigma_b^2, sigma_e^2]``.  Runs ONE Rscript that loops
+    ``lmer(y ~ 1 + (1|g), REML=TRUE)`` over the V voxels.  CPU-only, looped,
+    and file-coupled -> a slow baseline whose CSV+startup I/O is timed by
+    ``r_lme4_iofloor`` (economic subtracts it).'''
+    return _r_run(_R_LME4_CODE, Y, groups)
+
+
+def r_lme4_iofloor(Y: Any, groups: Any) -> np.ndarray:
+    '''I/O floor for ``r_lme4_reml``: the same CSV write + Rscript startup +
+    read-back, but NO lme4 / no fit -- the file-coupling + R-boot artifact
+    nitrix never pays (economic_report subtracts the same-namespace floor).
+    Returns zeros (timing only, not scored).'''
+    return _r_run(_R_IOFLOOR_CODE, Y, groups) * 0.0
+
+
 # -- FLAME two-level external baselines (flame_two_level case) ---------------
 # The fair competitor for nitrix's known-within-variance two-level REML is the
 # upstream tool FSL **FLAME** (`flameo`), which the case docstring long flagged

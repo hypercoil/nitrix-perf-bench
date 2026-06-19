@@ -176,6 +176,21 @@ PROVIDERS: Dict[str, Provider] = {
         Provider('fsl', 'numpy', requires='cpu',
                  description='FSL ref (mcflirt realign; fslmaths io-floor); '
                              'binary at NPERF_FSL_DIR; CPU-only'),
+        # R -- the statistical-modelling community gold standards: lme4 ``lmer``
+        # (mixed-effects REML, the reference for reml_fit) and mgcv ``gam`` (the
+        # reference for the GAM/spline family).  Like afni/fsl it is a CLI
+        # (Rscript), not a Python package, so it needs no separate interpreter:
+        # framework 'numpy' (base env has nibabel + nitrix for the lazy case
+        # import), and the wrapper writes data -> shells out to Rscript ->
+        # reads the result.  Rscript located via NPERF_RSCRIPT (absolute path,
+        # default /scratch/nperf/renv/bin/Rscript -- a conda renv with
+        # lme4/mgcv/Matrix/nlme). requires='cpu' (like statsmodels/fsl): a
+        # CPU tool -> runs on jax-cpu only; the GPU-vs-R economic comparison is
+        # read cross-platform from nitrix's two rows. /scratch is ephemeral;
+        # the renv is the recipe (R 4.5.3 + lme4 + mgcv installed there).
+        Provider('r', 'numpy', requires='cpu',
+                 description='R ref (lme4 lmer / mgcv gam); Rscript at '
+                             'NPERF_RSCRIPT (renv); CPU-only'),
     )
 }
 

@@ -6,6 +6,12 @@ of real time series -- the phase track for phase-amplitude coupling / phase
 synchrony.  fp64 oracle + community baseline: scipy
 (``unwrap(angle(scipy.signal.hilbert))``); GPU bar: a cupy reimpl (FFT-based,
 GPU-pure).  Ratio vs ``nitrix-jax``.
+
+**Input is a narrowband chirp, NOT white noise** (``narrowband_signal``): the
+unwrapped phase is only well-posed on a narrowband signal -- on broadband input
+the unwrap is unstable near the Nyquist wrap and at low-envelope points (by
+nature, not implementation).  See nitrix FR
+``doc-instantaneous-frequency-narrowband-caveat``.
 """
 from __future__ import annotations
 
@@ -16,12 +22,12 @@ import jax.numpy as jnp
 from nitrix.stats import instantaneous_phase
 
 from ._base import BuiltPoint, Case, to_cupy
-from ._signal import cupy_inst, scipy_inst_phase, signal_input
+from ._signal import cupy_inst, narrowband_signal, scipy_inst_phase
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     n_sig, t = int(param['n_sig']), int(param['t'])
-    X = signal_input(n_sig, t, param.get('seed', 0))
+    X = narrowband_signal(n_sig, t, param.get('seed', 0))
     jx = jax.block_until_ready(jnp.asarray(X))
     ref = scipy_inst_phase(fp64=True)(X)
 

@@ -21,6 +21,30 @@ def signal_input(n_sig: int, t: int, seed: int = 0) -> np.ndarray:
     return rng.standard_normal((n_sig, t)).astype(np.float32)
 
 
+def narrowband_signal(n_sig: int, t: int, seed: int = 0) -> np.ndarray:
+    '''A batch of **narrowband** signals -- per-signal linear chirps well below
+    Nyquist, constant unit envelope -- the regime where the analytic-signal
+    instantaneous phase/frequency are well-posed.
+
+    White noise is pathological for ``instantaneous_frequency``: it has energy
+    up to Nyquist, where the phase increment hits +-pi (the +pi == -pi wrap
+    ambiguity) and the envelope dips to zero (undefined phase), so the result
+    is unstable by NATURE -- not an fp32 or implementation defect (the
+    conjugate-product reformulation does not help; verified).  See nitrix FR
+    ``doc-instantaneous-frequency-narrowband-caveat``.  A chirp (the textbook
+    instantaneous-frequency input) has a single well-defined frequency per
+    sample, far from Nyquist, so fp32 matches the fp64 oracle.'''
+    rng = np.random.default_rng(seed)
+    tt = np.linspace(0.0, 1.0, t, dtype=np.float64)            # (t,)
+    # start/end frequencies in CYCLES over the window; kept << Nyquist (= t/2
+    # cycles), i.e. f/t << 0.5 cycles/sample even at the smallest t benched.
+    f0 = rng.uniform(10.0, 30.0, (n_sig, 1))
+    f1 = rng.uniform(40.0, 90.0, (n_sig, 1))
+    phase = 2.0 * np.pi * (f0 * tt + 0.5 * (f1 - f0) * tt * tt)  # chirp phase
+    sig = np.sin(phase) + 0.01 * rng.standard_normal((n_sig, t))  # tiny noise
+    return sig.astype(np.float32)
+
+
 def cupy_hilbert(kind: str) -> Callable[[Any], Any]:
     '''GPU Hilbert (``cupyx.scipy.signal.hilbert``) along the last axis; cupy
     imported lazily.  ``kind``: ``complex`` (analytic signal) | ``imag`` (the

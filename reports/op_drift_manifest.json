@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-18T06:28:34Z",
+    "generated": "2026-06-19T02:22:42Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -4801,9 +4801,9 @@
             "dtype": "float32",
             "n_finite": 2097152,
             "n_nonfinite": 0,
-            "l1": 8584710000.0,
-            "l2sq": 46866700000000.0,
-            "linf": 8482.8
+            "l1": 233740000.0,
+            "l2sq": 40697900000.0,
+            "linf": 371.313
           }
         ]
       }
@@ -4826,9 +4826,9 @@
             "dtype": "float32",
             "n_finite": 2096896,
             "n_nonfinite": 0,
-            "l1": 524074.0,
-            "l2sq": 162561.0,
-            "linf": 0.500021
+            "l1": 11367.9,
+            "l2sq": 95.0822,
+            "linf": 0.499132
           }
         ]
       }
@@ -5162,6 +5162,171 @@
             "l1": 50418.8,
             "l2sq": 33881.9,
             "linf": 1.0
+          }
+        ]
+      }
+    },
+    "permutation_test": {
+      "case": "permutation_test",
+      "qualname": "nitrix.stats.inference.permutation_test",
+      "signature": "(data: \"Float[Array, '*spatial N']\", design: \"Float[Array, 'N p']\", contrast: \"Float[Array, 'p'] | Float[Array, 'm p']\", *, key: 'Array', n_perm: 'int' = 500, enhancement: 'Enhancement' = 'tfce', exchange: 'Exchange' = 'sign', nuisance: \"Optional[Float[Array, 'N q']]\" = None, blocks: \"Optional[Int[Array, 'N']]\" = None, mask: \"Optional[Bool[Array, '*spatial']]\" = None, two_sided: 'bool' = True, var_smooth: 'Optional[float]' = None, connectivity: 'int' = 1, cluster_thresh: 'Optional[float]' = None, tfce_E: 'float' = 0.5, tfce_H: 'float' = 2.0, tfce_steps: 'int' = 100, pvalue_method: 'PValueMethod' = 'empirical', gpd_n_exceedances: 'int' = 250) -> 'PermResult'",
+      "behaviour": {
+        "point": {
+          "shape": [
+            24,
+            24,
+            24
+          ],
+          "subj": 16,
+          "n_perm": 100
+        },
+        "leaves": [
+          {
+            "shape": [
+              24,
+              24,
+              24
+            ],
+            "dtype": "float32",
+            "n_finite": 13824,
+            "n_nonfinite": 0,
+            "l1": 13428.0,
+            "l2sq": 13396.1,
+            "linf": 1.0
+          }
+        ]
+      }
+    },
+    "reml_fit_lowrank": {
+      "case": "reml_fit_lowrank",
+      "qualname": "nitrix.stats.lme.reml_fit",
+      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", Z: \"Float[Array, 'N q']\", *, theta_init: \"Optional[Float[Array, 'V 2']]\" = None, n_iter: 'int' = 20, damping: 'float' = 1e-06, block: 'Optional[int]' = None, low_rank: 'bool' = False) -> 'REMLResult'",
+      "behaviour": {
+        "point": {
+          "V": 128,
+          "q": 8,
+          "N": 1600,
+          "low_rank": true
+        },
+        "leaves": [
+          {
+            "shape": [
+              128,
+              3
+            ],
+            "dtype": "float32",
+            "n_finite": 384,
+            "n_nonfinite": 0,
+            "l1": 883.481,
+            "l2sq": 3434.72,
+            "linf": 5.8404
+          }
+        ]
+      }
+    },
+    "gam_fit": {
+      "case": "gam_fit",
+      "qualname": "nitrix.stats.gam.gam_fit",
+      "signature": "(Y: \"Float[Array, 'V N']\", smooths: 'Sequence[Smooth]', *, parametric: \"Optional[Float[Array, 'N q']]\" = None, intercept: 'bool' = True, family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>), lambda_mode: \"Literal['per_element', 'shared']\" = 'per_element', n_outer: 'int' = 20, n_inner: 'int' = 15, ridge: 'float' = 1e-08, lam_floor: 'float' = 1e-06, lam_ceil: 'float' = 100000000.0, block: 'Optional[int]' = None) -> 'GAMResult'",
+      "behaviour": {
+        "point": {
+          "V": 256,
+          "N": 150,
+          "n_basis": 15
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              150
+            ],
+            "dtype": "float32",
+            "n_finite": 38400,
+            "n_nonfinite": 0,
+            "l1": 23127.8,
+            "l2sq": 17447.7,
+            "linf": 1.15473
+          }
+        ]
+      }
+    },
+    "cyclic_gam": {
+      "case": "cyclic_gam",
+      "qualname": "nitrix.stats.basis.cyclic_cubic_basis",
+      "signature": "(x: \"Float[Array, ' n']\", n_basis: 'int' = 10, *, degree: 'int' = 3, penalty_order: 'int' = 2, bounds: 'Optional[Tuple[float, float]]' = None, center: 'bool' = True) -> 'SplineBasis'",
+      "behaviour": {
+        "point": {
+          "smooth": "cyclic",
+          "V": 256,
+          "N": 150,
+          "n_basis": 12
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              150
+            ],
+            "dtype": "float32",
+            "n_finite": 38400,
+            "n_nonfinite": 0,
+            "l1": 22990.5,
+            "l2sq": 17426.2,
+            "linf": 1.15499
+          }
+        ]
+      }
+    },
+    "thinplate_gam": {
+      "case": "thinplate_gam",
+      "qualname": "nitrix.stats.basis.thinplate_regression_basis",
+      "signature": "(x: \"Float[Array, ' n']\", n_basis: 'int' = 10, *, penalty_order: 'int' = 2, max_knots: 'int' = 100, bounds: 'Optional[Tuple[float, float]]' = None, center: 'bool' = True) -> 'SplineBasis'",
+      "behaviour": {
+        "point": {
+          "smooth": "thinplate",
+          "V": 256,
+          "N": 150,
+          "n_basis": 12
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              150
+            ],
+            "dtype": "float32",
+            "n_finite": 38400,
+            "n_nonfinite": 0,
+            "l1": 23128.0,
+            "l2sq": 17445.4,
+            "linf": 1.1529
+          }
+        ]
+      }
+    },
+    "tensor_gam": {
+      "case": "tensor_gam",
+      "qualname": "nitrix.stats.basis.tensor_product_basis",
+      "signature": "(margins: 'Tuple[SplineBasis, ...]', *, eig_rtol: 'float' = 1e-10) -> 'TensorBasis'",
+      "behaviour": {
+        "point": {
+          "smooth": "tensor",
+          "V": 256,
+          "N": 200,
+          "n_basis": 6
+        },
+        "leaves": [
+          {
+            "shape": [
+              256,
+              200
+            ],
+            "dtype": "float32",
+            "n_finite": 51200,
+            "n_nonfinite": 0,
+            "l1": 19863.8,
+            "l2sq": 11490.9,
+            "linf": 1.35263
           }
         ]
       }

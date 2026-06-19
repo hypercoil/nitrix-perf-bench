@@ -6,6 +6,14 @@ batch of real time series (the output time axis is one shorter -- a discrete
 derivative).  fp64 oracle + community baseline: scipy (hilbert -> angle ->
 unwrap -> diff); GPU bar: a cupy reimpl (FFT-based, GPU-pure).  Ratio vs
 ``nitrix-jax``.
+
+**Input is a narrowband chirp, NOT white noise** (``narrowband_signal``):
+instantaneous frequency is only well-posed on a narrowband signal.  On
+broadband input it is unstable at Nyquist (the +-pi wrap ambiguity) and where
+the envelope nears zero -- by NATURE, not fp32 or implementation (the
+conjugate-product reformulation was verified not to help).  See nitrix FR
+``doc-instantaneous-frequency-narrowband-caveat``.  On the chirp (the textbook
+regime) fp32 matches the fp64 oracle.
 """
 from __future__ import annotations
 
@@ -16,12 +24,12 @@ import jax.numpy as jnp
 from nitrix.stats import instantaneous_frequency
 
 from ._base import BuiltPoint, Case, to_cupy
-from ._signal import cupy_inst, scipy_inst_freq, signal_input
+from ._signal import cupy_inst, narrowband_signal, scipy_inst_freq
 
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     n_sig, t = int(param['n_sig']), int(param['t'])
-    X = signal_input(n_sig, t, param.get('seed', 0))
+    X = narrowband_signal(n_sig, t, param.get('seed', 0))
     jx = jax.block_until_ready(jnp.asarray(X))
     ref = scipy_inst_freq(fp64=True)(X)
 

@@ -73,6 +73,12 @@ def sk_oas(fp64: bool = False) -> Callable[..., Any]:
     return run
 
 
+# NOTE: sklearn's graphical_lasso (coordinate descent) does NOT fully converge
+# on these inputs even at max_iter=1000 -- it plateaus at a small NEGATIVE dual
+# gap (~1e-4), so the oracle is itself approximate.  This shows up as a non-
+# monotonic gate residual (c=160 ~1.6x while its neighbours c=80/320/640 pass),
+# i.e. oracle noise, not a nitrix accuracy trend.  The glasso case gate is set
+# loose enough to absorb it (see glasso.py); raising max_iter does not help.
 def sk_glasso(lam: float, fp64: bool = False) -> Callable[..., Any]:
     def run(S: Any) -> Any:
         from sklearn.covariance import graphical_lasso

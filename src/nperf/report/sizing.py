@@ -33,6 +33,11 @@ def size_elems(param: Dict[str, Any]) -> int:
     # bbr: N boundary points -- the cost axis (volume-independent).
     if 'shape' in param and 'N' in param:
         return int(param['N'])
+    # permutation_test: n_perm permutations over the spatial volume -- the
+    # work / HBM axis is n_perm * voxels (uses 'subj', not 'N', so no clash
+    # with the bbr shape+N branch above).
+    if 'shape' in param and 'n_perm' in param:
+        return prod(param['shape']) * int(param['n_perm'])
     # Real-anatomy points (a fixed-size real image, no 'shape'): the MNI152
     # template's voxel count at the given mm resolution (a stable constant).
     if 'data' in param:
@@ -46,6 +51,11 @@ def size_elems(param: Dict[str, Any]) -> int:
     if 'n' in param and 'd' in param:
         return (int(param['n']) * int(param['d'])
                 * int(param.get('k', 1) or 1))
+    # reml_fit_lowrank: the FaST-LMM low-rank win scales with the observation
+    # count ``N`` (q, V fixed), NOT the voxel batch -- so the curve sorts on N.
+    # Before the ``V`` branch (this case carries both V and N).
+    if 'low_rank' in param and 'N' in param:
+        return int(param['N'])
     # Batched LME ops carry the voxel batch ``V`` -- the linear scale axis.
     # Checked before ``n`` because reml_fit carries BOTH ``V`` and a per-group
     # ``n`` (constant across its points); ``V`` is the real scale axis.
@@ -78,6 +88,9 @@ def label(param: Dict[str, Any]) -> str:
     # ``V`` branches (PCA carries both n and d).
     if 'shape' not in param and 'n' in param and 'd' in param:
         return f'{param["n"]}x{param["d"]} k{param.get("k")}'
+    # reml_fit_lowrank: N is the scale axis (q, V fixed). Before the V branch.
+    if 'shape' not in param and 'low_rank' in param and 'N' in param:
+        return f'N={param["N"]} q{param.get("q")}'
     # Batched LME ops (V the scale axis); before ``n`` (reml carries both).
     if 'shape' not in param and 'V' in param:
         return f'V={param["V"]}'
@@ -102,6 +115,9 @@ def label(param: Dict[str, Any]) -> str:
     # Real-anatomy points (no 'shape'): the dataset + mm resolution.
     if 'data' in param:
         return f'{param["data"]} {param.get("resolution", 2)}mm'
+    # permutation_test: tag the permutation count (the scale axis).
+    if 'shape' in param and 'n_perm' in param:
+        return f'p{param["n_perm"]} {"x".join(str(s) for s in param["shape"])}'
     # volreg: a (T, *spatial) series -- tag the batch (the scale axis).
     if 'shape' in param and 'T' in param:
         return f'T{param["T"]} {"x".join(str(s) for s in param["shape"])}'

@@ -48,8 +48,14 @@ import jax.numpy as jnp
 import numpy as np
 from nitrix.stats.lme import reml_fit
 
-from ._base import BuiltPoint, Case, SlowBaseline
-from ._lme import balanced_oneway, closed_form_reml, statsmodels_reml
+from ._base import ApproxBaseline, BuiltPoint, Case, SlowBaseline
+from ._lme import (
+    balanced_oneway,
+    closed_form_reml,
+    r_lme4_iofloor,
+    r_lme4_reml,
+    statsmodels_reml,
+)
 from ._real_lme import real_reml_localizer
 
 
@@ -87,6 +93,12 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         'nitrix-jax': ('jax', _nitrix),
         'statsmodels.MixedLM': (
             'statsmodels', lambda y: statsmodels_reml(y, X, groups)),
+        # R lme4 lmer -- THE gold-standard mixed-model REML (matches the closed
+        # form on this balanced design); the strongest looped-CPU competitor.
+        'R.lme4': ('r', lambda y: r_lme4_reml(y, groups)),
+        # I/O floor for R.lme4: CSV write + R startup + read, no fit (economic
+        # subtracts the same-namespace 'R.' floor to isolate the lmer compute).
+        'R.iofloor': ('r', lambda y: r_lme4_iofloor(y, groups)),
     }
     return BuiltPoint(
         baselines=baselines, inputs_for=inputs_for,
@@ -139,5 +151,18 @@ CASE = Case(
             'statsmodels.MixedLM',
             'per-voxel iterative MixedLM fits (~14 ms/voxel on the L4 host); '
             'V=1024 x 13 timed reps ~ 3 min. CPU-only; skip in dev cycles.'),
+        SlowBaseline(
+            'R.lme4',
+            'per-voxel R lme4 lmer fits looped in one Rscript (lmer is '
+            'heavier than statsmodels per fit); minutes at V>=1024, '
+            'infeasible at the brain large tier. CPU-only; skip in dev.'),
+    ),
+    approximate_baselines=(
+        ApproxBaseline(
+            'R.iofloor',
+            'no-op: returns zeros, so its rel_to_tol is large and MEANINGLESS '
+            '-- the row exists only to time the CSV round-trip + R startup '
+            'R.lme4 pays (economic subtracts the same-namespace floor); a '
+            'LARGE fraction of R.lme4 wall-clock at small V.'),
     ),
 )
