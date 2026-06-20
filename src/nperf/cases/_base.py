@@ -76,6 +76,75 @@ class ApproxBaseline:
     reason: str
 
 
+@dataclass(frozen=True)
+class CostLaw:
+    '''Machine-readable companion to the prose ``complexity``: the op's
+    *theoretical* asymptotic cost exponent in a named scale axis, so the
+    extrapolation tool (``tools/extrapolate_report.py``) can (a) check the
+    empirically-fitted log-log exponent against theory, (b) bracket the
+    brain-scale projection between the empirical fit and a theory-anchored
+    slope, and (c) flag when the two diverge (a small-n constant-factor regime
+    not yet asymptotic, or a genuine surprise).  ``complexity`` stays the human
+    narrative; this is its structured form.
+
+    ``axis`` is the param-point KEY the curve fits on (the scale driver -- e.g.
+    ``'V'`` for a voxel batch, ``'q'`` for the random-effect level count);
+    ``time_exp`` / ``hbm_exp`` are the expected exponents of ``steady_time`` /
+    ``peak_hbm`` in that axis (HBM is usually elements-linear).  ``regime``
+    records the asymptotic regime the law assumes (e.g.
+    ``'many-tier q>64 structured'``), since a different modelling path through
+    the same op can have a different exponent.'''
+    axis: str
+    time_exp: float
+    hbm_exp: float = 1.0
+    regime: str = ''
+
+
+@dataclass(frozen=True)
+class ScalePath:
+    '''One *modelling path* of an op -- a cell of its config space (e.g. a GLMM
+    ``family`` x ``structure`` x ``method`` x level-count tier) -- measured
+    across a dense range of small, fast ``grid`` scales along ``cost.axis``, so
+    its brain-scale cost can be *extrapolated* (the empirical fit combined with
+    ``cost``) rather than measured at the prohibitive full size.  The headline
+    brain-scale point itself is one ``Case.large_param_points`` anchor carrying
+    the same ``label`` -- the extrapolation is validated against it.
+
+    ``params`` are the path-fixing keys a case ``_build`` branches on (the
+    existing param-dict-branching idiom, cf. ``reml_fit``'s ``data`` branch);
+    ``scaling_sweep`` crosses them with ``grid`` into the ``param_points``.
+    ``challenging`` marks a numerically hard path (the cells v3 hardened
+    against divergence / overflow / indefinite Hessians) so the report can
+    surface that performance is retained there too.'''
+    label: str
+    params: Dict[str, Any]
+    cost: CostLaw
+    grid: Tuple[Any, ...]
+    challenging: bool = False
+
+
+def scaling_sweep(
+    paths: List[ScalePath], base: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
+    '''Cross each modelling ``path`` with its small-fast ``grid`` into the flat
+    ``param_points`` list the runner sweeps.  Each emitted dict is
+    ``base | path.params | {path.cost.axis: v, 'path': path.label}`` -- the
+    ``'path'`` label lets the case ``_build`` branch on the path and lets
+    ``extrapolate_report`` group rows by path and fit over ``path.cost.axis``.
+    A ``challenging`` path also stamps ``'challenging': True`` so the report
+    can flag it from any of its rows.'''
+    base = base or {}
+    out: List[Dict[str, Any]] = []
+    for p in paths:
+        for v in p.grid:
+            pt: Dict[str, Any] = {
+                **base, **p.params, p.cost.axis: v, 'path': p.label}
+            if p.challenging:
+                pt['challenging'] = True
+            out.append(pt)
+    return out
+
+
 @dataclass
 class BuiltPoint:
     # case-local baseline name -> (provider_id, run_fn(*args) -> output);
@@ -149,3 +218,15 @@ class Case:
     # the algorithm, not just observed at whichever sizes we happened to pick.
     # Surfaced by ``tools/scaling_report.py`` beside the measured curve.
     complexity: Optional[str] = None
+    # machine-readable cost law(s) -- the structured companion to
+    # ``complexity`` that ``tools/extrapolate_report.py`` fits the empirical
+    # scaling curve against (theory-vs-empirical exponent + a brain-scale
+    # projection bracket validated against the ``large_param_points`` anchor).
+    # A SINGLE-path op sets ``cost_law`` (its whole sweep is one law); a
+    # MULTI-path op -- a config space, e.g. GLMM family x structure x method x
+    # level-count tier -- declares ``scale_paths`` (one ``ScalePath`` per path,
+    # each with its own axis, exponent, and small-fast grid; ``param_points``
+    # are built from them via ``scaling_sweep``).  Both optional, so existing
+    # cases retrofit lazily.
+    cost_law: Optional[CostLaw] = None
+    scale_paths: Tuple[ScalePath, ...] = field(default_factory=tuple)
