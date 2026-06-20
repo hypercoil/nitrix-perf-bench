@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-20T01:49:18Z",
+    "generated": "2026-06-20T02:36:33Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -5327,6 +5327,36 @@
             "l1": 19863.8,
             "l2sq": 11490.9,
             "linf": 1.35263
+          }
+        ]
+      }
+    },
+    "glmm_fit": {
+      "case": "glmm_fit",
+      "qualname": "nitrix.stats.glmm.glmm_fit",
+      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", *, group: \"Int[Array, 'N']\", z: \"Optional[Float[Array, 'N r']]\" = None, structure: 'str' = 'unstructured', family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>, eta_bound=inf), method: 'str' = 'pql', few_level_max: 'int' = 64, n_outer: 'int' = 20, n_inner: 'int' = 10, n_mode: 'int' = 20, n_quad: 'int' = 5, ridge: 'float' = 1e-08, lam_floor: 'float' = 1e-06, lam_ceil: 'float' = 100000000.0, damping: 'float' = 1e-06, block: 'Optional[int]' = None) -> 'GLMMResult'",
+      "behaviour": {
+        "point": {
+          "family": "gaussian",
+          "structure": "intercept",
+          "method": "pql",
+          "q": 8,
+          "n_per": 24,
+          "V": 64,
+          "path": "gaussian-intercept-few"
+        },
+        "leaves": [
+          {
+            "shape": [
+              64,
+              3
+            ],
+            "dtype": "float32",
+            "n_finite": 192,
+            "n_nonfinite": 0,
+            "l1": 116.411,
+            "l2sq": 94.5033,
+            "linf": 1.59736
           }
         ]
       }

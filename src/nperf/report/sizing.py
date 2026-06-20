@@ -56,6 +56,12 @@ def size_elems(param: Dict[str, Any]) -> int:
     # Before the ``V`` branch (this case carries both V and N).
     if 'low_rank' in param and 'N' in param:
         return int(param['N'])
+    # GLMM (glmm_fit) carries family + structure + BOTH V (voxel batch) and q
+    # (level count); paths sweep V or q, so the row-ordering proxy is V*q (the
+    # actual fit axis comes from the path's CostLaw, not this). Before the bare
+    # ``V`` branch (GLMM also carries V).
+    if 'family' in param and 'structure' in param:
+        return int(param['V']) * int(param['q'])
     # Batched LME ops carry the voxel batch ``V`` -- the linear scale axis.
     # Checked before ``n`` because reml_fit carries BOTH ``V`` and a per-group
     # ``n`` (constant across its points); ``V`` is the real scale axis.
@@ -91,6 +97,14 @@ def label(param: Dict[str, Any]) -> str:
     # reml_fit_lowrank: N is the scale axis (q, V fixed). Before the V branch.
     if 'shape' not in param and 'low_rank' in param and 'N' in param:
         return f'N={param["N"]} q{param.get("q")}'
+    # GLMM: family/structure/method + both scale axes (V, q). Before ``V``.
+    if 'family' in param and 'structure' in param:
+        m = param.get('method', 'pql')
+        lbl = f'{param["family"][:3]}-{param["structure"][:3]}-{m} ' \
+              f'V{param["V"]}q{param["q"]}'
+        if param.get('n_quad'):
+            lbl += f' nq{param["n_quad"]}'
+        return lbl
     # Batched LME ops (V the scale axis); before ``n`` (reml carries both).
     if 'shape' not in param and 'V' in param:
         return f'V={param["V"]}'
