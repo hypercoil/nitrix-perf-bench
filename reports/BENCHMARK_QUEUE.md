@@ -143,6 +143,24 @@ is the Tier-A worklist.
 > c≳512 on CPU+GPU (the `pairedcov` control is at parity, isolating the cost
 > to the redundant covs; flagged a scale risk in `SCALING.md`). **§3 Stats
 > COMPLETE.**
+>
+> **BLOCKER (2026-06-20) — GLMM flagship measurement gated on a nitrix fix.**
+> The v3 `glmm_fit` flagship case (`glmm_fit`, scaling-extrapolation paths +
+> one brain-scale anchor) is built, drift-seeded, and unit-tested, **but
+> cannot be measured**: `glmm_fit` derives `n_groups = int(jnp.max(group))`
+> (`glmm.py` main:1486 / audit-HEAD:1500), a data-dependent `int()` that raises
+> `ConcretizationTypeError` under the runner's `jax.jit` — every `nitrix-jax`
+> row comes back `compile_error`. Confirmed unfixed on `main`/`origin/main` and
+> the strictly-ahead `docs/stats-suite-audit` HEAD (`caa4ada`). Filed nitrix FR
+> [`glmm-fit-jit-incompatible-static-group-count`] (`d376e1d`): add an optional
+> static `n_groups` kwarg (back-compatible; restores `lme_fit` jit parity).
+> **Deliberately NO bench-side workaround.** An eager fallback would (a) mask a
+> real op-level defect the suite is *meant* to catch, and (b) corrupt the
+> small-`n` scaling fit with op-dispatch overhead. Surfacing an un-jittable
+> marquee op as a hard `compile_error` blocker is the perf system working as
+> intended — a finding routed upstream, not a gap to paper over. The R `mgcv`
+> looped baselines *do* measure; nitrix rows + report regen unblock once the FR
+> lands. (Carry: [[perfbench-stats-v2]].)
 
 | op | ref strategy | discipline notes |
 |---|---|---|
