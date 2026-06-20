@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 stats: ``nitrix.stats.instantaneous_frequency`` vs scipy / cupy.
+"""Tier-2 stats: ``nitrix.signal.instantaneous_frequency`` vs scipy / cupy.
 
 Instantaneous frequency ``fs * diff(unwrap(angle(analytic))) / period`` of a
 batch of real time series (the output time axis is one shorter -- a discrete
@@ -21,7 +21,7 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.stats import instantaneous_frequency
+from nitrix.signal import instantaneous_frequency
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import cupy_inst, narrowband_signal, scipy_inst_freq
@@ -54,7 +54,7 @@ _LARGE = [(2048, 16384), (4096, 16384)]
 
 CASE = Case(
     name='instantaneous_frequency',
-    op_qualname='nitrix.stats.instantaneous_frequency',
+    op_qualname='nitrix.signal.instantaneous_frequency',
     output_independent=False,  # FFT + sequential unwrap, then a diff
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

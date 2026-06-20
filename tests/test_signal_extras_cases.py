@@ -31,7 +31,7 @@ def test_contract_and_oracle(name):
     bp = c.build({'n_sig': 16, 't': 512, 'seed': 0})
     assert set(bp.baselines) == _EXPECT[name]
     assert bp.ratio_reference == 'nitrix-jax'
-    assert c.op_qualname.startswith('nitrix.stats.')
+    assert c.op_qualname.startswith('nitrix.signal.')
     out = np.asarray(jax.block_until_ready(
         bp.baselines['nitrix-jax'][1](*bp.inputs_for('jax'))))
     ref = np.asarray(bp.fp64_reference)

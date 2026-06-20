@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 stats: ``nitrix.stats.instantaneous_phase`` vs scipy / cupy.
+"""Tier-2 stats: ``nitrix.signal.instantaneous_phase`` vs scipy / cupy.
 
 Unwrapped instantaneous phase ``unwrap(angle(analytic_signal(X)))`` of a batch
 of real time series -- the phase track for phase-amplitude coupling / phase
@@ -19,7 +19,7 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.stats import instantaneous_phase
+from nitrix.signal import instantaneous_phase
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import cupy_inst, narrowband_signal, scipy_inst_phase
@@ -52,7 +52,7 @@ _LARGE = [(2048, 16384), (4096, 16384)]
 
 CASE = Case(
     name='instantaneous_phase',
-    op_qualname='nitrix.stats.instantaneous_phase',
+    op_qualname='nitrix.signal.instantaneous_phase',
     output_independent=False,  # FFT + a sequential unwrap along the time axis
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

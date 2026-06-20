@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 stats: ``nitrix.stats.env_inst`` vs scipy / cupy.
+"""Tier-2 stats: ``nitrix.signal.env_inst`` vs scipy / cupy.
 
 The FUSED analytic-signal readout: ``(envelope, instantaneous_frequency,
 instantaneous_phase)`` from ONE ``analytic_signal`` (Hilbert) call -- the perf
@@ -16,7 +16,7 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.stats import env_inst
+from nitrix.signal import env_inst
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import cupy_env_inst_sum, scipy_env_inst_sum, signal_input
@@ -56,7 +56,7 @@ _LARGE = [(2048, 16384), (4096, 16384)]
 
 CASE = Case(
     name='env_inst',
-    op_qualname='nitrix.stats.env_inst',
+    op_qualname='nitrix.signal.env_inst',
     output_independent=False,  # one shared FFT feeding three reductions
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

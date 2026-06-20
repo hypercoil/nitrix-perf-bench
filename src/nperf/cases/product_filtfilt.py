@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 stats: ``nitrix.stats.product_filtfilt`` vs numpy / cupy.
+"""Tier-2 stats: ``nitrix.signal.product_filtfilt`` vs numpy / cupy.
 
 Zero-phase forward-backward frequency-domain filter: ``product_filter``, flip,
 ``product_filter`` again, flip back (net zero phase delay; amplitude response
@@ -14,7 +14,7 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.stats import product_filtfilt
+from nitrix.signal import product_filtfilt
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import (
@@ -54,7 +54,7 @@ _LARGE = [(2048, 16384), (4096, 16384)]
 
 CASE = Case(
     name='product_filtfilt',
-    op_qualname='nitrix.stats.product_filtfilt',
+    op_qualname='nitrix.signal.product_filtfilt',
     output_independent=False,
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

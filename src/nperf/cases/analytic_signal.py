@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 (B11 breadth): ``nitrix.stats.analytic_signal`` vs scipy / cupy.
+"""Tier-2 (B11 breadth): ``nitrix.signal.analytic_signal`` vs scipy / cupy.
 
 The analytic signal (FFT Hilbert) of a batch of real time series.  nitrix (jax)
 vs ``scipy.signal.hilbert`` (CPU floor) + ``cupyx.scipy.signal.hilbert`` (GPU
@@ -16,7 +16,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import scipy.signal as ss
-from nitrix.stats import analytic_signal
+from nitrix.signal import analytic_signal
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import cupy_hilbert, signal_input
@@ -49,7 +49,7 @@ _SHAPES = [(512, 1024), (2048, 2048), (4096, 4096)]
 
 CASE = Case(
     name='analytic_signal',
-    op_qualname='nitrix.stats.analytic_signal',
+    op_qualname='nitrix.signal.analytic_signal',
     output_independent=False,  # each output sample depends on the whole signal
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

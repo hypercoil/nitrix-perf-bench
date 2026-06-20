@@ -51,7 +51,7 @@ def test_analytic_signal_oracle_is_complex():
 
 
 def test_op_qualnames_match_nitrix():
-    assert analytic_signal.CASE.op_qualname == 'nitrix.stats.analytic_signal'
+    assert analytic_signal.CASE.op_qualname == 'nitrix.signal.analytic_signal'
     assert (hilbert_transform.CASE.op_qualname
-            == 'nitrix.stats.hilbert_transform')
-    assert envelope.CASE.op_qualname == 'nitrix.stats.envelope'
+            == 'nitrix.signal.hilbert_transform')
+    assert envelope.CASE.op_qualname == 'nitrix.signal.envelope'

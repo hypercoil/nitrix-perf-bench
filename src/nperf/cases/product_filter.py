@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 stats: ``nitrix.stats.product_filter`` vs numpy / cupy.
+"""Tier-2 stats: ``nitrix.signal.product_filter`` vs numpy / cupy.
 
 Frequency-domain convolution: ``irfft(weight * rfft(X))`` -- a circular
 convolution along the time axis with a freq-domain ``weight`` (rfft length
@@ -14,7 +14,7 @@ from typing import Any, Dict, Tuple
 
 import jax
 import jax.numpy as jnp
-from nitrix.stats import product_filter
+from nitrix.signal import product_filter
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import (
@@ -54,7 +54,7 @@ _LARGE = [(2048, 16384), (4096, 16384)]
 
 CASE = Case(
     name='product_filter',
-    op_qualname='nitrix.stats.product_filter',
+    op_qualname='nitrix.signal.product_filter',
     output_independent=False,  # the FFT couples all timepoints
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

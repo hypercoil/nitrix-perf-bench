@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 (B11 breadth): ``nitrix.stats.hilbert_transform`` vs scipy / cupy.
+"""Tier-2 (B11 breadth): ``nitrix.signal.hilbert_transform`` vs scipy / cupy.
 
 The Hilbert transform (imaginary part of the analytic signal), sibling of the
 ``analytic_signal`` case (see it + ``cases/_signal.py``).  Real-valued output.
@@ -15,7 +15,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import scipy.signal as ss
-from nitrix.stats import hilbert_transform
+from nitrix.signal import hilbert_transform
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import cupy_hilbert, signal_input
@@ -48,7 +48,7 @@ _SHAPES = [(512, 1024), (2048, 2048), (4096, 4096)]
 
 CASE = Case(
     name='hilbert_transform',
-    op_qualname='nitrix.stats.hilbert_transform',
+    op_qualname='nitrix.signal.hilbert_transform',
     output_independent=False,
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

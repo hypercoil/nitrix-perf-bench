@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tier-2 (B11 breadth): ``nitrix.stats.envelope`` vs scipy / cupy.
+"""Tier-2 (B11 breadth): ``nitrix.signal.envelope`` vs scipy / cupy.
 
 The analytic-signal envelope (``|analytic|``), sibling of ``analytic_signal``
 (see it + ``cases/_signal.py``).  Real-valued output.  nitrix (jax) vs
@@ -15,7 +15,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import scipy.signal as ss
-from nitrix.stats import envelope
+from nitrix.signal import envelope
 
 from ._base import BuiltPoint, Case, to_cupy
 from ._signal import cupy_hilbert, signal_input
@@ -48,7 +48,7 @@ _SHAPES = [(512, 1024), (2048, 2048), (4096, 4096)]
 
 CASE = Case(
     name='envelope',
-    op_qualname='nitrix.stats.envelope',
+    op_qualname='nitrix.signal.envelope',
     output_independent=False,
     metrics=['steady_time', 'compile_time', 'peak_hbm', 'host_rss',
              'throughput'],

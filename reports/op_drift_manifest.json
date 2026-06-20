@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-19T02:22:42Z",
+    "generated": "2026-06-20T01:49:18Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -1623,7 +1623,7 @@
     },
     "analytic_signal": {
       "case": "analytic_signal",
-      "qualname": "nitrix.stats.analytic_signal",
+      "qualname": "nitrix.signal.analytic_signal",
       "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None) -> \"Complex[Array, '...']\"",
       "behaviour": {
         "point": {
@@ -2078,7 +2078,7 @@
     },
     "envelope": {
       "case": "envelope",
-      "qualname": "nitrix.stats.envelope",
+      "qualname": "nitrix.signal.envelope",
       "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None) -> \"Float[Array, '...']\"",
       "behaviour": {
         "point": {
@@ -2236,7 +2236,7 @@
     },
     "hilbert_transform": {
       "case": "hilbert_transform",
-      "qualname": "nitrix.stats.hilbert_transform",
+      "qualname": "nitrix.signal.hilbert_transform",
       "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None) -> \"Float[Array, '...']\"",
       "behaviour": {
         "point": {
@@ -2892,7 +2892,7 @@
     "residualise": {
       "case": "residualise",
       "qualname": "nitrix.linalg.residualise",
-      "signature": "(Y: \"Num[Array, '... C_Y obs']\", X: \"Num[Array, '... C_X obs']\", *, weights: \"Optional[Float[Array, '... obs']]\" = None, l2: 'float' = 0.0, rowvar: 'bool' = True, return_mode: 'ReturnMode' = 'residual', method: 'Method' = 'cholesky') -> \"Num[Array, '... C_Y obs']\"",
+      "signature": "(Y: \"Num[Array, '... C_Y obs']\", X: \"Num[Array, '... C_X obs']\", *, weights: \"Optional[Float[Array, '... obs']]\" = None, l2: 'float' = 0.0, rowvar: 'bool' = True, return_mode: 'ReturnMode' = 'residual', method: 'Method' = 'cholesky', shrinkage: 'Shrinkage' = 'none') -> \"Num[Array, '... C_Y obs']\"",
       "behaviour": {
         "point": {
           "V": 10000,
@@ -4785,7 +4785,7 @@
     },
     "instantaneous_phase": {
       "case": "instantaneous_phase",
-      "qualname": "nitrix.stats.instantaneous_phase",
+      "qualname": "nitrix.signal.instantaneous_phase",
       "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None, period: 'float' = 6.283185307179586) -> \"Float[Array, '...']\"",
       "behaviour": {
         "point": {
@@ -4810,7 +4810,7 @@
     },
     "instantaneous_frequency": {
       "case": "instantaneous_frequency",
-      "qualname": "nitrix.stats.instantaneous_frequency",
+      "qualname": "nitrix.signal.instantaneous_frequency",
       "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None, fs: 'float' = 1.0, period: 'float' = 6.283185307179586) -> \"Float[Array, '...']\"",
       "behaviour": {
         "point": {
@@ -4835,7 +4835,7 @@
     },
     "env_inst": {
       "case": "env_inst",
-      "qualname": "nitrix.stats.env_inst",
+      "qualname": "nitrix.signal.env_inst",
       "signature": "(X: \"Float[Array, '...']\", *, axis: 'int' = -1, n: 'Optional[int]' = None, fs: 'float' = 1.0, period: 'float' = 6.283185307179586) -> \"Tuple[Float[Array, '...'], Float[Array, '...'], Float[Array, '...']]\"",
       "behaviour": {
         "point": {
@@ -4857,7 +4857,7 @@
     },
     "product_filter": {
       "case": "product_filter",
-      "qualname": "nitrix.stats.product_filter",
+      "qualname": "nitrix.signal.product_filter",
       "signature": "(X: \"Num[Array, '... obs']\", weight: \"Num[Array, '... obs_freq']\", **fft_params: 'Any') -> \"Num[Array, '... obs']\"",
       "behaviour": {
         "point": {
@@ -4882,7 +4882,7 @@
     },
     "product_filtfilt": {
       "case": "product_filtfilt",
-      "qualname": "nitrix.stats.product_filtfilt",
+      "qualname": "nitrix.signal.product_filtfilt",
       "signature": "(X: \"Num[Array, '... obs']\", weight: \"Num[Array, '... obs_freq']\", **fft_params: 'Any') -> \"Num[Array, '... obs']\"",
       "behaviour": {
         "point": {
@@ -4908,7 +4908,7 @@
     "glm_fit": {
       "case": "glm_fit",
       "qualname": "nitrix.stats.glm_fit",
-      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", *, family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>), weights: \"Optional[Float[Array, 'N']]\" = None, n_iter: 'int' = 25, ridge: 'float' = 0.0, block: 'Optional[int]' = None) -> 'GLMResult'",
+      "signature": "(Y: \"Float[Array, 'V N']\", X: \"Float[Array, 'N p']\", *, family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>, eta_bound=inf), weights: \"Optional[Float[Array, 'N']]\" = None, n_iter: 'int' = 25, ridge: 'float' = 0.0, block: 'Optional[int]' = None) -> 'GLMResult'",
       "behaviour": {
         "point": {
           "V": 10000,
@@ -4934,7 +4934,7 @@
     "t_contrast": {
       "case": "t_contrast",
       "qualname": "nitrix.stats.t_contrast",
-      "signature": "(result: 'GLMResult', contrast: \"Float[Array, 'p']\") -> \"Tuple[Float[Array, 'V'], Float[Array, 'V'], Float[Array, 'V'], Float[Array, 'V']]\"",
+      "signature": "(result: 'GLMResult', contrast: \"Float[Array, 'p']\", *, cov: \"Optional[Float[Array, '... p p']]\" = None) -> \"Tuple[Float[Array, 'V'], Float[Array, 'V'], Float[Array, 'V'], Float[Array, 'V']]\"",
       "behaviour": {
         "point": {
           "V": 10000,
@@ -4959,7 +4959,7 @@
     "f_contrast": {
       "case": "f_contrast",
       "qualname": "nitrix.stats.f_contrast",
-      "signature": "(result: 'GLMResult', contrast: \"Float[Array, 'm p']\") -> \"Tuple[Float[Array, 'V'], Float[Array, 'V'], float, float]\"",
+      "signature": "(result: 'GLMResult', contrast: \"Float[Array, 'm p']\", *, cov: \"Optional[Float[Array, '... p p']]\" = None) -> \"Tuple[Float[Array, 'V'], Float[Array, 'V'], float, float]\"",
       "behaviour": {
         "point": {
           "V": 10000,
@@ -5227,7 +5227,7 @@
     "gam_fit": {
       "case": "gam_fit",
       "qualname": "nitrix.stats.gam.gam_fit",
-      "signature": "(Y: \"Float[Array, 'V N']\", smooths: 'Sequence[Smooth]', *, parametric: \"Optional[Float[Array, 'N q']]\" = None, intercept: 'bool' = True, family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>), lambda_mode: \"Literal['per_element', 'shared']\" = 'per_element', n_outer: 'int' = 20, n_inner: 'int' = 15, ridge: 'float' = 1e-08, lam_floor: 'float' = 1e-06, lam_ceil: 'float' = 100000000.0, block: 'Optional[int]' = None) -> 'GAMResult'",
+      "signature": "(Y: \"Float[Array, 'V N']\", smooths: 'Sequence[Smooth]', *, parametric: \"Optional[Float[Array, 'N q']]\" = None, intercept: 'bool' = True, family: 'Union[str, Family]' = Family(name='gaussian', has_fixed_dispersion=False, link=<function _identity at 0x...>, linkinv=<function _identity at 0x...>, mu_eta=<function _ones_like at 0x...>, variance=<function _ones_like at 0x...>, unit_deviance=<function <lambda> at 0x...>, init_mu=<function _identity at 0x...>, loglik=<function _gaussian_loglik at 0x...>, eta_bound=inf), lambda_mode: \"Literal['per_element', 'shared']\" = 'per_element', n_outer: 'int' = 20, n_inner: 'int' = 10, ridge: 'float' = 1e-08, lam_floor: 'float' = 1e-06, lam_ceil: 'float' = 100000000.0, block: 'Optional[int]' = None) -> 'GAMResult'",
       "behaviour": {
         "point": {
           "V": 256,
