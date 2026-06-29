@@ -4,19 +4,19 @@
 
 ## Coverage (runtime ops)
 
-- **runtime ops catalogued**: 209 (+ 16 host-side constructors, apart)
-- **measured** (≥1 platform): 110 / 209
-- **multiplatform** (CPU + GPU): 103 / 209
-- **with a strong on-target GPU ref**: 98 / 209
-- **with a community-gold ref** (ANTs/FSL/…): 17 / 209
-- **scaled** (ran at the declared brain-scale tier): 31 / 209 — **1** fragile (oom/timeout)
-- **economically favorable** (GPU beats CPU gold by ≥ the bar): 86 / 209 — **14** not multiplicative
-- **on real data** (planted or full): 8 / 209
-- **marquee** ops (held to the real-data + community-baseline bar): 8 — **1** not yet meeting it
+- **runtime ops catalogued**: 244 (+ 16 host-side constructors, apart)
+- **measured** (≥1 platform): 113 / 244
+- **multiplatform** (CPU + GPU): 106 / 244
+- **with a strong on-target GPU ref**: 98 / 244
+- **with a community-gold ref** (ANTs/FSL/…): 19 / 244
+- **scaled** (ran at the declared brain-scale tier): 32 / 244 — **1** fragile (oom/timeout)
+- **economically favorable** (GPU beats CPU gold by ≥ the bar): 89 / 244 — **14** not multiplicative
+- **on real data** (planted or full): 9 / 244
+- **marquee** ops (held to the real-data + community-baseline bar): 11 — **3** not yet meeting it
 - **lagging on the GPU**: 16
-- **lagging on CPU vs the community baseline** (≥1.5×, an optimise signal): 11
+- **lagging on CPU vs the community baseline** (≥1.5×, an optimise signal): 12
 - **GPU blocked upstream** (jaxlib cuSOLVER): 2
-- ⚠️ **3 benchmarked case(s) absent from the catalogue** (`op_matrix.json` is stale -- invisible to the join until regenerated in nitrix): `bbr_register`, `greedy_syn_register`, `volreg`. Includes **MARQUEE** ops: `bbr_register`, `greedy_syn_register`, `volreg`.
+- ⚠️ **15 benchmarked case(s) absent from the catalogue** (`op_matrix.json` is stale -- invisible to the join until regenerated in nitrix): `cyclic_cubic_basis`, `tensor_product_basis`, `thinplate_regression_basis`, `f_contrast`, `gam_fit`, `glmm_fit`, `bonferroni`, `supra_threshold_clusters`, `cluster_mass_map`, `cluster_size_map`, `fdr_bh`, `gpd_pvalue`, `permutation_test`, `tfce`, `t_contrast`. Includes **MARQUEE** ops: `gam_fit`, `glmm_fit`, `permutation_test`.
 
 ## Lagging on the deployment target (GPU) — ranked
 
@@ -50,14 +50,15 @@ A **supplementary** lens (it does **not** supersede the strong-GPU and GPU-econo
 | 1 | `nitrix.morphology.connected_components` | scipy.label | 0.0254 | ~39.4x slower |
 | 2 | `nitrix.morphology.largest_connected_component` | scipy.largest_cc | 0.0404 | ~24.8x slower |
 | 3 | `nitrix.morphology.median_filter` | simpleitk.Median | 0.0859 | ~11.6x slower |
-| 4 | `nitrix.geometry.integrate_velocity_field` | scipy.ndimage.map_coordinates | 0.209 | ~4.8x slower |
-| 5 | `nitrix.smoothing.gaussian` | scipy.ndimage.gaussian_filter | 0.284 | ~3.5x slower |
-| 6 | `nitrix.augment.random_flip` | monai.RandFlip | 0.338 | ~3.0x slower |
-| 7 | `nitrix.signal.sosfilt` | scipy.signal.sosfilt | 0.363 | ~2.8x slower |
-| 8 | `nitrix.graph.laplacian_eigenmap` | scipy.sparse.eigsh | 0.45 | ~2.2x slower |
-| 9 | `nitrix.graph.diffusion_embedding` | scipy.sparse.eigsh | 0.492 | ~2.0x slower |
-| 10 | `nitrix.signal.sosfiltfilt` | scipy.signal.sosfiltfilt | 0.591 | ~1.7x slower |
-| 11 | `nitrix.smoothing.bilateral_gaussian` | simpleitk.Bilateral | 0.654 | ~1.5x slower |
+| 4 | `nitrix.register.greedy_syn_register` | ants.registration | 0.0882 | ~11.3x slower |
+| 5 | `nitrix.geometry.integrate_velocity_field` | scipy.ndimage.map_coordinates | 0.209 | ~4.8x slower |
+| 6 | `nitrix.smoothing.gaussian` | scipy.ndimage.gaussian_filter | 0.284 | ~3.5x slower |
+| 7 | `nitrix.augment.random_flip` | monai.RandFlip | 0.338 | ~3.0x slower |
+| 8 | `nitrix.signal.sosfilt` | scipy.signal.sosfilt | 0.363 | ~2.8x slower |
+| 9 | `nitrix.graph.laplacian_eigenmap` | scipy.sparse.eigsh | 0.45 | ~2.2x slower |
+| 10 | `nitrix.graph.diffusion_embedding` | scipy.sparse.eigsh | 0.492 | ~2.0x slower |
+| 11 | `nitrix.signal.sosfiltfilt` | scipy.signal.sosfiltfilt | 0.591 | ~1.7x slower |
+| 12 | `nitrix.smoothing.bilateral_gaussian` | simpleitk.Bilateral | 0.654 | ~1.5x slower |
 
 ## GPU blocked — nitrix path skipped, a GPU ref works
 
@@ -85,7 +86,9 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.geometry.compose_affine` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.compose_displacement` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.downsample` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.field_log` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.fit_affine` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.fuse_transforms` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.gaussian_pyramid` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.invert_affine` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.make_square_affine` | unmeasured | none | unmeasured |
@@ -97,7 +100,12 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.geometry.rotation_matrix_to_angles` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.sample_at_points` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.spatial_transform[lanczos]` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.transform_geodesic` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.transform_mean` | unmeasured | none | unmeasured |
 | high | `nitrix.geometry.upsample` | unmeasured | none | unmeasured |
+| high | `nitrix.geometry.velocity_mean` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.in_degree_vector` | unmeasured | none | unmeasured |
+| high | `nitrix.graph.symmetric_degree_vector` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cg` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cho_solve` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.cone_project_spd` | unmeasured | none | unmeasured |
@@ -105,11 +113,15 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.linalg.fill_diagonal` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.gauss_newton` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.implicit_least_squares` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.implicit_minimize` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.levenberg_marquardt` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.matrix_exp` | gpu_only | floor_only | f32_only |
+| high | `nitrix.linalg.matrix_log` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.mean_euclidean` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.mean_log_euclidean` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.parameterised_norm` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.partial_residualise` | unmeasured | none | unmeasured |
+| high | `nitrix.linalg.randomized_svd` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.recondition_eigenspaces` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.solve` | unmeasured | none | unmeasured |
 | high | `nitrix.linalg.squareform` | unmeasured | none | unmeasured |
@@ -131,9 +143,14 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.metrics.joint_histogram` | unmeasured | none | unmeasured |
 | high | `nitrix.metrics.koleo` | unmeasured | none | unmeasured |
 | high | `nitrix.metrics.lncc` | gpu_only | strong_ref | f32_only |
+| high | `nitrix.metrics.lncc_grad` | unmeasured | none | unmeasured |
+| high | `nitrix.metrics.lncc_grad_center` | unmeasured | none | unmeasured |
+| high | `nitrix.metrics.match_histogram` | unmeasured | none | unmeasured |
+| high | `nitrix.metrics.mi_grad` | unmeasured | none | unmeasured |
 | high | `nitrix.metrics.mutual_information` | gpu_only | strong_ref | f32_only |
 | high | `nitrix.metrics.ncc` | gpu_only | strong_ref | f32_only |
 | high | `nitrix.metrics.ssd` | gpu_only | strong_ref | f32_only |
+| high | `nitrix.metrics.winsorize` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_decompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.complex_recompose` | unmeasured | none | unmeasured |
 | high | `nitrix.numerics.crop_to_multiple` | unmeasured | none | unmeasured |
@@ -152,12 +169,18 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.semiring.ell_row_softmax` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_conv` | unmeasured | none | unmeasured |
 | high | `nitrix.semiring.semiring_ell_matmul` | unmeasured | none | unmeasured |
+| high | `nitrix.semiring.semiring_ell_rmatvec` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.bandpass` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.bandstop` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.env_inst` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.highpass` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.iir_filter` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.instantaneous_frequency` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.instantaneous_phase` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.linear_interpolate` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.lowpass` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.product_filter` | unmeasured | none | unmeasured |
+| high | `nitrix.signal.product_filtfilt` | unmeasured | none | unmeasured |
 | high | `nitrix.signal.sample_windows` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.brute_force_knn` | unmeasured | none | unmeasured |
 | high | `nitrix.smoothing.susan_emulator` | unmeasured | none | unmeasured |
@@ -172,20 +195,33 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | high | `nitrix.sparse.mesh_pool_max` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.mesh_unpool_max` | unmeasured | none | unmeasured |
 | high | `nitrix.sparse.sectioned_semiring_ell_matmul` | unmeasured | none | unmeasured |
-| high | `nitrix.stats.env_inst` | unmeasured | none | unmeasured |
+| high | `nitrix.sparse.sectioned_semiring_ell_rmatvec` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.beta_fit` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.ebic_score` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.gam_fit` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.gaulss_fit` | unmeasured | none | unmeasured |
 | high | `nitrix.stats.gaussian_nll` | unmeasured | none | unmeasured |
-| high | `nitrix.stats.instantaneous_frequency` | unmeasured | none | unmeasured |
-| high | `nitrix.stats.instantaneous_phase` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.glasso` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.glasso_path` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.glm_fit` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.glmm_fit` | unmeasured | none | unmeasured |
 | high | `nitrix.stats.kl_diagonal_gaussian` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.ledoit_wolf` | unmeasured | none | unmeasured |
 | high | `nitrix.stats.lme.flame_two_level` | cpu_only | floor_only | f32_only |
-| high | `nitrix.stats.product_filter` | unmeasured | none | unmeasured |
-| high | `nitrix.stats.product_filtfilt` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.lme.gls_fit` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.lme.lme_fit` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.oas` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.ordinal_fit` | unmeasured | none | unmeasured |
+| high | `nitrix.stats.shrunk_covariance` | unmeasured | none | unmeasured |
 | medium | `nitrix.bias.histogram_match` | multiplatform | none | f32_only |
 | medium | `nitrix.bias.n4_bias_field_correction` | multiplatform | none | f32_only |
 | medium | `nitrix.linalg.tangent_project_spd` | multiplatform | floor_only | f32_only |
 | medium | `nitrix.register.affine_register` | multiplatform | none | f32_only |
+| medium | `nitrix.register.bbr_register` | multiplatform | none | f32_only |
 | medium | `nitrix.register.diffeomorphic_demons_register` | multiplatform | none | f32_only |
+| medium | `nitrix.register.greedy_syn_register` | multiplatform | none | f32_only |
 | medium | `nitrix.register.rigid_register` | multiplatform | none | f32_only |
+| medium | `nitrix.register.volreg` | multiplatform | floor_only | f32_only |
 | medium | `nitrix.semiring.semiring_ell_edge_aggregate` | multiplatform | none | f32_only |
 | medium | `nitrix.semiring.semiring_matmul` | multiplatform | internal_only | f32_only |
 | medium | `nitrix.smoothing.bilateral_gaussian` | multiplatform | none | f32_only |
@@ -266,10 +302,10 @@ Priority is a coarse heuristic (no consumer-traffic weighting yet): **high** = u
 | `nitrix.graph.modularity_matrix` | cupy.modularity_matrix | 1.18 | ~1.2x faster |
 | `nitrix.augment.random_resized_crop` | cupy.random_resized_crop | 1.17 | ~1.2x faster |
 | `nitrix.graph.girvan_newman_null` | cupy.gn_null | 1.16 | ~1.2x faster |
-| `nitrix.stats.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
-| `nitrix.stats.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
+| `nitrix.signal.envelope` | cupyx.scipy.signal.hilbert | 1.13 | ~1.1x faster |
+| `nitrix.signal.analytic_signal` | cupyx.scipy.signal.hilbert | 1.11 | ~1.1x faster |
 | `nitrix.signal.lomb_scargle_interpolate` | cupy.joint_glm | 1.1 | ~1.1x faster |
-| `nitrix.stats.hilbert_transform` | cupyx.scipy.signal.hilbert | 1.03 | ~1.0x faster |
+| `nitrix.signal.hilbert_transform` | cupyx.scipy.signal.hilbert | 1.03 | ~1.0x faster |
 | `nitrix.graph.coaffiliation` | cupy.coaffiliation | 1.02 | ~1.0x faster |
 
 ## Scale — brain-scale tier (COVERAGE v2)
@@ -337,13 +373,14 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.geometry.spherical_geodesic_distance` | favorable (amortized only) ~ | 93.2x | — |
 | `nitrix.stats.corr` | favorable (amortized only) ~ | 91.1x | — |
 | `nitrix.graph.relaxed_modularity` | favorable (amortized only) ~ | 87.6x | — |
+| `nitrix.register.diffeomorphic_demons_register` | favorable (amortized only) ~ | 85.1x | ants.registration |
 | `nitrix.stats.conditionalcorr` | favorable (amortized only) | 84.1x | — |
 | `nitrix.geometry.rigid_log` | favorable (amortized only) | 81.2x | — |
 | `nitrix.stats.pairedcov` | favorable (amortized only) | 81.1x | — |
-| `nitrix.stats.analytic_signal` | favorable (amortized only) ~ | 78.9x | — |
-| `nitrix.stats.envelope` | favorable (amortized only) ~ | 76.9x | — |
+| `nitrix.signal.analytic_signal` | favorable (amortized only) ~ | 78.9x | — |
+| `nitrix.signal.envelope` | favorable (amortized only) ~ | 76.9x | — |
 | `nitrix.numerics.robust_zscore_normalize` | favorable (amortized only) ~ | 73.2x | — |
-| `nitrix.stats.hilbert_transform` | favorable (amortized only) ~ | 72.3x | — |
+| `nitrix.signal.hilbert_transform` | favorable (amortized only) ~ | 72.3x | — |
 | `nitrix.stats.conditionalcov` | favorable (amortized only) | 70.9x | — |
 | `nitrix.linalg.linear_kernel` | favorable (amortized only) ~ | 70.4x | — |
 | `nitrix.numerics.intensity_normalize` | favorable (amortized only) ~ | 70.1x | — |
@@ -352,11 +389,11 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.augment.gaussian_noise` | favorable (amortized only) ~ | 66.3x | — |
 | `nitrix.stats.pca_transform` | favorable (amortized only) | 65.7x | — |
 | `nitrix.geometry.compactness_penalty` | favorable (amortized only) ~ | 65.2x | — |
+| `nitrix.register.greedy_syn_register` | favorable (amortized only) ~ | 60.8x | ants.registration |
 | `nitrix.numerics.psc_normalize` | favorable (amortized only) ~ | 54.4x | — |
 | `nitrix.morphology.max_unpool_nd` | favorable (amortized only) | 47.0x | — |
 | `nitrix.geometry.spatial_gradient` | favorable (amortized only) | 45.7x | — |
 | `nitrix.bias.histogram_match` | favorable (amortized only) ~ | 43.6x | simpleitk.HistogramMatching |
-| `nitrix.register.diffeomorphic_demons_register` | favorable (amortized only) | 40.4x | ants.registration |
 | `nitrix.augment.random_histogram_shift` | favorable (amortized only) ~ | 39.5x | — |
 | `nitrix.register.rigid_register` | favorable (amortized only) | 35.9x | ants.registration |
 | `nitrix.augment.gamma_contrast` | favorable (amortized only) ~ | 35.4x | — |
@@ -375,8 +412,10 @@ The deployment-economics bar: a nitrix-GPU win counts only if it is **multiplica
 | `nitrix.geometry.jacobian_det_displacement` | favorable (amortized only) ~ | 21.2x | — |
 | `nitrix.geometry.spatial_transform` | favorable (amortized only) ~ | 19.6x | — |
 | `nitrix.signal.lomb_scargle_interpolate` | favorable (amortized only) ~ | 18.9x | — |
+| `nitrix.register.bbr_register` | favorable (amortized only) | 16.7x | — |
 | `nitrix.morphology.dilate` | favorable (amortized only) ~ | 13.3x | simpleitk.GrayscaleDilate |
 | `nitrix.morphology.erode` | favorable (amortized only) ~ | 12.1x | simpleitk.GrayscaleErode |
+| `nitrix.register.volreg` | favorable (amortized only) | 11.2x | ants.motion_correction |
 | `nitrix.smoothing.bilateral_gaussian` | favorable (amortized only) ~ | 10.8x | simpleitk.Bilateral |
 | `nitrix.linalg.symsqrt` | favorable (amortized only) ~ | 10.2x | — |
 | `nitrix.geometry.cartesian_to_latlong` | favorable (amortized only) ~ | 8.5x | — |
@@ -401,6 +440,7 @@ Marquee functions should be tested on real brain data against real community bas
 | `nitrix.register.rigid_register` | real_planted | ants.registration (real_planted) |
 | `nitrix.register.affine_register` | real_planted | ants.registration (real_planted) |
 | `nitrix.register.diffeomorphic_demons_register` | real_planted | ants.registration (real_planted) |
+| `nitrix.register.greedy_syn_register` | real_planted | ants.registration (real_planted) |
 
 ## Marquee coverage matrix (COVERAGE v2)
 
@@ -408,26 +448,47 @@ The headline functions used on real images, scored against their tier bar (`scor
 
 | op | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|
+| `nitrix.register.bbr_register` | 2/5 | ✓ | ✓ | ✓ | ✗ synth | · | ✗ none |
+| `nitrix.register.volreg` | 3/5 | ✓ | ✓ | ✓ | ✗ synth | · | ◐ ants.motion_correction |
 | `nitrix.stats.lme.flame_two_level` | 3/5 | ✗ cpu_only | ⚠ timeout | · | ● full | · | ● fsl.flameo |
 | `nitrix.numerics.intensity_normalize` | 3/4 | ✓ | · | ✓~ | ● full | ✓ | ✗ none |
+| `nitrix.register.diffeomorphic_demons_register` | 4/5 | ✓ | ○ | ✓~ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.greedy_syn_register` | 4/5 | ✓ | ○ | ✓~ | ◐ planted | · | ● ants.registration |
 | `nitrix.stats.lme.reml_fit` | 4/5 | ✓ | ○ | ✓~ | ● full | · | ● statsmodels.MixedLM |
 | `nitrix.bias.n4_bias_field_correction` | 4/4 | ✓ | · | ✓~ | ◐ planted | · | ● simpleitk.N4 |
 | `nitrix.register.affine_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
-| `nitrix.register.diffeomorphic_demons_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.register.rigid_register` | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.smoothing.bilateral_gaussian` | 4/4 | ✓ | · | ✓~ | ● full | · | ● simpleitk.Bilateral |
 
-**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `intensity_normalize`.
+**Marquee unmet** (no real-data input, or no domain ref on real data) — the next-round targets: `bbr_register`, `volreg`, `intensity_normalize`.
 
 ## Full coverage matrix — every op with a case (COVERAGE v2)
 
-All 110 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
+All 127 ops with a case, scored against their tier (`★` = marquee, which adds the real-data + domain-on-real bar). Worst-covered (and marquee) first; same glyphs as above.
 
 | op | ★ | score | platform | scale | economic | input | gpu-ref | domain-ref |
 |---|---|---|---|---|---|---|---|---|
+| `nitrix.register.bbr_register` | ★ | 2/5 | ✓ | ✓ | ✓ | ✗ synth | · | ✗ none |
+| `nitrix.register.volreg` | ★ | 3/5 | ✓ | ✓ | ✓ | ✗ synth | · | ◐ ants.motion_correction |
 | `nitrix.stats.lme.flame_two_level` | ★ | 3/5 | ✗ cpu_only | ⚠ timeout | · | ● full | · | ● fsl.flameo |
 | `nitrix.linalg.matrix_exp` |  | 1/3 | ✗ gpu_only | ✓ | ✗~ | ✗ synth | · | ✗ none |
+| `nitrix.signal.env_inst` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.signal.instantaneous_frequency` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.signal.instantaneous_phase` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.signal.product_filter` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.signal.product_filtfilt` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.ebic_score` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.gaussian_nll` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.glasso` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.glasso_path` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.glm_fit` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.kl_diagonal_gaussian` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.ledoit_wolf` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.oas` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
+| `nitrix.stats.shrunk_covariance` |  | 0/2 | ✗ unmeasured | · | · | ✗ synth | · | ✗ none |
 | `nitrix.numerics.intensity_normalize` | ★ | 3/4 | ✓ | · | ✓~ | ● full | ✓ | ✗ none |
+| `nitrix.register.diffeomorphic_demons_register` | ★ | 4/5 | ✓ | ○ | ✓~ | ◐ planted | · | ● ants.registration |
+| `nitrix.register.greedy_syn_register` | ★ | 4/5 | ✓ | ○ | ✓~ | ◐ planted | · | ● ants.registration |
 | `nitrix.stats.lme.reml_fit` | ★ | 4/5 | ✓ | ○ | ✓~ | ● full | · | ● statsmodels.MixedLM |
 | `nitrix.geometry.invert_displacement` |  | 2/3 | ✓ | ○ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.linalg.tangent_project_spd` |  | 1/2 | ✓ | · | ✓~ | ✗ synth | · | ✗ none |
@@ -445,7 +506,6 @@ All 110 ops with a case, scored against their tier (`★` = marquee, which adds 
 | `nitrix.stats.precision` |  | 2/3 | ✓ | ○ | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.bias.n4_bias_field_correction` | ★ | 4/4 | ✓ | · | ✓~ | ◐ planted | · | ● simpleitk.N4 |
 | `nitrix.register.affine_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
-| `nitrix.register.diffeomorphic_demons_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.register.rigid_register` | ★ | 5/5 | ✓ | ✓ | ✓ | ◐ planted | · | ● ants.registration |
 | `nitrix.smoothing.bilateral_gaussian` | ★ | 4/4 | ✓ | · | ✓~ | ● full | · | ● simpleitk.Bilateral |
 | `nitrix.augment.gamma_contrast` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
@@ -518,6 +578,9 @@ All 110 ops with a case, scored against their tier (`★` = marquee, which adds 
 | `nitrix.register.bending_energy` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.register.gradient_smoothness` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.register.jacobian_folding_penalty` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.analytic_signal` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.envelope` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
+| `nitrix.signal.hilbert_transform` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.signal.lomb_scargle_interpolate` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.signal.lomb_scargle_periodogram` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.signal.polynomial_detrend` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
@@ -525,11 +588,8 @@ All 110 ops with a case, scored against their tier (`★` = marquee, which adds 
 | `nitrix.signal.sosfiltfilt` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.signal.tsconv` |  | 2/2 | ✓ | · | ✗~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.smoothing.gaussian` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
-| `nitrix.stats.analytic_signal` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.stats.conditionalcorr` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.stats.conditionalcov` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
-| `nitrix.stats.envelope` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
-| `nitrix.stats.hilbert_transform` |  | 2/2 | ✓ | · | ✓~ | ✗ synth | ✓ | ✗ none |
 | `nitrix.stats.pairedcorr` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.stats.pairedcov` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
 | `nitrix.stats.pca_fit` |  | 3/3 | ✓ | ✓ | ✓ | ✗ synth | ✓ | ✗ none |
