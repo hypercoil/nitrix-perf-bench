@@ -50,7 +50,14 @@ from ._register import (
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     levels, iters = int(param['levels']), int(param['iters'])
-    spec = RegistrationSpec(levels=levels, iterations=iters)
+    # mode='early_exit': nitrix's spec default is 'fixed' (runs ALL `iterations`),
+    # but rigid converges in a few iters and the community refs early-stop (ANTs
+    # preset with its 1e-7/8 convergence; dipy's L-BFGS converges before the cap).
+    # Measuring nitrix on the fixed full budget vs early-stopping refs is unfair
+    # (nitrix does ~2x the iterations) -- early_exit is the like-for-like compare
+    # and what a defaults-trusting user should get. See nitrix FR
+    # register-default-fixed-iterations-regression.
+    spec = RegistrationSpec(levels=levels, iterations=iters, mode='early_exit')
     seed = param.get('seed', 0)
     if param.get('data') == 'mni152':
         # REAL anatomy: the MNI152 T1 under a planted rigid warp (same grid).

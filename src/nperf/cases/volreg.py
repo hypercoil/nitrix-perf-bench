@@ -57,6 +57,11 @@ from ._register import (
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     shape = tuple(param['shape'])
     series = motion_series(shape, int(param['T']), param.get('seed', 0))
+    # Keep mode='fixed' for volreg -- measured here, early_exit gives NO benefit
+    # on this batched vmap-over-frames path (T=8: 129 vs 130 ms; T=32: 660 vs
+    # 638 ms -- the while_loop runs to the max per-frame trip count, so it cannot
+    # beat the fixed scan and adds slight overhead as T grows). Unlike the
+    # single-pair rigid/affine recipes, fixed is the right call here.
     spec = RegistrationSpec(levels=int(param['levels']),
                             iterations=int(param['iters']))
     sj = jax.block_until_ready(jnp.asarray(series))

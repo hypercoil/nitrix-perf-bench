@@ -46,7 +46,12 @@ from ._register import (
 
 def _build(param: Dict[str, Any]) -> BuiltPoint:
     levels, iters = int(param['levels']), int(param['iters'])
-    spec = RegistrationSpec(levels=levels, iterations=iters)
+    # mode='early_exit': fair parity with the early-stopping refs (ANTs preset
+    # 1e-7/8; dipy L-BFGS) -- nitrix's 'fixed' default runs ALL `iterations` while
+    # affine converges in a few, so fixed would ~2x nitrix's work vs the refs and
+    # vs what a defaults-trusting user needs. See nitrix FR
+    # register-default-fixed-iterations-regression.
+    spec = RegistrationSpec(levels=levels, iterations=iters, mode='early_exit')
     seed = param.get('seed', 0)
     if param.get('data') == 'mni152':
         # REAL anatomy: the MNI152 T1 under a planted affine warp (same grid).
