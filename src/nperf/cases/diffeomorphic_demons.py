@@ -128,13 +128,18 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
         return (moving, fixed)
 
     baselines = {
-        # the recipe; return velocity (the SVF parametrisation -- forces the
-        # full scan to run so compile_time is the real cold compile). The
-        # DEFAULT representation='group' -- the v4 perf path (~2 gathers/iter).
+        # the recipe; return the displacement field -- the always-present
+        # default output users consume (DiffeomorphicResult.displacement,
+        # (*spatial, ndim)). velocity recovery (field_log) is now lazy / opt-in
+        # (nitrix c8df85c "lazy velocity output"); .velocity is None unless
+        # spec.compute_velocity, so the benchmark reads .displacement, which
+        # still forces the full coarse->fine scan (compile_time = real cold
+        # compile). DEFAULT representation='group' -- the v4 perf path
+        # (~2 gathers/iter).
         'nitrix-jax': (
             'jax',
             lambda mv, fx: diffeomorphic_demons_register(
-                mv, fx, spec=spec).velocity),
+                mv, fx, spec=spec).displacement),
         # the exact-SVF 'algebra' path (re-exp every iter; byte-identical to
         # the pre-v4 recipe -- the log-Demons parity oracle). Same recipe, one
         # spec knob flipped, so the ratio vs nitrix-jax is the pure cost of the
@@ -144,7 +149,7 @@ def _build(param: Dict[str, Any]) -> BuiltPoint:
             'jax',
             lambda mv, fx: diffeomorphic_demons_register(
                 mv, fx, spec=replace(spec, representation='algebra')
-            ).velocity),
+            ).displacement),
         'ants.registration': ('ants', ants_ref),     # diffeo ref (SyNOnly)
         'dipy.registration': ('dipy', dipy_ref),      # dipy SyN on SSD
         'simpleitk.demons': ('simpleitk', sitk_ref),  # direct ITK demons

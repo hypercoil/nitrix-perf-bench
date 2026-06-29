@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generated": "2026-06-20T02:36:33Z",
+    "generated": "2026-06-29T19:18:02Z",
     "jax_version": "0.10.0",
     "sig_figs": 6,
     "note": "keyed by case name (qualname is a field; >1 case may target one op). signature + sign/order-invariant behaviour digest; a change detector (nitrix vs its committed past), not a correctness verdict. tools/drift_check.py"
@@ -2287,7 +2287,7 @@
     "integrate_velocity_field": {
       "case": "integrate_velocity_field",
       "qualname": "nitrix.geometry.integrate_velocity_field",
-      "signature": "(velocity: \"Float[Array, '*spatial ndim']\", *, n_steps: 'int' = 7, mode: 'BoundaryMode' = 'nearest', cval: 'float' = 0.0) -> \"Float[Array, '*spatial ndim']\"",
+      "signature": "(velocity: \"Float[Array, '*spatial ndim']\", *, n_steps: \"Union[int, Literal['auto']]\" = 7, mode: 'BoundaryMode' = 'nearest', cval: 'float' = 0.0) -> \"Float[Array, '*spatial ndim']\"",
       "behaviour": {
         "point": {
           "d": 24
@@ -3549,7 +3549,7 @@
     "rigid_register": {
       "case": "rigid_register",
       "qualname": "nitrix.register.rigid_register",
-      "signature": "(moving: \"Float[Array, '*mspatial']\", fixed: \"Float[Array, '*fspatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06, convergence='auto'), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto', init: \"Literal['identity', 'moment']\" = 'identity', winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False) -> 'RegistrationResult'",
+      "signature": "(moving: \"Float[Array, '*mspatial']\", fixed: \"Float[Array, '*fspatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06, mode='fixed', convergence=Convergence(threshold=1e-06, window=10), ic_line_search=False), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto', init: \"Literal['identity', 'moment']\" = 'identity', init_transform: \"Optional[Float[Array, ' d1 d1']]\" = None, mask: \"Optional[Float[Array, '*fspatial']]\" = None, winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False) -> 'RegistrationResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -3578,7 +3578,7 @@
     "affine_register": {
       "case": "affine_register",
       "qualname": "nitrix.register.affine_register",
-      "signature": "(moving: \"Float[Array, '*mspatial']\", fixed: \"Float[Array, '*fspatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06, convergence='auto'), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto', init: \"Literal['identity', 'moment']\" = 'identity', winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False) -> 'RegistrationResult'",
+      "signature": "(moving: \"Float[Array, '*mspatial']\", fixed: \"Float[Array, '*fspatial']\", *, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06, mode='fixed', convergence=Convergence(threshold=1e-06, window=10), ic_line_search=False), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto', init: \"Literal['identity', 'moment']\" = 'identity', init_transform: \"Optional[Float[Array, ' d1 d1']]\" = None, mask: \"Optional[Float[Array, '*fspatial']]\" = None, winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False, restarts: 'int' = 1) -> 'RegistrationResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -3607,7 +3607,7 @@
     "diffeomorphic_demons": {
       "case": "diffeomorphic_demons",
       "qualname": "nitrix.register.diffeomorphic_demons_register",
-      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'DemonsSpec' = DemonsSpec(levels=3, iterations=80, sigma_fluid=1.0, sigma_diffusion=1.5, n_steps=6, alpha=0.4, bch_order=1, spacing=None, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest', representation='group', convergence=None), force: 'Optional[Union[Force, Sequence[Force]]]' = None, init_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_displacement: \"Optional[Float[Array, '*spatial ndim']]\" = None, mask: \"Optional[Float[Array, '*spatial']]\" = None, restrict: 'Optional[tuple[float, ...]]' = None, winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False, smoothing_sigma: 'Optional[Union[float, Sequence[float]]]' = None) -> 'DiffeomorphicResult'",
+      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'DemonsSpec' = DemonsSpec(levels=3, iterations=80, sigma_fluid=1.0, sigma_diffusion=1.5, spacing=None, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest', representation='group', mode='fixed', convergence=Convergence(threshold=1e-06, window=10), compute_velocity=False, n_steps=6, alpha=0.4, bch_order=1), force: 'Optional[Union[Force, Sequence[Force]]]' = None, init_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_displacement: \"Optional[Float[Array, '*spatial ndim']]\" = None, mask: \"Optional[Float[Array, '*spatial']]\" = None, restrict: 'Optional[tuple[float, ...]]' = None, winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False, smoothing_sigma: 'Optional[Union[float, Sequence[float]]]' = None) -> 'DiffeomorphicResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -3629,9 +3629,9 @@
             "dtype": "float32",
             "n_finite": 331776,
             "n_nonfinite": 0,
-            "l1": 385536.0,
-            "l2sq": 610056.0,
-            "linf": 6.15925
+            "l1": 390327.0,
+            "l2sq": 624339.0,
+            "linf": 4.91375
           }
         ]
       }
@@ -4167,7 +4167,7 @@
     "greedy_syn_register": {
       "case": "greedy_syn_register",
       "qualname": "nitrix.register.greedy_syn_register",
-      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'SyNSpec' = SyNSpec(levels=3, iterations=80, radius=2, step=0.25, step_mode='clamp', sigma_fluid=1.0, sigma_diffusion=1.5, n_steps=5, spacing=None, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest', representation='group', convergence=None), force: 'Optional[Union[Force, Sequence[Force]]]' = None, init_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_displacement: \"Optional[Float[Array, '*spatial ndim']]\" = None, mask: \"Optional[Float[Array, '*spatial']]\" = None, restrict: 'Optional[tuple[float, ...]]' = None, winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False, smoothing_sigma: 'Optional[Union[float, Sequence[float]]]' = None) -> 'SyNResult'",
+      "signature": "(moving: \"Float[Array, '*spatial']\", fixed: \"Float[Array, '*spatial']\", *, spec: 'SyNSpec' = SyNSpec(levels=3, iterations=80, sigma_fluid=1.0, sigma_diffusion=1.5, spacing=None, pyramid_factor=2.0, pyramid_sigma=None, boundary_mode='nearest', representation='group', mode='fixed', convergence=Convergence(threshold=1e-06, window=10), compute_velocity=False, radius=2, step=0.25, step_mode='clamp', n_steps=5), force: 'Optional[Union[Force, Sequence[Force]]]' = None, init_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_displacement: \"Optional[Float[Array, '*spatial ndim']]\" = None, mask: \"Optional[Float[Array, '*spatial']]\" = None, restrict: 'Optional[tuple[float, ...]]' = None, winsorize: 'Optional[tuple[float, float]]' = None, histogram_match: 'bool' = False, smoothing_sigma: 'Optional[Union[float, Sequence[float]]]' = None) -> 'SyNResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -4189,9 +4189,9 @@
             "dtype": "float32",
             "n_finite": 331776,
             "n_nonfinite": 0,
-            "l1": 98464.2,
-            "l2sq": 48315.0,
-            "linf": 2.18331
+            "l1": 83412.0,
+            "l2sq": 34668.9,
+            "linf": 1.83948
           }
         ]
       }
@@ -4199,7 +4199,7 @@
     "volreg": {
       "case": "volreg",
       "qualname": "nitrix.register.volreg",
-      "signature": "(series: \"Float[Array, 't *spatial']\", *, reference: \"Union[int, str, Float[Array, '*spatial']]\" = 'mean', passes: 'int' = 1, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06, convergence='auto'), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto') -> 'VolregResult'",
+      "signature": "(series: \"Float[Array, 't *spatial']\", *, reference: \"Union[int, str, Float[Array, '*spatial']]\" = 'mean', passes: 'int' = 1, spec: 'RegistrationSpec' = RegistrationSpec(levels=3, iterations=30, metric=SSD(), optimizer='auto', interpolation=Linear(), boundary_mode='constant', cval=0.0, pyramid_factor=2.0, pyramid_sigma=None, cg_tol=1e-06, mode='fixed', convergence=Convergence(threshold=1e-06, window=10), ic_line_search=False), space: 'CoordinateSpace' = IndexSpace(), method: 'str' = 'auto') -> 'VolregResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -4230,7 +4230,7 @@
     "bbr_register": {
       "case": "bbr_register",
       "qualname": "nitrix.register.bbr_register",
-      "signature": "(moving: \"Float[Array, '*spatial']\", points: \"Float[Array, ' n d']\", normals: \"Float[Array, ' n d']\", *, moving_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_params: \"Optional[Float[Array, ' p']]\" = None, spec: 'BBRSpec' = BBRSpec(step=1.0, slope=0.5, q0=0.0, iterations=100, interpolation=Linear(), boundary_mode='nearest', cval=0.0, eps=0.001)) -> 'BBRResult'",
+      "signature": "(moving: \"Float[Array, '*spatial']\", points: \"Float[Array, ' n d']\", normals: \"Float[Array, ' n d']\", *, moving_affine: \"Optional[Float[Array, ' d1 d1']]\" = None, init_params: \"Optional[Float[Array, ' p']]\" = None, spec: 'BBRSpec' = BBRSpec(step=1.0, slope=0.5, q0=0.0, iterations=50, schedule=(4.0, 2.0, 1.0), search=BBRSearch(rotation=0.07, translation=4.0, steps=3, step=None), mode='fixed', convergence=Convergence(threshold=1e-06, window=10), rotation_step=0.03, translation_step=2.0, step_decay=0.92, interpolation=Linear(), boundary_mode='nearest', cval=0.0, eps=0.001)) -> 'BBRResult'",
       "behaviour": {
         "point": {
           "shape": [
@@ -4249,9 +4249,9 @@
             "dtype": "float32",
             "n_finite": 6,
             "n_nonfinite": 0,
-            "l1": 2.92299,
-            "l2sq": 1.92866,
-            "linf": 0.913746
+            "l1": 2.86872,
+            "l2sq": 3.15562,
+            "linf": 1.49615
           }
         ]
       }

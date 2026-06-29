@@ -381,7 +381,8 @@ def bbr_boundary(shape: Sequence[int], n_points: int, seed: int = 0, *,
     convention ``bbr_cost`` expects: ``inside = q - step*n``).  The points are
     displaced by a small **planted** rigid offset so the boundary sits *off*
     the true edge at identity; a correct ``bbr_register`` seats it back (the
-    recovery pin is ``cost_history[-1] < cost_history[0]``).'''
+    recovery pin is ``cost_history.min() < cost_history[0]`` -- annealing-aware,
+    since the grid+anneal recipe shifts the absolute cost scale across stages).'''
     import scipy.ndimage as spnd
     from scipy.spatial.transform import Rotation
 
