@@ -163,6 +163,16 @@ class BuiltPoint:
     # when fp64_reference is None: the human reason the comparison is N/A
     # (recorded as fidelity.reason): why the baselines legitimately differ.
     fidelity_note: Optional[str] = None
+    # OPTIONAL registration-recovery scorer (REGISTRATION_RECOVERY): a
+    # planted-warp point with a known ground truth carries a closure
+    # ``recovery(name, out_host) -> {recovery_ncc, recovery_tre, ...}``
+    # (built in ``_build`` capturing the GT field / fixed image / mask).  When
+    # present, ``measure_attempt`` scores each baseline's output against the
+    # planted truth and injects the scalars into ``metrics`` -- so recovery
+    # quality is reported *beside* speed.  ``None`` -> speed only (as today).
+    # The closure dispatches on ``baseline_name`` because nitrix baselines
+    # return the transform/field while community refs return the warped image.
+    recovery: Optional[Callable[[str, Any], Dict[str, float]]] = None
 
 
 @dataclass

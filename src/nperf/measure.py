@@ -257,6 +257,19 @@ def measure_attempt(
                 'unit': METRICS['throughput'].unit,
             },
         }
+        # Registration recovery quality (REGISTRATION_RECOVERY): when the point
+        # carries a planted-warp ground truth, score how well this baseline
+        # recovered it and inject the scalars beside the timing metrics.  A
+        # recovery-scoring failure must never fail the timing row; recovery
+        # is additive signal, speed is the primary measurement.
+        if built.recovery is not None:
+            try:
+                for _k, _v in built.recovery(baseline_name, out_host).items():
+                    if _v is not None and _k in METRICS:
+                        metrics[_k] = {'value': float(_v),
+                                       'unit': METRICS[_k].unit}
+            except Exception:  # noqa: BLE001 -- recovery is best-effort
+                pass
         # No cross-implementation oracle: the case's baselines compute the same
         # *task* but not bit-identical results (e.g. a different boundary
         # convention), so there is no fp64 ground truth both should match.  The

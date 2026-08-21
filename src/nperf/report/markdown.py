@@ -51,6 +51,30 @@ def _fmt_fidelity(rec: Dict[str, Any]) -> str:
     return f"{tag} {fid.get('rel_to_tol', float('nan')):.2g}×tol"
 
 
+def _fmt_recovery(rec: Dict[str, Any]) -> str:
+    '''Registration recovery quality: NCC (uniform, warped-vs-fixed) + the
+    transform-based scores (TRE mm @ landmarks, warp RMS mm, min Jacobian)
+    where the recovered field is extractable.  ``—`` when the point carries no
+    planted-warp ground truth (every non-recovery row).'''
+    m = rec.get('metrics') or {}
+    ncc = (m.get('recovery_ncc') or {}).get('value')
+    tre = (m.get('recovery_tre') or {}).get('value')
+    warp = (m.get('recovery_warp') or {}).get('value')
+    jac = (m.get('recovery_jacmin') or {}).get('value')
+    if all(x is None for x in (ncc, tre, warp, jac)):
+        return '—'
+    parts = []
+    if ncc is not None:
+        parts.append(f'ncc {ncc:.3f}')
+    if tre is not None:
+        parts.append(f'TRE {tre:.2f}mm')
+    if warp is not None:
+        parts.append(f'wrp {warp:.2f}')
+    if jac is not None:
+        parts.append(f'J {jac:+.2f}')
+    return ' '.join(parts)
+
+
 def _fmt_ratio(rec: Dict[str, Any]) -> str:
     if rec.get('status') == 'fidelity_failed':
         return 'refused'
@@ -168,11 +192,14 @@ def render_markdown(
         'reported not gated, a fidelity/speed tradeoff that keeps its ratio). '
         'A `fidelity_failed` row keeps its measurements but its ratio is '
         '`refused`. Ratios are **within-platform** (vs that platform\'s '
-        'reference baseline).',
+        'reference baseline). `recovery` (registration only) = how well the '
+        'baseline recovered a *known planted warp*: `ncc` warped-vs-fixed '
+        '(uniform), `TRE` mm @ landmarks, `wrp` RMS warp-vs-truth mm, `J` min '
+        'Jacobian (<0 = folding) -- the accuracy beside the speed.',
         '',
         '| case | platform | param | baseline | status | steady (min/med) | '
-        'compile | mem | fidelity | ratio |',
-        '|---|---|---|---|---|---|---|---|---|---|',
+        'compile | mem | fidelity | recovery | ratio |',
+        '|---|---|---|---|---|---|---|---|---|---|---|',
     ]
     for r in sorted(records, key=_row_sort_key):
         metrics = r.get('metrics') or {}
@@ -185,7 +212,8 @@ def render_markdown(
         )
         lines.append(
             '| {case} | {platform} | {param} | `{baseline}` | {status} | '
-            '{steady} | {compile} | {mem} | {fid} | {ratio} |'.format(
+            '{steady} | {compile} | {mem} | {fid} | {recov} | '
+            '{ratio} |'.format(
                 case=r.get('case'),
                 platform=r.get('platform'),
                 param=_fmt_param(r.get('param_point', {})),
@@ -195,6 +223,7 @@ def render_markdown(
                 compile=_fmt_time(comp.get('value')),
                 mem=_fmt_mem(r),
                 fid=_fmt_fidelity(r),
+                recov=_fmt_recovery(r),
                 ratio=_fmt_ratio(r),
             )
         )

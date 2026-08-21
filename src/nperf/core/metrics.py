@@ -36,6 +36,18 @@ METRICS: Dict[str, Metric] = {
         # Stored in the `fidelity` block, not `metrics`; catalogued for its
         # unit/direction/gate-threshold (pass <=> rel_to_tol <= 1; annex §C).
         Metric('fidelity', '×tol', 'lower', kind='fidelity', threshold=1.0),
+        # --- Registration recovery quality (REGISTRATION_RECOVERY) ---------
+        # Scored per-baseline from a *planted-warp* point with a known ground
+        # truth (BuiltPoint.recovery), NOT an oracle two-array compare.  How
+        # WELL each tool recovered the known transform -- reported beside speed
+        # so the report shows the speed/accuracy tradeoff, not speed alone.
+        # ``recovery_ncc`` is the UNIFORM column (every tool: warped-vs-fixed
+        # alignment); TRE / warp / jac are the rigorous transform-based scores
+        # (where the recovered field is extractable -- nitrix/ANTs/dipy).
+        Metric('recovery_ncc', 'ncc', 'higher'),   # warped vs fixed (uniform)
+        Metric('recovery_tre', 'mm', 'lower'),     # TRE @ landmarks
+        Metric('recovery_warp', 'mm', 'lower'),    # RMS field-vs-GT over mask
+        Metric('recovery_jacmin', 'detJ', 'higher'),  # min detJ (<0 = fold)
         # 'energy' deferred (distinct protocol, DESIGN §L1).
     )
 }
